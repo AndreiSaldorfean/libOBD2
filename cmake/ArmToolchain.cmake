@@ -12,6 +12,7 @@ set(CMAKE_C_FLAGS
     -g \
     -O0 \
     -Wa,-alh=output.lst")
+
 set(CMAKE_EXE_LINKER_FLAGS
     "-lc \
     -T${CMAKE_SOURCE_DIR}/linker/stm32f4.ld \

@@ -2,14 +2,24 @@ cmake_minimum_required(VERSION 3.14)
 project(libOBD2 LANGUAGES C)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
-file(GLOB SOURCES "src/*.c" "src/os/*.c" "startup/*.c" "${CMAKE_SOURCE_DIR}./libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c")
+
+file(GLOB SOURCES
+    "${CMAKE_SOURCE_DIR}/src/startup/isr_vector.c"
+    "${CMAKE_SOURCE_DIR}/src/startup/reset_handler.c"
+    "${CMAKE_SOURCE_DIR}/src/*.c"
+    "${CMAKE_SOURCE_DIR}/src/os/*.c"
+    "${CMAKE_SOURCE_DIR}/../libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c"
+)
+
 add_executable(${PROJECT_NAME} ${SOURCES})
+
 target_include_directories(${PROJECT_NAME}
     PRIVATE
     ./inc/
-    ./libs/libopencm3/include/
-    ./libs/FreeRTOS-Kernel/include/
-    ./libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/
+    ../libs/libopencm3/include/
+    ../libs/FreeRTOS-Kernel/include/
+    ../libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/
+    ../../include
 )
 # include_directories(SYSTEM
 #     /home/rudy/tools/arm-gnu-toolchain/lib/gcc/arm-none-eabi/14.2.1/
@@ -18,6 +28,7 @@ target_include_directories(${PROJECT_NAME}
 
 set( FREERTOS_PORT "GCC_ARM_CM4F" CACHE STRING "" FORCE)
 set( FREERTOS_HEAP "4" CACHE STRING "" FORCE)
+
 add_library(freertos_config INTERFACE)
 
 target_include_directories(freertos_config SYSTEM
@@ -30,11 +41,16 @@ target_compile_definitions(freertos_config
     projCOVERAGE_TEST=0
 )
 
-add_subdirectory(libs/FreeRTOS-Kernel)
+add_subdirectory(
+    ${CMAKE_CURRENT_LIST_DIR}/../libs/FreeRTOS-Kernel
+    ${CMAKE_BINARY_DIR}/FreeRTOS-Kernel
+)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    ${CMAKE_SOURCE_DIR}/libs/libopencm3/lib/libopencm3_stm32f4.a
+    ${CMAKE_SOURCE_DIR}/../libs/libopencm3/lib/libopencm3_stm32f4.a
     freertos_config
     freertos_kernel
+    ${CMAKE_SOURCE_DIR}/../../build/libOBD2.a
     )
 
 # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

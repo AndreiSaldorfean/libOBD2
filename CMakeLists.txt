@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(libOBD2 LANGUAGES C)
+project(OBD2 LANGUAGES C)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".a")
 
