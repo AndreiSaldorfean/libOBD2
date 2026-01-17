@@ -1,0 +1,7 @@
+[submodule "examples/libs/libopencm3"]
+	path = examples/libs/libopencm3
+	url = https://github.com/libopencm3/libopencm3.git
+
+[submodule "examples/libs/FreeRTOS-Kernel"]
+	path = examples/libs/FreeRTOS-Kernel
+	url = git@github.com:FreeRTOS/FreeRTOS-Kernel.git
