@@ -17,3 +17,13 @@ stm32f401ccu_b:
 
 stm32f401ccu_clean:
 	rm -rf ./examples/STM32F401CCU/build
+
+unit_test: unit_test_clean
+	cmake -S ./tests/ -B ./tests/build -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=../cmake/ArmToolchain.cmake
+
+unit_test_b:
+	cmake --build ./tests/build
+
+unit_test_clean:
+	rm -rf ./tests/build
+
