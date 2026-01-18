@@ -2,6 +2,9 @@ all: clean
 	cmake -S . -B build -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/ArmToolchain.cmake
 b:
 	cmake --build build
+flash:
+	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
+	  -c "program /home/rudy/Projects/libOBD2/examples/STM32F401CCU/build/libOBD2.elf verify reset exit"
 open:
 	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "init; reset halt"
 ren:
@@ -23,6 +26,13 @@ unit_test: unit_test_clean
 
 unit_test_b:
 	cmake --build ./tests/build
+
+flash_unit:
+	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
+	  -c "program /home/rudy/Projects/libOBD2/tests/build/libOBD2.elf verify reset exit"
+
+uf:
+	dfu-util -a 0 -s 0x08000000:leave -D ./tests/build/libOBD2.bin
 
 unit_test_clean:
 	rm -rf ./tests/build

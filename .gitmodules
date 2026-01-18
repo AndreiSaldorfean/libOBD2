@@ -5,6 +5,21 @@
 [submodule "examples/libs/FreeRTOS-Kernel"]
 	path = examples/libs/FreeRTOS-Kernel
 	url = git@github.com:FreeRTOS/FreeRTOS-Kernel.git
+
 [submodule "tests/Unity"]
 	path = tests/Unity
 	url = git@github.com:ThrowTheSwitch/Unity.git
+
+[submodule "examples/libs/CMSIS_5"]
+    path = "examples/libs/CMSIS_5"
+    url = "git@github.com:ARM-software/CMSIS_5.git"
+
+[submodule "examples/libs/cmsis_device_f4"]
+    path = "examples/libs/cmsis_device_f4"
+    url = "git@github.com:STMicroelectronics/cmsis_device_f4.git"
+
+[submodule "examples/libs/tinyusb"]
+    path = "examples/libs/tinyusb"
+    url = "git@github.com:hathach/tinyusb.git"
+
+

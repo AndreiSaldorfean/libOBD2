@@ -2,4 +2,5 @@
 .cache
 build/
 .clangd
+.gdb_history
 ./examples/STM32F401CCU/build

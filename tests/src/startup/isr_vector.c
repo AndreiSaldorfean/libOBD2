@@ -2,6 +2,10 @@
 #include "libopencm3/stm32/gpio.h"
 #include "libopencm3/stm32/rcc.h"
 #include "libopencm3/stm32/usart.h"
+#include "FreeRTOS.h"
+#include "FreeRTOSConfig.h"
+#include "task.h"
+#include "tusb.h"
 
 void NMI_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void HardFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
@@ -16,6 +20,18 @@ extern void xPortSysTickHandler(void);
 // SysTick handler required by FreeRTOS
 void SysTick_Handler(void) {
   gpio_toggle(GPIOD, GPIO12);
+  xPortSysTickHandler();
+}
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
+{
+    (void)xTask;
+    (void)pcTaskName;
+    taskDISABLE_INTERRUPTS();
+    for (;;)
+    {
+        // Optionally toggle an LED or log here
+    }
 }
 
 // Default empty handler
@@ -23,7 +39,15 @@ void Default_Handler(void) {
   while (1) {
   }
 }
+extern void vPortSVCHandler(void);
+extern void xPortPendSVHandler(void);
 extern void Reset_Handler(void);
+
+/* USB OTG FS interrupt handler for TinyUSB */
+void otg_fs_isr(void)
+{
+    tud_int_handler(0);
+}
 
 __attribute__((section(".isr_vector"))) void (*const vector_table[])(void) = {
     (void (*)(void))(0x20000000 + 128 * 1024), // Initial stack pointer
@@ -33,13 +57,14 @@ __attribute__((section(".isr_vector"))) void (*const vector_table[])(void) = {
     MemManage_Handler,                         // MPU fault handler
     BusFault_Handler,                          // Bus fault handler
     UsageFault_Handler,                        // Usage fault handler
-    0,
-    0,
-    0,
-    0, // Reserved
-    0,
-    DebugMon_Handler, // Debug monitor handler
-    0,                // Reserved
-    0,
-    SysTick_Handler, // SysTick handler (used by FreeRTOS)
+    0, 0, 0, 0,        // Reserved
+    vPortSVCHandler,   // SVCall handler
+    DebugMon_Handler,  // Debug monitor handler
+    0,                 // Reserved
+    xPortPendSVHandler,// PendSV handler
+    SysTick_Handler,   // SysTick handler (used by FreeRTOS)
+    // External interrupts start here (IRQ 0-66)
+    [16 ... 82] = Default_Handler,  // IRQ 0-66 default
+    otg_fs_isr,        // IRQ 67: USB OTG FS
+    [84 ... 100] = Default_Handler, // Rest default
 };

@@ -2,6 +2,8 @@
 #include "unity.h"
 #include "test_kline.h"
 #include "kline.h"
+#include "tusb.h"
+#include <stdio.h>
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -12,6 +14,7 @@
 void test_KLINE_0(void)
 {
     int a;
+
     a = foo();
 
     TEST_ASSERT_EQUAL_UINT32(1, a);
