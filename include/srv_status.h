@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 /* ================================================= MACROS ================================================ */
-#define OBD_MAKE_ERROR(module, code) ((obd_status_t)((module << 8) | (code & 0xFF)))
+#define OBD_MAKE_ERROR(module, code) ((obd_status_t)(((module) << 8) | ((code) & 0xFF)))
 #define OBD_STATUS_OK                ((obd_status_t)0x0U)
 
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
