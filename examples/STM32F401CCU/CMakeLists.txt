@@ -86,10 +86,21 @@ add_custom_target(
     DEPENDS ${PROJECT_NAME}
 )
 
+target_link_options(${PROJECT_NAME} PRIVATE
+  -Wl,--print-memory-usage
+)
+
 add_custom_target(
     renode_make
     COMMAND renode ${CMAKE_SOURCE_DIR}/utils/stm_dev_make.resc --console
     DEPENDS ${PROJECT_NAME}
+)
+set(CMAKE_SIZE arm-none-eabi-size)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+  COMMAND ${CMAKE_SIZE} --format=berkeley $<TARGET_FILE:${PROJECT_NAME}>
+  COMMENT "Firmware size (text/data/bss/dec/hex):"
+  VERBATIM
 )
 
 # add_custom_target(

@@ -8,7 +8,6 @@
 #include "tusb.h"
 
 void NMI_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void HardFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void MemManage_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void BusFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void UsageFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
@@ -32,6 +31,14 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
     {
         // Optionally toggle an LED or log here
     }
+}
+void HardFault_Handler(void)
+{
+    uint32_t cont = 0;
+
+    (void)cont;
+
+    while (cont == 0);
 }
 
 // Default empty handler
