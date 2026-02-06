@@ -11,6 +11,7 @@ file(GLOB SOURCES
     "${CMAKE_SOURCE_DIR}/src/startup/reset_handler.c"
     "${CMAKE_SOURCE_DIR}/src/*.c"
     "${CMAKE_SOURCE_DIR}/src/os/*.c"
+    "${CMAKE_SOURCE_DIR}/src/ports/*.c"
     "${CMAKE_SOURCE_DIR}/../libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c"
     "${CMAKE_SOURCE_DIR}/../libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
     ${TINYUSB_ROOT}/src/*.c

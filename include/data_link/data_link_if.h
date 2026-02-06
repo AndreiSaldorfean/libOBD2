@@ -3,8 +3,8 @@
 
 /* ================================================ INCLUDES =============================================== */
 #include "srv_status.h"
-#include <stddef.h>
 #include "transport_if.h"
+#include <stddef.h>
 
 /* ================================================= MACROS ================================================ */
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
@@ -25,7 +25,7 @@ typedef struct
 typedef struct
 {
     const obd_transport_ops_t *pTransportOps;
-    void* pTransportHandle;
+    void *pTransportHandle;
 
     obd_status_t (*connect)(void *handle);
     obd_status_t (*send_request)(void *handle, obd_request_t *req);
