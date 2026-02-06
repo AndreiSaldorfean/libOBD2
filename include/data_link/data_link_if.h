@@ -19,7 +19,7 @@ typedef struct
 {
     uint8_t sid;
     uint32_t *data;
-    size_t data_len;
+    size_t* data_len;
 } obd_response_t;
 
 typedef struct

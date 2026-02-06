@@ -1,7 +1,7 @@
 /* ================================================ INCLUDES =============================================== */
 #include "unity.h"
 #include "unity_internals.h"
-#include "test_kline.h"
+#include "test_libobd2.h"
 #include "stdio.h"
 
 #include <stdint.h>
@@ -55,7 +55,8 @@ int main()
 
     UNITY_BEGIN();
 
-    RUN_TEST(test_KLINE_0);
+    RUN_TEST(test_LIBOBD2_0);
+    RUN_TEST(test_LIBOBD2_1);
 
     int result = UNITY_END();
 

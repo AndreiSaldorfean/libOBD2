@@ -12,6 +12,7 @@
 typedef struct
 {
     const dataLink_if_t *pDataLink;
+    void* pDataLinkHandle;
     bool connectionStatus;
 } obd_ctx_t;
 
