@@ -1,7 +1,7 @@
 all: clean
 	cmake -S . -B build -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/ArmToolchain.cmake
 b:
-	cmake --build build
+	cmake --build build -j12
 flash:
 	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
 	  -c "program /home/rudy/Projects/libOBD2/examples/STM32F401CCU/build/libOBD2.elf verify reset exit"
@@ -16,7 +16,7 @@ stm32f401ccu: stm32f401ccu_clean
 	cmake -S ./examples/STM32F401CCU/ -B ./examples/STM32F401CCU/build -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=../../cmake/ArmToolchain.cmake
 
 stm32f401ccu_b:
-	cmake --build ./examples/STM32F401CCU/build
+	cmake --build ./examples/STM32F401CCU/build -j12
 
 stm32f401ccu_clean:
 	rm -rf ./examples/STM32F401CCU/build
@@ -25,7 +25,7 @@ unit_test: unit_test_clean
 	cmake -S ./tests/ -B ./tests/build -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=../cmake/ArmToolchain.cmake
 
 unit_test_b:
-	cmake --build ./tests/build
+	cmake --build ./tests/build -j12
 
 flash_unit:
 	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
