@@ -1,5 +1,6 @@
 /* ================================================ INCLUDES =============================================== */
-#include "kline.h"
+#include "srv_status.h"
+#include "transport_if.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -7,10 +8,16 @@
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */
-
-int foo()
+obd_status_t UART_init(void* handle)
 {
-    int a;
-    a = 1;
-    return a;
+}
+
+obd_status_t UART_write_byte(void* handle, uint8_t *data, size_t len)
+{
+
+}
+
+obd_status_t UART_recv_byte(void* handle, uint8_t *recv_buffer, size_t len)
+{
+
 }
