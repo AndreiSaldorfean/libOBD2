@@ -1,0 +1,96 @@
+---
+# ClangFormat configuration for embedded C development
+BasedOnStyle: LLVM
+Language: C
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+
+# Braces on same column as statement (Allman style)
+BreakBeforeBraces: Allman
+
+# Function definitions and declarations
+AlwaysBreakAfterReturnType: None
+AlwaysBreakAfterDefinitionReturnType: None
+
+# Spacing
+SpaceAfterCStyleCast: false
+SpaceBeforeParens: ControlStatements
+SpaceBeforeAssignmentOperators: true
+SpaceInEmptyParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpacesInCStyleCastParentheses: false
+
+# Line length (common for embedded to avoid horizontal scrolling)
+ColumnLimit: 80
+
+# Alignment
+AlignAfterOpenBracket: AlwaysBreak
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignOperands: true
+AlignTrailingComments: true
+
+# Pointer and reference alignment (common in embedded: type* name)
+PointerAlignment: Right
+DerivePointerAlignment: false
+
+# Function calls and parameters
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Empty
+
+# Break before binary operators for better readability
+BreakBeforeBinaryOperators: None
+
+# Include sorting (useful for embedded projects)
+SortIncludes: true
+IncludeBlocks: Preserve
+IncludeCategories:
+  - Regex:           '^".*\.h"'
+    Priority:        1
+  - Regex:           '^<.*\.h>'
+    Priority:        2
+  - Regex:           '.*'
+    Priority:        3
+
+# Keep empty lines
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+SeparateDefinitionBlocks: Always
+
+# Penalties (fine-tuning for line breaking decisions)
+PenaltyBreakBeforeFirstCallParameter: 1
+PenaltyBreakComment: 300
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakString: 1000
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 60
+
+# Indent case labels in switch statements
+IndentCaseLabels: true
+
+# Indent preprocessor directives
+IndentPPDirectives: None
+
+# Bin packing
+BinPackArguments: false
+BinPackParameters: false
+
+# Comments
+ReflowComments: false
+
+# Macros (common in embedded for register definitions)
+MacroBlockBegin: ''
+MacroBlockEnd: ''
+
+# Keep single-line statements separate for debugging
+AllowShortEnumsOnASingleLine: false
