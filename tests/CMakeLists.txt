@@ -7,11 +7,15 @@ set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 set(TINYUSB_ROOT ${CMAKE_SOURCE_DIR}/../examples/libs/tinyusb)
 
 file(GLOB SOURCES
+    "${CMAKE_SOURCE_DIR}/../utils/*.c"
+    "${CMAKE_SOURCE_DIR}/../src/*.c"
+    "${CMAKE_SOURCE_DIR}/../src/data_link/*.c"
+    "${CMAKE_SOURCE_DIR}/../src/data_link/l2_kwp/*.c"
     "${CMAKE_SOURCE_DIR}/src/startup/isr_vector.c"
     "${CMAKE_SOURCE_DIR}/src/startup/reset_handler.c"
     "${CMAKE_SOURCE_DIR}/src/*.c"
     "${CMAKE_SOURCE_DIR}/src/os/*.c"
-    "${CMAKE_SOURCE_DIR}/src/kline/*.c"
+    "${CMAKE_SOURCE_DIR}/src/app/*.c"
     "${CMAKE_SOURCE_DIR}/Unity/src/*.c"
     "${CMAKE_SOURCE_DIR}/../libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c"
     "${CMAKE_SOURCE_DIR}/../examples/libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
@@ -29,7 +33,12 @@ target_include_directories(${PROJECT_NAME}
     ./inc/
     ../examples/libs/libopencm3/include/
     ../include
-    ./src/kline
+    ../utils
+    ../interface/
+    ../include/app/
+    ../include/data_link/
+    ../include/data_link/l2_kwp/
+    ./src/app
     ./Unity/src/
     ../examples/libs/FreeRTOS-Kernel/include/
     ../examples/libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/
