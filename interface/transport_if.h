@@ -9,14 +9,17 @@
 /* ================================================ INCLUDES =============================================== */
 #include "srv_status.h"
 #include <stddef.h>
+#include <stdbool.h>
 
 /* ================================================= MACROS ================================================ */
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
+
 typedef struct
 {
     obd_status_t (*init)(void *handle);
-    obd_status_t (*send_byte)(void *handle, uint8_t *data, size_t len);
-    obd_status_t (*recv_byte)(void *handle, uint8_t *buffer, size_t *len);
+    obd_status_t (*send_byte)(void *handle, uint8_t data);
+    obd_status_t (*recv_byte)(void *handle, uint8_t *buffer);
+    obd_status_t (*send_pulse)(void *handle, bool pulse);
 } obd_transport_ops_t;
 
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
