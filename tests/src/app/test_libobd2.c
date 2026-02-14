@@ -73,6 +73,13 @@ void test_LIBOBD2_1(void)
     size_t len;
     obd_status_t status;
 
-    status = LibOBD2_RequestService(&ctx, SID_SHOW_CURRENT_DATA, PID_01_COOLANT_TEMP, respBuffer, &len);
+    obd_request_t request = {
+        .sid = SID_SHOW_CURRENT_DATA,
+        .param = {PID_01_COOLANT_TEMP}
+    };
+
+    obd_response_t response = {0};
+
+    status = LibOBD2_RequestService(&ctx, &request, 2, &response, &len);
     TEST_ASSERT_EQUAL_UINT32(OBD_ERR_NULL_PTR, status);
 }

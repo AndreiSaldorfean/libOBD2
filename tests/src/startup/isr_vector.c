@@ -8,7 +8,6 @@
 #include "tusb.h"
 
 void NMI_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void HardFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void MemManage_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void BusFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void UsageFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
@@ -32,6 +31,11 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
     {
         // Optionally toggle an LED or log here
     }
+}
+
+void HardFault_Handler(void) {
+    bool continue_ = 1;
+    while (continue_);
 }
 
 // Default empty handler
@@ -64,7 +68,7 @@ __attribute__((section(".isr_vector"))) void (*const vector_table[])(void) = {
     xPortPendSVHandler,// PendSV handler
     SysTick_Handler,   // SysTick handler (used by FreeRTOS)
     // External interrupts start here (IRQ 0-66)
-    [16 ... 82] = Default_Handler,  // IRQ 0-66 default
-    otg_fs_isr,        // IRQ 67: USB OTG FS
-    [84 ... 100] = Default_Handler, // Rest default
+    // [16 ... 82] = Default_Handler,  // IRQ 0-66 default
+    // otg_fs_isr,        // IRQ 67: USB OTG FS
+    // [84 ... 100] = Default_Handler, // Rest default
 };

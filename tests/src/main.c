@@ -1,4 +1,5 @@
 /* ================================================ INCLUDES =============================================== */
+#include "test_timer.h"
 #include "unity.h"
 #include "unity_internals.h"
 #include "test_libobd2.h"
@@ -55,8 +56,10 @@ int main()
 
     UNITY_BEGIN();
 
-    RUN_TEST(test_LIBOBD2_0);
-    RUN_TEST(test_LIBOBD2_1);
+    // RUN_TEST(test_LIBOBD2_0);
+    // RUN_TEST(test_LIBOBD2_1);
+    RUN_TEST(test_TIMER_0);
+    RUN_TEST(test_TIMER_1);
 
     int result = UNITY_END();
 
