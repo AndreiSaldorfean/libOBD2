@@ -1,3 +1,4 @@
+#include "uart_kwp_transport_port.h"
 #include <stdint.h>
 #define STM32F4
 #include <stddef.h>
@@ -5,8 +6,11 @@
 #include <unistd.h>
 #include "libopencm3/stm32/gpio.h"
 #include "libopencm3/stm32/rcc.h"
+#include "libopencm3/stm32/usart.h"
 #include "libopencm3/cm3/nvic.h"
+#include "uart_kwp_transport_port.h"
 #include "tusb.h"
+#include "l2_kwp.h"
 
 #define GPIOC_MODE_REGISTER *(volatile uint32_t*)(uintptr_t)(0x40020800UL)
 #define GPIOC_MODER13_SHIFT (26)
@@ -22,7 +26,7 @@ static void gpio_setup(void)
     GPIOC_MODE_REGISTER |= pinmode;
 }
 
-static void usart_setup(void)
+static void usbCdc_setup(void)
 {
     /* Use internal HSI oscillator - works on all F401CCU boards without crystal */
     rcc_clock_setup_pll(&rcc_hsi_configs[RCC_CLOCK_3V3_84MHZ]);
@@ -39,9 +43,6 @@ static void usart_setup(void)
 
     /* Initialize TinyUSB */
     tusb_init();
-
-    /* Enable USB interrupt after initialization */
-    nvic_enable_irq(NVIC_OTG_FS_IRQ);
 }
 
 int main(void)
@@ -50,22 +51,47 @@ int main(void)
 	uint32_t counter = 0;
 
 	gpio_setup();
-	usart_setup();
+	usbCdc_setup();
+
+    uartKwp_ctx_t uartCtx =
+    {
+            .usartClk    = RCC_USART1,
+            .usartNum    = USART1,
+            .baudRate    = 10400,
+            .dataBits    = 8,
+            .stopBits    = USART_STOPBITS_1,
+            .mode        = USART_MODE_TX_RX,
+            .parity      = USART_PARITY_NONE,
+            .flowControl = USART_FLOWCONTROL_NONE,
+            .usartTxPin  = GPIO9,
+            .usartRxPin  = GPIO10,
+
+            .gpioRcc = RCC_GPIOA,
+            .gpio = GPIOA,
+    };
+
+    UART_KWP_Init(&uartCtx);
+
+    UART_KWP_ChangeBaud(&uartCtx, FAST_INIT_WAKEUP_START);
+    UART_KWP_SendPulse(&uartCtx, 0);
 
 	/* Disable stdout buffering for immediate printf output */
 	setbuf(stdout, NULL);
 
 	/* Main loop - minimal config without RTOS */
 	while (1) {
-
         GPIOC_ODR ^= (1 << 13);
 
         /* Send hello once when CDC is connected */
         if (!hello_sent) {
-            printf("USB CDC Connected!\r\n");
-            printf("Counter test: %lu\r\n", counter);
+            // printf("USB CDC Connected!\r\n");
+            // printf("Counter test: %lu\r\n", counter);
             hello_sent = 1;
 		}
+
+        UART_KWP_ChangeBaud(&uartCtx, FAST_INIT_WAKEUP_END);
+
+        UART_KWP_WriteByte(&uartCtx, 0x83);
 
         for(int i=0;i<1000000;i++)
         {

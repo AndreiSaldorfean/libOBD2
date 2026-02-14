@@ -12,6 +12,8 @@
 /* ================================================= MACROS ================================================ */
 // #define SPT_5BAUD_INIT
 // #define SPT_CHANGE_TIMING_PARAM
+#define FAST_INIT_WAKEUP_START (0x1)
+#define FAST_INIT_WAKEUP_END   (0x2)
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef union
 {
