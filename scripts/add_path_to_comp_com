@@ -1,5 +1,0 @@
-#!/bin/zsh
-
-var=' -I/home/rudy/tools/arm-gnu-toolchain/arm-none-eabi/include/\",'
-
-sed "4s|..$|${var}|" ../build/compile_commands.json > tmp && mv tmp ../build/compile_commands.json
