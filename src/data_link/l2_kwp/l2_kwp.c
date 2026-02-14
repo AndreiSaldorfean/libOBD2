@@ -241,10 +241,13 @@ static obd_status_t L2_KWP_FastInit(dataLink_if_t *self)
 {
     void* transportHandle = self->pTransportHandle;
     obd_status_t (*TR_SendPulse)(void *handle, bool pulse) = self->pTransportOps->send_pulse;
+    void (*TR_SwitchBaud)(void *handle, uint8_t mode) = self->pTransportOps->change_baud;
     obd_status_t status;
     l2_kwp_ctx_t *ctx = self->pProtocolCtx;
 
     L2_KWP_IdleBasedOnConnStatus(self);
+
+    TR_SwitchBaud(transportHandle, FAST_INIT_WAKEUP_START);
 
     TR_SendPulse(transportHandle, PULSE_HIGH);
 
@@ -255,6 +258,8 @@ static obd_status_t L2_KWP_FastInit(dataLink_if_t *self)
 
     // delay 25ms
     self->pTimingOps->delay_ms(self->pTimingHandle, 25);
+
+    TR_SwitchBaud(transportHandle, FAST_INIT_WAKEUP_END);
 
     // For keeping the size of the function small the L2_KWP_SRV_StartCommunication
     // will do more than just sending the service

@@ -25,7 +25,13 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
+    ../../include/data_link/
+    ../../include/data_link/l2_kwp/
+    ../../include/
+    ../../interface/
+    ../../include/app/
     ./inc/
+    ./src/ports/
     ../libs/libopencm3/include/
     ../libs/FreeRTOS-Kernel/include/
     ../libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/
