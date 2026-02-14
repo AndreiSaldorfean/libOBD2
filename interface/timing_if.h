@@ -36,6 +36,13 @@ typedef struct
      * @param pHandle Platform-specific handle (e.g., timer peripheral)
      * @return Current time in milliseconds (can wrap around)
      */
+    obd_status_t (*timer_init)(void *pHandle);
+
+    /**
+     * @brief Get current timestamp in milliseconds
+     * @param pHandle Platform-specific handle (e.g., timer peripheral)
+     * @return Current time in milliseconds (can wrap around)
+     */
     uint32_t (*get_time_ms)(void *pHandle);
 
     /**

@@ -19,6 +19,7 @@ file(GLOB SOURCES
     "${CMAKE_SOURCE_DIR}/Unity/src/*.c"
     "${CMAKE_SOURCE_DIR}/../libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c"
     "${CMAKE_SOURCE_DIR}/../examples/libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
+    "${CMAKE_SOURCE_DIR}/../examples/STM32F401CCU/src/ports/*.c"
     ${TINYUSB_ROOT}/src/*.c
     ${TINYUSB_ROOT}/src/common/*.c
     ${TINYUSB_ROOT}/src/device/*.c
@@ -40,6 +41,7 @@ target_include_directories(${PROJECT_NAME}
     ../include/data_link/l2_kwp/
     ./src/app
     ./Unity/src/
+    ../examples/STM32F401CCU/src/ports/
     ../examples/libs/FreeRTOS-Kernel/include/
     ../examples/libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/
     ../examples/libs/cmsis_device_f4/Include
@@ -60,6 +62,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     CFG_TUSB_OS=OPT_OS_FREERTOS
     STM32F401xC
     UNITY_EXCLUDE_SETJMP_H
+    UNITY_OUTPUT_CHAR=UnityOutputCharSilent
+    UNITY_OUTPUT_FLUSH=UnityOutputFlushSilent
+    "UNITY_OUTPUT_CHAR_HEADER_DECLARATION=UnityOutputCharSilent(int)"
+    "UNITY_OUTPUT_FLUSH_HEADER_DECLARATION=UnityOutputFlushSilent(void)"
 )
 
 set( FREERTOS_PORT "GCC_ARM_CM4F" CACHE STRING "" FORCE)
