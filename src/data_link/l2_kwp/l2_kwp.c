@@ -272,6 +272,8 @@ static obd_status_t L2_KWP_Init(dataLink_if_t *self)
 {
     obd_status_t status;
 
+    self->pTimingOps->timer_init(self->pTimingHandle);
+
     status = L2_KWP_FastInit(self);
 
     #if defined(SPT_5BAUD_INIT)

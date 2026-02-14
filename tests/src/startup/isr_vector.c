@@ -8,7 +8,6 @@
 #include "tusb.h"
 
 void NMI_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void HardFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void MemManage_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void BusFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void UsageFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
@@ -34,6 +33,11 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
     }
 }
 
+void HardFault_Handler(void) {
+    bool continue_ = 1;
+    while (continue_);
+}
+
 // Default empty handler
 void Default_Handler(void) {
   while (1) {
@@ -48,6 +52,9 @@ void otg_fs_isr(void)
 {
     tud_int_handler(0);
 }
+
+/* TIM2 interrupt handler - defined in kwp_timer.c */
+extern void tim2_isr(void);
 
 __attribute__((section(".isr_vector"))) void (*const vector_table[])(void) = {
     (void (*)(void))(0x20000000 + 128 * 1024), // Initial stack pointer
@@ -64,7 +71,9 @@ __attribute__((section(".isr_vector"))) void (*const vector_table[])(void) = {
     xPortPendSVHandler,// PendSV handler
     SysTick_Handler,   // SysTick handler (used by FreeRTOS)
     // External interrupts start here (IRQ 0-66)
-    [16 ... 82] = Default_Handler,  // IRQ 0-66 default
-    otg_fs_isr,        // IRQ 67: USB OTG FS
+    [16 ... 43] = Default_Handler,  // IRQ 0-27 default
+    tim2_isr,                       // IRQ 28: TIM2
+    [45 ... 82] = Default_Handler,  // IRQ 29-66 default
+    otg_fs_isr,                     // IRQ 67: USB OTG FS
     [84 ... 100] = Default_Handler, // Rest default
 };

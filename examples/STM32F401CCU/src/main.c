@@ -1,3 +1,4 @@
+#include "kwp_timer.h"
 #include "uart_kwp_transport_port.h"
 #include <stdint.h>
 #define STM32F4
@@ -53,6 +54,17 @@ int main(void)
 	gpio_setup();
 	usbCdc_setup();
 
+    timerCtx_t tmrCtx =
+    {
+        .timeout_active = false,
+        .timeout_expired = false,
+        .timeout_callback = NULL,
+        .timeout_user_data = NULL,
+        .timeout_target_ms = 0,
+    };
+
+    KWP_TMR_Init(&tmrCtx);
+
     uartKwp_ctx_t uartCtx =
     {
             .usartClk    = RCC_USART1,
@@ -66,8 +78,8 @@ int main(void)
             .usartTxPin  = GPIO9,
             .usartRxPin  = GPIO10,
 
-            .gpioRcc = RCC_GPIOA,
-            .gpio = GPIOA,
+            .gpioRcc     = RCC_GPIOA,
+            .gpio        = GPIOA,
     };
 
     UART_KWP_Init(&uartCtx);
