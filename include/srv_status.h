@@ -10,6 +10,7 @@
 #define OBD_STATUS_OK                ((obd_status_t)0x0U)
 #define OBD_GENERIC_ERROR            (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (obd_status_t)0x1U))
 #define OBD_ERR_NULL_PTR             (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (obd_status_t)0x2U))
+#define OBD_NOT_SUPPORTED            (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (obd_status_t)0x3U))
 
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef uint16_t obd_status_t;
