@@ -32,7 +32,7 @@ flash_unit:
 	  -c "program /home/rudy/Projects/libOBD2/tests/build/libOBD2.elf verify reset exit"
 
 uf:
-	dfu-util -a 0 -s 0x08000000:leave -D ./tests/build/libOBD2.bin
+	dfu-util -a 0 -s 0x08000000:leave -D ./examples/STM32F401CCU/build/libOBD2.bin
 
 unit_test_clean:
 	rm -rf ./tests/build

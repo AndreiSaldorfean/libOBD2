@@ -118,3 +118,9 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 #     COMMAND /bin/zsh ${CMAKE_SOURCE_DIR}/utils/add_path_to_comp_com
 #     DEPENDS ${PROJECT_NAME}
 # )
+
+# Generate .bin file from .elf
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${PROJECT_NAME}> ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.bin
+    COMMENT "Generating ${PROJECT_NAME}.bin"
+)

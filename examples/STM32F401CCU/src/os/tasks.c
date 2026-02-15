@@ -17,6 +17,29 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
+static void configDummyTranciever(timerCtx_t* tmrCtx, uartKwp_ctx_t *uartCtx)
+{
+        tmrCtx->timeout_active    = false;
+        tmrCtx->timeout_expired   = false;
+        tmrCtx->timeout_callback  = NULL;
+        tmrCtx->timeout_user_data = NULL;
+        tmrCtx->timeout_start_ms = 0;
+
+        uartCtx->usartClk    = RCC_USART1;
+        uartCtx->usartNum    = USART1;
+        uartCtx->baudRate    = 10400;
+        uartCtx->dataBits    = 8;
+        uartCtx->stopBits    = USART_STOPBITS_1;
+        uartCtx->mode        = USART_MODE_TX_RX;
+        uartCtx->parity      = USART_PARITY_NONE;
+        uartCtx->flowControl = USART_FLOWCONTROL_NONE;
+        uartCtx->usartTxPin  = GPIO9;
+        uartCtx->usartRxPin  = GPIO10;
+
+        uartCtx->gpioRcc     = RCC_GPIOA;
+        uartCtx->gpio        = GPIOA;
+}
+
 static void configDataLink(dataLink_if_t* dl)
 {
     static timerCtx_t tmrCtx =
@@ -121,4 +144,27 @@ void TransceiverTask(void *param)
 
         vTaskDelay(1000/portTICK_PERIOD_MS);
     }
+}
+
+void DummyTransciever(void *param)
+{
+    obd_status_t status;
+
+    (void)param;
+    (void)status;
+
+    timerCtx_t tmrCtx;
+    uartKwp_ctx_t uartCtx;
+
+    configDummyTranciever(&tmrCtx, &uartCtx);
+
+    KWP_TMR_Init(&tmrCtx);
+    UART_KWP_Init(&uartCtx);
+
+    UART_KWP_WriteByte(&uartCtx, 0x83);
+    UART_KWP_WriteByte(&uartCtx, 0xF1);
+    UART_KWP_WriteByte(&uartCtx, 0x10);
+    UART_KWP_WriteByte(&uartCtx, 0xC1);
+    UART_KWP_WriteByte(&uartCtx, 0x8F);
+    UART_KWP_WriteByte(&uartCtx, 0xBD);
 }

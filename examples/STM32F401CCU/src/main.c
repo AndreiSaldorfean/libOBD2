@@ -17,6 +17,14 @@ int main(void)
 
     TaskHandle_t gHelloWorld = NULL;
 
+    // uint32_t status = xTaskCreate(
+    //     DummyTransciever,
+    //     "Dummy Transciever Task",
+    //     1024,
+    //     NULL,
+    //     tskIDLE_PRIORITY,
+    //     &gHelloWorld);
+
     uint32_t status = xTaskCreate(
         TransceiverTask,
         "Transceiver Task",
