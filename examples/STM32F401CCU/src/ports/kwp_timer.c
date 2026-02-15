@@ -2,6 +2,7 @@
 #include "kwp_timer.h"
 #include <stddef.h>
 #define STM32F4
+#include "libopencm3/cm3/cortex.h"
 #include "libopencm3/cm3/nvic.h"
 #include "libopencm3/stm32/f4/nvic.h"
 #include "libopencm3/stm32/f4/rcc.h"
@@ -9,76 +10,74 @@
 #include "srv_status.h"
 
 /* ================================================= MACROS ================================================ */
-#define TIMER_FREQ_HZ       1000000U   /* 1MHz = 1µs per tick */
-#define TIMER_PERIOD_MS     1000U      /* 1000 ticks of 1µs = 1ms */
+/*
+ * Use TIM2 as a free-running 32-bit microsecond counter.
+ *
+ * For STM32F401 @ 84MHz:
+ *   - APB1 bus = 42MHz (max)
+ *   - APB1 timer clock = 84MHz (doubled when APB1 prescaler > 1)
+ *   - Prescaler for 1MHz = 84 - 1 = 83
+ *
+ * TIM2 is 32-bit, so it can count up to 4294 seconds (~71 minutes) before wrapping.
+ */
+#define TIM2_PRESCALER      83U
 
 /* ============================================ LOCAL VARIABLES ============================================ */
-static volatile uint32_t g_ms_counter = 0;
-static timerCtx_t *g_timer_ctx = NULL;  /* For ISR access */
+static volatile timerCtx_t *g_timer_ctx = NULL;  /* For ISR access */
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 static void tim_setup(void);
+static inline uint32_t get_time_us(void);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-static void tim_setup(void)
-{
-	/* Enable TIM2 clock. */
-	rcc_periph_clock_enable(RCC_TIM2);
-
-	/* Enable TIM2 interrupt. */
-	nvic_enable_irq(NVIC_TIM2_IRQ);
-
-	/* Reset TIM2 peripheral to defaults. */
-	rcc_periph_reset_pulse(RST_TIM2);
-
-	/*
-	 * Configure timer for 1ms overflow rate.
-	 * APB1 timer clock = APB1_freq * 2 (when APB1 prescaler != 1)
-	 *
-	 * Strategy: Prescale to 1MHz (1µs ticks), then count 1000 ticks = 1ms
-	 * Prescaler = (timer_clk / 1MHz) - 1
-	 */
-	timer_set_prescaler(TIM2, ((rcc_apb1_frequency * 2) / TIMER_FREQ_HZ) - 1);
-
-	/* Disable preload. */
-	timer_disable_preload(TIM2);
-	timer_continuous_mode(TIM2);
-
-	/* Set period to 1000 ticks - overflow every 1ms (1000 × 1µs) */
-	timer_set_period(TIM2, TIMER_PERIOD_MS - 1);
-
-	/* Counter enable. */
-	timer_enable_counter(TIM2);
-
-	/* Enable update interrupt (fires on overflow) */
-	timer_enable_irq(TIM2, TIM_DIER_UIE);
-}
 
 /**
- * @brief TIM2 interrupt handler - called every 1ms
+ * @brief Get current time in microseconds directly from hardware
+ * @return Current time in microseconds (wraps at ~71 minutes)
  */
-void tim2_isr(void)
+static inline uint32_t get_time_us(void)
 {
-	if (timer_get_flag(TIM2, TIM_SR_UIF)) {
-		timer_clear_flag(TIM2, TIM_SR_UIF);
+    return timer_get_counter(TIM2);
+}
 
-		/* Increment millisecond counter */
-		g_ms_counter++;
+static void tim_setup(void)
+{
+    /* Enable TIM2 clock */
+    rcc_periph_clock_enable(RCC_TIM2);
 
-		/* Check timeout */
-		if (g_timer_ctx != NULL && g_timer_ctx->timeout_active) {
-			if (g_ms_counter >= g_timer_ctx->timeout_target_ms) {
-				g_timer_ctx->timeout_active = false;
-				g_timer_ctx->timeout_expired = true;
+    /* Reset TIM2 peripheral to defaults */
+    rcc_periph_reset_pulse(RST_TIM2);
 
-				/* Call callback if registered */
-				if (g_timer_ctx->timeout_callback != NULL) {
-					g_timer_ctx->timeout_callback(g_timer_ctx->timeout_user_data);
-				}
-			}
-		}
-	}
+    /* Disable counter during configuration */
+    timer_disable_counter(TIM2);
+
+    /*
+     * Configure TIM2 as free-running 32-bit microsecond counter.
+     * No interrupts needed - just read the counter directly.
+     */
+    timer_set_prescaler(TIM2, TIM2_PRESCALER);
+
+    /* Disable preload for immediate prescaler update */
+    timer_disable_preload(TIM2);
+    timer_continuous_mode(TIM2);
+
+    /* Set period to max (32-bit) - free-running counter */
+    timer_set_period(TIM2, 0xFFFFFFFF);
+
+    /* Generate update event to load prescaler immediately */
+    timer_generate_event(TIM2, TIM_EGR_UG);
+
+    /* Clear the update flag that was set by the UG event */
+    timer_clear_flag(TIM2, TIM_SR_UIF);
+
+    /* Reset counter to 0 */
+    timer_set_counter(TIM2, 0);
+
+    /* Start the counter */
+    timer_enable_counter(TIM2);
+
+    /* No interrupts - pure polling */
 }
 
 /* ================================================ MODULE API ============================================= */
@@ -86,9 +85,8 @@ obd_status_t KWP_TMR_Init(void *pHandle)
 {
     timerCtx_t *ctx = (timerCtx_t*)pHandle;
 
-    /* Store context for ISR access */
+    /* Store context */
     g_timer_ctx = ctx;
-    g_ms_counter = 0;
 
     /* Setup the hardware timer */
     tim_setup();
@@ -98,20 +96,21 @@ obd_status_t KWP_TMR_Init(void *pHandle)
 
 uint32_t KWP_TMR_GetTimeMs(void *pHandle)
 {
-    (void)pHandle;  /* Not needed, using global counter */
+    (void)pHandle;
 
-    return g_ms_counter;
+    return get_time_us() / 1000U;
 }
 
 obd_status_t KWP_TMR_DelayMs(void *pHandle, uint32_t delay_ms)
 {
     (void)pHandle;
 
-    uint32_t start_ms = g_ms_counter;
+    uint32_t start_us = get_time_us();
+    uint32_t delay_us = delay_ms * 1000U;
 
-    /* Blocking wait - handles wrap-around correctly */
-    while ((g_ms_counter - start_ms) < delay_ms) {
-        /* Could add __WFI() here to save power */
+    /* Blocking wait with microsecond precision - handles wrap-around */
+    while ((get_time_us() - start_us) < delay_us) {
+        /* Busy wait */
     }
 
     return OBD_STATUS_OK;
@@ -121,12 +120,16 @@ obd_status_t KWP_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_cal
 {
     timerCtx_t *ctx = (timerCtx_t*)pHandle;
 
-    /* Configure timeout */
+    cm_disable_interrupts();
+
     ctx->timeout_callback = callback;
     ctx->timeout_user_data = pUserData;
-    ctx->timeout_target_ms = g_ms_counter + timeout_ms;
+    ctx->timeout_start_ms = get_time_us() / 1000U;
+    ctx->timeout_duration_ms = timeout_ms;
     ctx->timeout_expired = false;
     ctx->timeout_active = true;
+
+    cm_enable_interrupts();
 
     return OBD_STATUS_OK;
 }
@@ -143,6 +146,20 @@ obd_status_t KWP_TMR_StopTimeout(void *pHandle)
 bool KWP_TMR_IsTimeoutExpired(void *pHandle)
 {
     timerCtx_t *ctx = (timerCtx_t*)pHandle;
+
+    if (ctx->timeout_active) {
+        uint32_t now_ms = get_time_us() / 1000U;
+        uint32_t elapsed = now_ms - ctx->timeout_start_ms;
+
+        if (elapsed >= ctx->timeout_duration_ms) {
+            ctx->timeout_active = false;
+            ctx->timeout_expired = true;
+
+            if (ctx->timeout_callback != NULL) {
+                ctx->timeout_callback(ctx->timeout_user_data);
+            }
+        }
+    }
 
     return ctx->timeout_expired;
 }

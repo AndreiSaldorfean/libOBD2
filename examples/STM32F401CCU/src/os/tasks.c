@@ -25,7 +25,7 @@ static void configDataLink(dataLink_if_t* dl)
         .timeout_expired   = false,
         .timeout_callback  = NULL,
         .timeout_user_data = NULL,
-        .timeout_target_ms = 0,
+        .timeout_start_ms = 0,
     };
 
     static obd_timing_ops_t timerOps =

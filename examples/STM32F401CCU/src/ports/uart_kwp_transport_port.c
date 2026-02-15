@@ -50,6 +50,9 @@ obd_status_t UART_KWP_WriteByte(void* handle, uint8_t data)
 
     usart_send_blocking(ctx->usartNum, data);
 
+    /* Wait for transmission to fully complete (shift register empty) */
+    while (!(USART_SR(ctx->usartNum) & USART_SR_TC));
+
     return OBD_STATUS_OK;
 }
 
