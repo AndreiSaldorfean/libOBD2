@@ -1,30 +1,18 @@
 /* ================================================ INCLUDES =============================================== */
-#include "test_timer.h"
-#include "unity.h"
-#include "unity_internals.h"
-#include "test_libobd2.h"
-#include "stdio.h"
-
-#include <stdint.h>
-#define STM32F4
-#include <stddef.h>
+#include "init.h"
+#include "libopencm3/stm32/f4/gpio.h"
 #include <stdio.h>
-#include <unistd.h>
-#include "libopencm3/stm32/gpio.h"
-#include "libopencm3/stm32/rcc.h"
-#include "libopencm3/cm3/nvic.h"
+#define STM32F4
+#include "libopencm3/stm32/f4/rcc.h"
+#include "libopencm3/stm32/f4/usart.h"
 #include "tusb.h"
 
-/* ================================================= MACROS ================================================ */
+/* ================================================= MACROS * ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-void setUp(void) { }
-
-void tearDown(void) { }
-
-static void usart_setup(void)
+static void usbCdc_setup(void)
 {
     /* Use internal HSI oscillator - works on all F401CCU boards without crystal */
     rcc_clock_setup_pll(&rcc_hsi_configs[RCC_CLOCK_3V3_84MHZ]);
@@ -41,27 +29,14 @@ static void usart_setup(void)
 
     /* Initialize TinyUSB */
     tusb_init();
-
-    /* Enable USB interrupt after initialization */
-    nvic_enable_irq(NVIC_OTG_FS_IRQ);
 }
+
 /* ================================================ MODULE API ============================================= */
-
-int main()
+void sysInit()
 {
-	usart_setup();
+    setbuf(stdout, NULL); // disable buffering
 
-	/* Disable stdout buffering for immediate printf output */
-	setbuf(stdout, NULL);
+    *(volatile uint32_t *)(0xe000edfc) |= 0x400;
 
-    UNITY_BEGIN();
-
-    RUN_TEST(test_LIBOBD2_0);
-    RUN_TEST(test_LIBOBD2_1);
-    RUN_TEST(test_TIMER_0);
-    RUN_TEST(test_TIMER_1);
-
-    int result = UNITY_END();
-
-    return result;
+    usbCdc_setup();
 }

@@ -7,11 +7,12 @@ set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 set(TINYUSB_ROOT ${CMAKE_SOURCE_DIR}/../libs/tinyusb)
 
 file(GLOB SOURCES
-    "${CMAKE_SOURCE_DIR}/src/startup/isr_vector.c"
-    "${CMAKE_SOURCE_DIR}/src/startup/reset_handler.c"
+    "${CMAKE_SOURCE_DIR}/src/startup/*.c"
+    "${CMAKE_SOURCE_DIR}/src/startup/*.c"
     "${CMAKE_SOURCE_DIR}/src/*.c"
     "${CMAKE_SOURCE_DIR}/src/os/*.c"
     "${CMAKE_SOURCE_DIR}/src/ports/*.c"
+    "${CMAKE_SOURCE_DIR}/../../utils/*.c"
     "${CMAKE_SOURCE_DIR}/../libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c"
     "${CMAKE_SOURCE_DIR}/../libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
     ${TINYUSB_ROOT}/src/*.c
@@ -29,6 +30,7 @@ target_include_directories(${PROJECT_NAME}
     ../../include/data_link/l2_kwp/
     ../../include/
     ../../interface/
+    ../../utils/
     ../../include/app/
     ./inc/
     ./src/ports/

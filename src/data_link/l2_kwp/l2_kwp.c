@@ -8,6 +8,7 @@
 #include "transport_if.h"
 #include "utils.h"
 #include "l2_kwp_srv.h"
+#include <string.h>
 
 /* ================================================= MACROS ================================================ */
 #define PULSE_HIGH (1U)
@@ -18,11 +19,13 @@
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 static uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data);
 
-static obd_status_t L2_KWP_SendMessage(void* timingHandle,const obd_timing_ops_t *pTimingOps, void* handle, const obd_transport_ops_t *transportOps, message_t* msg);
+static obd_status_t L2_KWP_SendMessage(void* timingHandle,const obd_timing_ops_t *pTimingOps, void* handle, const obd_transport_ops_t *transportOps, uint8_t* msg, size_t len);
 static obd_status_t L2_KWP_RecvMessage(void* timingHandle,const obd_timing_ops_t *pTimingOps, void* handle, const obd_transport_ops_t *transportOps, message_t* recvdMsg);
 
 static obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t* self);
+#if 0
 static obd_status_t L2_KWP_SRV_StopCommunication(dataLink_if_t* self);
+#endif
 #if defined(SPT_CHANGE_TIMING_PARAM)
 static obd_status_t L2_KWP_SRV_AccessTimingParameter(dataLink_if_t* self);
 #endif /* SPT_CHANGE_TIMING_PARAM */
@@ -47,7 +50,7 @@ static uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data)
         checksum+= hdr[idx];
     }
 
-    for (uint8_t idx = 0; idx < data.len; idx++)
+    for (uint8_t idx = 0; idx < data.len + 1; idx++)
     {
         checksum+= req[idx];
     }
@@ -55,9 +58,8 @@ static uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data)
     return checksum % 256;
 }
 
-static obd_status_t L2_KWP_SendMessage(void* timingHandle,const obd_timing_ops_t *pTimingOps, void* handle, const obd_transport_ops_t *transportOps, message_t* msg)
+static obd_status_t L2_KWP_SendMessage(void* timingHandle,const obd_timing_ops_t *pTimingOps, void* handle, const obd_transport_ops_t *transportOps, uint8_t* msg, size_t len)
 {
-    uint8_t* pMsg = (uint8_t*)msg;
     bool (*IsTimeoutExpired)(void *pHandle) = pTimingOps->is_timeout_expired;
     uint32_t (*GetTimeMs)(void *pHandle) = pTimingOps->get_time_ms;
     obd_status_t status;
@@ -71,11 +73,11 @@ static obd_status_t L2_KWP_SendMessage(void* timingHandle,const obd_timing_ops_t
         return OBD_GENERIC_ERROR;
     }
 
-
-    for (int idx = 0; idx < 256; idx++)
+    for (size_t idx = 0; idx < len; idx++)
     {
-        status = transportOps->send_byte(handle, pMsg[idx]);
+        status = transportOps->send_byte(handle, msg[idx]);
         OBD2_ASSERT_OK(status);
+        pTimingOps->delay_ms(timingHandle, KWP_P4_TIME_MIN);
     }
 
     pTimingOps->start_timeout(timingHandle, KWP_P2_TIME_MAX, NULL, NULL);
@@ -104,6 +106,7 @@ static obd_status_t L2_KWP_RecvMessage(void* timingHandle,const obd_timing_ops_t
 
     for (int idx = 1; idx <= len; idx++)
     {
+        /* TODO: Figure out how to get the end of a message and length of recieved message */
         pTimingOps->start_timeout(timingHandle, KWP_P1_TIME_MAX, NULL, NULL);
         status = transportOps->recv_byte(handle, pMsg + idx);
         OBD2_ASSERT_EQUAL(false, IsTimeoutExpired(timingHandle));
@@ -133,6 +136,37 @@ static void L2_KWP_IdleBasedOnConnStatus(dataLink_if_t *self)
         ctx->conStatus.bits.STOP_COMM = 0;
     }
 }
+void L2_KWP_PrepareMessage(message_t* sentMsg, uint8_t *aSentMsg, size_t *len)
+{
+    size_t headerLen = (sentMsg->header.len == 0) ? 3 : 4;
+    // size_t dataLen = sentMsg->data.len;
+    size_t idx = 0;
+
+    aSentMsg[idx++] = sentMsg->header.fmt.val;
+    aSentMsg[idx++] = sentMsg->header.trgAddr;
+    aSentMsg[idx++] = sentMsg->header.srcAddr;
+    if (headerLen == 4)
+    {
+        aSentMsg[idx++] = sentMsg->header.len;
+    }
+
+    aSentMsg[idx++] = sentMsg->data.req.sid;
+
+    for (uint8_t i = 0; i < sentMsg->data.len; i++)
+    {
+        aSentMsg[idx++] = sentMsg->data.req.param[i];
+    }
+
+    aSentMsg[idx++] = sentMsg->cs;
+    *len = idx;
+}
+
+void L2_KWP_ProcessMessage(message_t* recvdMsg, uint8_t *aRecvdMsg)
+{
+    (void)recvdMsg;
+    (void)aRecvdMsg;
+}
+
 
 /******************************************* ISO 14230-2 Services ********************************************/
 static obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t* self)
@@ -145,7 +179,7 @@ static obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t* self)
     {
         header_t hdr =
         {
-            .fmt     = {0x81},
+            .fmt     = {0xC1},
             .trgAddr = 0x33,
             .srcAddr = 0xF1,
             .len     = 0,
@@ -179,6 +213,7 @@ static obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t* self)
     return OBD_STATUS_OK;
 }
 
+#if 0
 static obd_status_t L2_KWP_SRV_StopCommunication(dataLink_if_t* self)
 {
     message_t recvdMsg = {0};
@@ -207,6 +242,7 @@ static obd_status_t L2_KWP_SRV_StopCommunication(dataLink_if_t* self)
 
     return OBD_STATUS_OK;
 }
+#endif
 
 static obd_status_t L2_KWP_SRV_SendData(dataLink_if_t* self, message_t* sentMsg, message_t* recvdMsg)
 {
@@ -215,12 +251,19 @@ static obd_status_t L2_KWP_SRV_SendData(dataLink_if_t* self, message_t* sentMsg,
     const obd_timing_ops_t *timingOps = self->pTimingOps;
     void* transHandle = self->pTransportHandle;
     void* timingHandle = self->pTimingHandle;
+    uint8_t aSentMsg[256] = {0};
+    uint8_t aRecvdMsg[256] = {0};
+    size_t sentMsgLen = 0;
 
-    status = L2_KWP_SendMessage(timingHandle, timingOps, transHandle, transportOps, sentMsg);
+    L2_KWP_PrepareMessage(sentMsg, aSentMsg, &sentMsgLen);
+
+    status = L2_KWP_SendMessage(timingHandle, timingOps, transHandle, transportOps, aSentMsg, sentMsgLen);
     OBD2_ASSERT_OK(status);
 
     status = L2_KWP_RecvMessage(timingHandle, timingOps, transHandle, transportOps, recvdMsg);
     OBD2_ASSERT_OK(status);
+
+    L2_KWP_ProcessMessage(recvdMsg, aRecvdMsg);
 
     return status;
 }
@@ -243,20 +286,17 @@ static obd_status_t L2_KWP_FastInit(dataLink_if_t *self)
     obd_status_t (*TR_SendPulse)(void *handle, bool pulse) = self->pTransportOps->send_pulse;
     void (*TR_SwitchBaud)(void *handle, uint8_t mode) = self->pTransportOps->change_baud;
     obd_status_t status;
-    l2_kwp_ctx_t *ctx = self->pProtocolCtx;
 
     L2_KWP_IdleBasedOnConnStatus(self);
 
     TR_SwitchBaud(transportHandle, FAST_INIT_WAKEUP_START);
 
-    TR_SendPulse(transportHandle, PULSE_HIGH);
-
-    // delay 25ms
+    // ISO 14230 Fast Init: LOW for 25ms (TiniL)
+    TR_SendPulse(transportHandle, PULSE_LOW);
     self->pTimingOps->delay_ms(self->pTimingHandle, 25);
 
-    TR_SendPulse(transportHandle, PULSE_LOW);
-
-    // delay 25ms
+    // ISO 14230 Fast Init: HIGH for 25ms (TiniH)
+    TR_SendPulse(transportHandle, PULSE_HIGH);
     self->pTimingOps->delay_ms(self->pTimingHandle, 25);
 
     TR_SwitchBaud(transportHandle, FAST_INIT_WAKEUP_END);
@@ -315,7 +355,8 @@ obd_status_t l2_kwp_send_request(dataLink_if_t *self, const obd_request_t *req, 
     const obd_timing_ops_t *timingOps = self->pTimingOps;
     void* transHandle = self->pTransportHandle;
     void* timingHandle = self->pTimingHandle;
-
+    uint8_t aMessage[256] = {0};
+    size_t msgLen = 0;
 
     data_t data =
     {
@@ -331,7 +372,9 @@ obd_status_t l2_kwp_send_request(dataLink_if_t *self, const obd_request_t *req, 
         .cs = L2_KWP_ComputeChecksum(ctx.header, data)
     };
 
-    status = L2_KWP_SendMessage(timingHandle, timingOps, transHandle, transportOps, &message);
+    L2_KWP_PrepareMessage(&message, aMessage, &msgLen);
+
+    status = L2_KWP_SendMessage(timingHandle, timingOps, transHandle, transportOps, aMessage, msgLen);
     OBD2_ASSERT_OK(status);
 
     return OBD_STATUS_OK;

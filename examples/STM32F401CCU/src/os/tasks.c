@@ -1,44 +1,124 @@
-#include <stdint.h>
-#define STM32F4
+/* ================================================ INCLUDES =============================================== */
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
-#include "libopencm3/stm32/gpio.h"
-#include "libopencm3/stm32/rcc.h"
-#include "libopencm3/stm32/usart.h"
+#include "data_link_if.h"
+#include "iso15031_5.h"
 #include "task.h"
-#include <stddef.h>
-#include <unistd.h>
+#include "tasks.h"
+#include "init.h"
+#include "srv_status.h"
+#include "uart_kwp_transport_port.h"
+#include "kwp_timer.h"
+#include "libobd2.h"
+#include "l2_kwp.h"
+#include "utils.h"
 
-// int __errno_var = 0;
-static void clock_setup(void) {
-  /* Enable GPIOD clock for LED & USARTs. */
-  rcc_periph_clock_enable(RCC_GPIOD);
-  rcc_periph_clock_enable(RCC_GPIOA);
+/* ================================================= MACROS ================================================ */
+/* ============================================ LOCAL VARIABLES ============================================ */
+/* ============================================ GLOBAL VARIABLES =========================================== */
+/* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
+static void configDataLink(dataLink_if_t* dl)
+{
+    static timerCtx_t tmrCtx =
+    {
+        .timeout_active    = false,
+        .timeout_expired   = false,
+        .timeout_callback  = NULL,
+        .timeout_user_data = NULL,
+        .timeout_target_ms = 0,
+    };
 
-  /* Enable clocks for USART2. */
-  rcc_periph_clock_enable(RCC_USART2);
+    static obd_timing_ops_t timerOps =
+    {
+            .timer_init         = KWP_TMR_Init,
+            .delay_ms           = KWP_TMR_DelayMs,
+            .get_time_ms        = KWP_TMR_GetTimeMs,
+            .is_timeout_expired = KWP_TMR_IsTimeoutExpired,
+            .start_timeout      = KWP_TMR_StartTimeout,
+            .stop_timeout       = KWP_TMR_StopTimeout,
+    };
+
+    static uartKwp_ctx_t uartCtx =
+    {
+            .usartClk    = RCC_USART1,
+            .usartNum    = USART1,
+            .baudRate    = 10400,
+            .dataBits    = 8,
+            .stopBits    = USART_STOPBITS_1,
+            .mode        = USART_MODE_TX_RX,
+            .parity      = USART_PARITY_NONE,
+            .flowControl = USART_FLOWCONTROL_NONE,
+            .usartTxPin  = GPIO9,
+            .usartRxPin  = GPIO10,
+
+            .gpioRcc     = RCC_GPIOA,
+            .gpio        = GPIOA,
+    };
+
+    static obd_transport_ops_t transportOps =
+    {
+        .init        = UART_KWP_Init,
+        .send_byte   = UART_KWP_WriteByte,
+        .recv_byte   = UART_KWP_RecvByte,
+        .send_pulse  = UART_KWP_SendPulse,
+        .change_baud = UART_KWP_ChangeBaud,
+    };
+
+
+    static l2_kwp_ctx_t kwpCtx =
+    {
+        .conStatus = {0u},
+        .header    =
+        {
+            .fmt     = {0x10U},
+            .trgAddr = 0x33,
+            .srcAddr = 0xF1,
+            .len     = 1
+        },
+    };
+
+
+    dl->pProtocolCtx     = &kwpCtx;
+    dl->pTimingOps       = &timerOps;
+    dl->pTimingHandle    = &tmrCtx;
+    dl->pTransportHandle = &uartCtx;
+    dl->pTransportOps    = &transportOps;
+    dl->connect          = l2_kwp_connect;
+    dl->send_request     = l2_kwp_send_request;
+    dl->recv_response    = l2_kwp_recv_response;
 }
+/* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
+/* ================================================ MODULE API ============================================= */
+void TransceiverTask(void *param)
+{
+    obd_status_t status;
+    dataLink_if_t dataLink;
 
-static void usart_setup(void) {
-  /* Setup USART2 parameters. */
-  usart_set_baudrate(USART2, 115200);
-  usart_set_databits(USART2, 8);
-  usart_set_stopbits(USART2, USART_STOPBITS_1);
-  usart_set_mode(USART2, USART_MODE_TX);
-  usart_set_parity(USART2, USART_PARITY_NONE);
-  usart_set_flow_control(USART2, USART_FLOWCONTROL_NONE);
+    (void)param;
+    (void)status;
 
-  /* Finally enable the USART. */
-  usart_enable(USART2);
-}
+    configDataLink(&dataLink);
 
-static void gpio_setup(void) {
-  /* Setup GPIO pin GPIO12 on GPIO port D for LED. */
-  gpio_mode_setup(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO12);
+    obd_ctx_t ctx =
+    {
+            .pDataLink = &dataLink,
+            .connectionStatus = 0
+    };
 
-  /* Setup GPIO pins for USART2 transmit. */
-  gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO2);
+    status = LibOBD2_Init(&ctx);
 
-  /* Setup USART2 TX pin as alternate function. */
-  gpio_set_af(GPIOA, GPIO_AF7, GPIO2);
+    obd_request_t request =
+    {
+            .sid = SID_SHOW_CURRENT_DATA,
+            .param = {PID_01_COOLANT_TEMP},
+    };
+    obd_response_t response = {0};
+    size_t respLen = 0;
+
+    for (;;)
+    {
+        LibOBD2_RequestService(&ctx, &request, 1, &response, &respLen);
+
+        vTaskDelay(1000/portTICK_PERIOD_MS);
+    }
 }

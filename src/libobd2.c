@@ -17,14 +17,14 @@ obd_status_t LibOBD2_Init(obd_ctx_t *ctx)
 
     OBD2_CHECK_NULLPTR(ctx);
     OBD2_CHECK_NULLPTR(ctx->pDataLink);
-    OBD2_CHECK_NULLPTR(ctx->pDataLinkHandle);
+    // OBD2_CHECK_NULLPTR(ctx->pDataLinkHandle);
     OBD2_CHECK_NULLPTR(ctx->pDataLink->connect);
 
     /* Add aliases to pointers */
-    dataLink_if_t *pDlHandle = ctx->pDataLinkHandle;
+    dataLink_if_t *self = ctx->pDataLink;
     obd_status_t (*Dl_Connect)(dataLink_if_t *handle) = ctx->pDataLink->connect;
 
-    status = Dl_Connect(pDlHandle);
+    status = Dl_Connect(self);
     OBD2_ASSERT_OK(status);
 
     return status;
@@ -43,19 +43,19 @@ obd_status_t LibOBD2_RequestService(
     OBD2_CHECK_NULLPTR(ctx->pDataLink);
     OBD2_CHECK_NULLPTR(ctx->pDataLink->send_request);
     OBD2_CHECK_NULLPTR(ctx->pDataLink->recv_response);
-    OBD2_CHECK_NULLPTR(ctx->pDataLinkHandle);
+    OBD2_CHECK_NULLPTR(ctx->pDataLink->pProtocolCtx);
     OBD2_CHECK_NULLPTR(response);
     OBD2_CHECK_NULLPTR(responseLen);
 
     /* Add aliases to pointers */
-    void *pDlHandle = ctx->pDataLinkHandle;
+    void *self = ctx->pDataLink;
     obd_status_t (*Dl_SendRequest)(dataLink_if_t *handle, const obd_request_t *req, size_t len) = ctx->pDataLink->send_request;
     obd_status_t (*Dl_ReceiveResponse)(dataLink_if_t  *handle, obd_response_t *resp, size_t* len) = ctx->pDataLink->recv_response;
 
-    status = Dl_SendRequest(pDlHandle, request, requestLen);
+    status = Dl_SendRequest(self, request, requestLen);
     OBD2_ASSERT_OK(status);
 
-    status = Dl_ReceiveResponse(pDlHandle, response, responseLen);
+    status = Dl_ReceiveResponse(self, response, responseLen);
 
     return status;
 }

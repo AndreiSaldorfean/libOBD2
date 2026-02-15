@@ -21,25 +21,25 @@ obd_status_t UART_KWP_Init(void* handle)
     rcc_periph_clock_enable(ctx->gpioRcc);
     rcc_periph_clock_enable(ctx->usartClk);
 
-    gpio_mode_setup(ctx->gpio, GPIO_MODE_AF, GPIO_PUPD_NONE, ctx->usartTxPin);
-    gpio_mode_setup(ctx->gpio, GPIO_MODE_AF, GPIO_PUPD_NONE, ctx->usartRxPin);
+    /* Configure USART BEFORE setting up GPIO pins */
+    usart_set_baudrate(ctx->usartNum, ctx->baudRate);
+    usart_set_databits(ctx->usartNum, ctx->dataBits);
+    usart_set_stopbits(ctx->usartNum, ctx->stopBits);
+    usart_set_mode(ctx->usartNum, ctx->mode);
+    usart_set_parity(ctx->usartNum, ctx->parity);
+    usart_set_flow_control(ctx->usartNum, ctx->flowControl);
+    usart_enable(ctx->usartNum);
 
+    /* Set ODR HIGH before any mode change (works even in input mode) */
+    gpio_set(ctx->gpio, ctx->usartTxPin);
+
+    /* Set alternate function BEFORE switching mode */
     gpio_set_af(ctx->gpio, GPIO_AF7, ctx->usartTxPin);
     gpio_set_af(ctx->gpio, GPIO_AF7, ctx->usartRxPin);
 
-    /* Usart setup for kline comm */
-    {
-        /* Setup usart parameters. */
-        usart_set_baudrate(ctx->usartNum, ctx->baudRate);
-        usart_set_databits(ctx->usartNum, ctx->dataBits);
-        usart_set_stopbits(ctx->usartNum, ctx->stopBits);
-        usart_set_mode(ctx->usartNum, ctx->mode);
-        usart_set_parity(ctx->usartNum, ctx->parity);
-        usart_set_flow_control(ctx->usartNum, ctx->flowControl);
-
-        /* Finally enable the usart. */
-        usart_enable(ctx->usartNum);
-    }
+    /* Now switch to alternate function - USART already driving HIGH */
+    gpio_mode_setup(ctx->gpio, GPIO_MODE_AF, GPIO_PUPD_NONE, ctx->usartTxPin);
+    gpio_mode_setup(ctx->gpio, GPIO_MODE_AF, GPIO_PUPD_NONE, ctx->usartRxPin);
 
     return OBD_STATUS_OK;
 }

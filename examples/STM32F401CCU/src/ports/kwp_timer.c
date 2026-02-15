@@ -9,8 +9,8 @@
 #include "srv_status.h"
 
 /* ================================================= MACROS ================================================ */
-#define TIMER_FREQ_HZ       1000U   /* 1kHz = 1ms per tick */
-#define TICKS_PER_MS        1U
+#define TIMER_FREQ_HZ       1000000U   /* 1MHz = 1µs per tick */
+#define TIMER_PERIOD_MS     1000U      /* 1000 ticks of 1µs = 1ms */
 
 /* ============================================ LOCAL VARIABLES ============================================ */
 static volatile uint32_t g_ms_counter = 0;
@@ -33,10 +33,11 @@ static void tim_setup(void)
 	rcc_periph_reset_pulse(RST_TIM2);
 
 	/*
-	 * Configure timer for 1ms tick rate.
+	 * Configure timer for 1ms overflow rate.
 	 * APB1 timer clock = APB1_freq * 2 (when APB1 prescaler != 1)
-	 * Prescaler = (timer_clk / desired_freq) - 1
-	 * For 1kHz (1ms period): prescaler = (timer_clk / 1000) - 1
+	 *
+	 * Strategy: Prescale to 1MHz (1µs ticks), then count 1000 ticks = 1ms
+	 * Prescaler = (timer_clk / 1MHz) - 1
 	 */
 	timer_set_prescaler(TIM2, ((rcc_apb1_frequency * 2) / TIMER_FREQ_HZ) - 1);
 
@@ -44,8 +45,8 @@ static void tim_setup(void)
 	timer_disable_preload(TIM2);
 	timer_continuous_mode(TIM2);
 
-	/* Set period to 1 tick - overflow every 1ms */
-	timer_set_period(TIM2, TICKS_PER_MS);
+	/* Set period to 1000 ticks - overflow every 1ms (1000 × 1µs) */
+	timer_set_period(TIM2, TIMER_PERIOD_MS - 1);
 
 	/* Counter enable. */
 	timer_enable_counter(TIM2);

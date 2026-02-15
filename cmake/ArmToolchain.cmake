@@ -9,6 +9,8 @@ set(CMAKE_C_FLAGS
     -Wall \
     --specs=nano.specs \
     -Wextra \
+    -Wextra \
+    -Werror \
     -g \
     -O0 \
     -Wa,-alh=output.lst")

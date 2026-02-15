@@ -39,11 +39,11 @@ typedef struct dataLink_if dataLink_if_t;
 struct dataLink_if
 {
     /* Transport layer */
-    const obd_transport_ops_t *pTransportOps;
+    obd_transport_ops_t *pTransportOps;
     void *pTransportHandle;
 
     /* Timing layer */
-    const obd_timing_ops_t *pTimingOps;
+    obd_timing_ops_t *pTimingOps;
     void *pTimingHandle;
 
     /* Protocol-specific context (e.g., l2_kwp_ctx_t) */

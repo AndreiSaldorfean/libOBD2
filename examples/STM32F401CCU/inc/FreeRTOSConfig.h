@@ -115,7 +115,7 @@
  * (in words, not in bytes!).  The kernel does not use this constant for any
  * other purpose.  Demo applications use the constant to make the demos somewhat
  * portable across hardware architectures. */
-#define configMINIMAL_STACK_SIZE                   128
+#define configMINIMAL_STACK_SIZE                   512
 
 /* configMAX_TASK_NAME_LEN sets the maximum length (in characters) of a task's
  * human readable name.  Includes the NULL terminator. */
@@ -493,7 +493,7 @@
  * calls. For example, if configSYSTEM_CALL_STACK_SIZE is defined as 128 and
  * there are 10 tasks in the application, the total amount of memory used for
  * system call stacks is 128 * 10 = 1280 words. */
-#define configSYSTEM_CALL_STACK_SIZE                              128
+#define configSYSTEM_CALL_STACK_SIZE                              256
 
 /* When using the v2 MPU wrapper, set configENABLE_ACCESS_CONTROL_LIST to 1 to
  * enable Access Control List (ACL) feature. When ACL is enabled, an
