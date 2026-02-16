@@ -17,14 +17,25 @@ int main(void)
 
     TaskHandle_t gHelloWorld = NULL;
 
+    /* === Board A: Transmitter === */
     // uint32_t status = xTaskCreate(
-    //     DummyTransciever,
-    //     "Dummy Transciever Task",
+    //     DummyTransmitter,
+    //     "Dummy Transmitter Task",
     //     1024,
     //     NULL,
     //     tskIDLE_PRIORITY,
     //     &gHelloWorld);
 
+    /* === Board B: Receiver === */
+    // uint32_t status = xTaskCreate(
+    //     DummyReceiver,
+    //     "Dummy Receiver Task",
+    //     1024,
+    //     NULL,
+    //     tskIDLE_PRIORITY,
+    //     &gHelloWorld);
+
+    /* === Normal Transceiver (client) === */
     uint32_t status = xTaskCreate(
         TransceiverTask,
         "Transceiver Task",
@@ -32,7 +43,6 @@ int main(void)
         NULL,
         tskIDLE_PRIORITY,
         &gHelloWorld);
-
 
     if (status != pdPASS)
     {

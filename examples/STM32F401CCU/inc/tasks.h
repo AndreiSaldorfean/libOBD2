@@ -8,6 +8,7 @@
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 void TransceiverTask(void *param);
-void DummyTransciever(void *param);
+void DummyTransmitter(void *param);
+void DummyReceiver(void *param);
 
 #endif /* TASKS_H */
