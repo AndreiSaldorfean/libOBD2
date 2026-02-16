@@ -8,6 +8,18 @@
 #include <stddef.h>
 
 /* ================================================= MACROS ================================================ */
+#define LIBOBD_TimingInit(handle)            (handle->pTimingOps->timer_init(handle->pTimingHandle))
+#define LIBOBD_GetTimeMs(handle)             (handle->pTimingOps->get_time_ms(handle->pTimingHandle))
+#define LIBOBD_Delay(handle, delay)          (handle->pTimingOps->delay_ms(handle->pTimingHandle, delay))
+#define LIBOBD_StartTimeout(handle, timeout) (handle->pTimingOps->start_timeout(handle->pTimingHandle, timeout, NULL, NULL))
+#define LIBOBD_StopTimeout(handle)           (handle->pTimingOps->stop_timeout(handle->pTimingHandle))
+#define LIBOBD_IsTimeoutExpired(handle)      (handle->pTimingOps->is_timeout_expired(handle->pTimingHandle))
+
+#define LIBOBD_TransportInit(handle)      (handle->pTransportOps->init(handle->pTransportHandle))
+#define LIBOBD_SendByte(handle, byte)     (handle->pTransportOps->send_byte(handle->pTransportHandle, byte))
+#define LIBOBD_ReceiveByte(handle, byte)  (handle->pTransportOps->recv_byte(handle->pTransportHandle, byte))
+#define LIBOBD_SendPulse(handle, pulse)   (handle->pTransportOps->send_pulse(handle->pTransportHandle, pulse))
+#define LIBOBD_SwitchMode(handle, mode)   (handle->pTransportOps->switch_mode(handle->pTransportHandle, mode))
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
 {

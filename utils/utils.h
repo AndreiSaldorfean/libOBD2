@@ -22,6 +22,11 @@
        if ((val1) != (val2)) return (val1); \
     }while(0)
 
+#define OBD2_ASSERT_EQUAL_OR_ERR(val1, val2, err) \
+    do { \
+       if ((val1) != (val2)) return (err); \
+    }while(0)
+
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 

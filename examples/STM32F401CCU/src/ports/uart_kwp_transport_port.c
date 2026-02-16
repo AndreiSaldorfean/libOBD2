@@ -88,14 +88,18 @@ void UART_KWP_ChangeBaud(void* handle, uint8_t mode)
     switch (mode)
     {
         case FAST_INIT_WAKEUP_START:
+        case SLOW_INIT_5BAUD_START:
         {
             // Disable USART first
             usart_disable(ctx->usartNum);
             // Switch TX pin to GPIO output for bit-banging
             gpio_mode_setup(ctx->gpio, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, ctx->usartTxPin);
+            // Set line HIGH (idle state for K-line)
+            gpio_set(ctx->gpio, ctx->usartTxPin);
             break;
         }
         case FAST_INIT_WAKEUP_END:
+        case SLOW_INIT_5BAUD_END:
         {
             // Switch TX pin back to USART alternate function
             gpio_mode_setup(ctx->gpio, GPIO_MODE_AF, GPIO_PUPD_NONE, ctx->usartTxPin);

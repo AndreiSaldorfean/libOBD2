@@ -17,10 +17,10 @@
 typedef struct
 {
     obd_status_t (*init)(void *handle);
-    obd_status_t (*send_byte)(void *handle, uint8_t data);
-    obd_status_t (*recv_byte)(void *handle, uint8_t *buffer);
-    obd_status_t (*send_pulse)(void *handle, bool pulse);
-    void         (*change_baud)(void *handle, uint8_t mode);
+    void (*send_byte)(void *handle, uint8_t data);
+    void (*recv_byte)(void *handle, uint8_t *buffer);
+    void (*send_pulse)(void *handle, bool pulse);
+    void (*switch_mode)(void *handle, uint8_t mode);
 } obd_transport_ops_t;
 
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */

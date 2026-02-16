@@ -15,6 +15,7 @@ target_include_directories(${PROJECT_NAME}
     ./include/
     ./utils/
     ./include/data_link/l2_kwp
+    ./include/data_link/l2_iso9141/
     ./include/data_link/
     ./include/app/
     ./interface/

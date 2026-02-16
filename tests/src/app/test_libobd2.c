@@ -68,7 +68,7 @@ void test_LIBOBD2_0(void)
         .send_byte = UART_KWP_WriteByte,
         .recv_byte = UART_KWP_RecvByte,
         .send_pulse = UART_KWP_SendPulse,
-        .change_baud = UART_KWP_ChangeBaud,
+        .switch_mode = UART_KWP_ChangeBaud,
     };
 
 
