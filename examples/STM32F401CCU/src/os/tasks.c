@@ -88,7 +88,7 @@ static void configDataLink(dataLink_if_t* dl)
         .send_byte   = UART_KWP_WriteByte,
         .recv_byte   = UART_KWP_RecvByte,
         .send_pulse  = UART_KWP_SendPulse,
-        .change_baud = UART_KWP_ChangeBaud,
+        .switch_mode = UART_KWP_SwitchMode,
     };
 
 
@@ -137,7 +137,7 @@ void TransceiverTask(void *param)
     obd_request_t request =
     {
             .sid = SID_SHOW_CURRENT_DATA,
-            .param = {PID_01_COOLANT_TEMP},
+            .param = {0},
     };
     obd_response_t response = {0};
     size_t respLen = 0;
@@ -150,7 +150,48 @@ void TransceiverTask(void *param)
     }
 }
 
-void DummyTransmitter(void *param)
+void DummySlowInitEcu(void *param)
+{
+    obd_status_t status;
+    uint8_t buffer;
+
+    (void)param;
+    (void)status;
+
+    timerCtx_t tmrCtx;
+    uartKwp_ctx_t uartCtx;
+
+    configDummyTranciever(&tmrCtx, &uartCtx);
+
+    {
+        rcc_periph_clock_enable(RCC_GPIOC);
+
+        uint32_t pinmode = (GPIOC_MODER13_MASK & (0x01<<GPIOC_MODER13_SHIFT));
+
+        GPIOC_MODE_REGISTER |= pinmode;
+    }
+
+    KWP_TMR_Init(&tmrCtx);
+    UART_KWP_Init(&uartCtx);
+
+    KWP_TMR_DelayMs(&tmrCtx, 25);
+    GPIOC_ODR ^= (1 << 13);
+
+    UART_KWP_WriteByte(&uartCtx, 0x55);
+    KWP_TMR_DelayMs(&tmrCtx, 10);
+    UART_KWP_WriteByte(&uartCtx, 0x08);
+    KWP_TMR_DelayMs(&tmrCtx, 10);
+    UART_KWP_WriteByte(&uartCtx, 0x08);
+    KWP_TMR_DelayMs(&tmrCtx, 30);
+
+    while(OBD_RECV_NOT_READY == UART_KWP_RecvByte(&uartCtx, &buffer));
+    KWP_TMR_DelayMs(&tmrCtx, 30);
+    UART_KWP_WriteByte(&uartCtx, 0xCC);
+
+    GPIOC_ODR ^= (1 << 13);
+}
+
+void DummyFastInitEcu(void *param)
 {
     obd_status_t status;
     uint8_t buffer[10];

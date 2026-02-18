@@ -44,7 +44,7 @@ obd_status_t UART_KWP_Init(void* handle)
     return OBD_STATUS_OK;
 }
 
-obd_status_t UART_KWP_WriteByte(void* handle, uint8_t data)
+void UART_KWP_WriteByte(void* handle, uint8_t data)
 {
     uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
 
@@ -52,20 +52,22 @@ obd_status_t UART_KWP_WriteByte(void* handle, uint8_t data)
 
     /* Wait for transmission to fully complete (shift register empty) */
     while (!(USART_SR(ctx->usartNum) & USART_SR_TC));
-
-    return OBD_STATUS_OK;
 }
 
 obd_status_t UART_KWP_RecvByte(void* handle, uint8_t *recv_buffer)
 {
     uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
 
-    *recv_buffer = usart_recv_blocking(ctx->usartNum);
+    if((USART_SR(ctx->usartNum) & USART_SR_RXNE))
+    {
+        *recv_buffer = usart_recv(ctx->usartNum);
+        return OBD_STATUS_OK;
+    }
 
-    return OBD_STATUS_OK;
+    return OBD_RECV_NOT_READY;
 }
 
-obd_status_t UART_KWP_SendPulse(void* handle, bool pulse)
+void UART_KWP_SendPulse(void* handle, bool pulse)
 {
     uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
 
@@ -78,10 +80,9 @@ obd_status_t UART_KWP_SendPulse(void* handle, bool pulse)
         gpio_clear(ctx->gpio, ctx->usartTxPin);
     }
 
-    return OBD_STATUS_OK;
 }
 
-void UART_KWP_ChangeBaud(void* handle, uint8_t mode)
+void UART_KWP_SwitchMode(void* handle, uint8_t mode)
 {
     uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
 

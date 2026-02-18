@@ -17,9 +17,17 @@ int main(void)
 
     TaskHandle_t gHelloWorld = NULL;
 
+    // uint32_t status = xTaskCreate(
+    //     DummyFastInitEcu,
+    //     "Dummy Transmitter Task",
+    //     1024,
+    //     NULL,
+    //     tskIDLE_PRIORITY,
+    //     &gHelloWorld);
+
     /* === Board A: Transmitter === */
     // uint32_t status = xTaskCreate(
-    //     DummyTransmitter,
+    //     DummySlowInitEcu,
     //     "Dummy Transmitter Task",
     //     1024,
     //     NULL,

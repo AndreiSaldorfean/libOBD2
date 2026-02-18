@@ -73,7 +73,7 @@ static inline obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, header_t *head
     obd_status_t status;
 
     // Format byte
-    LIBOBD_ReceiveByte(self, buffer);
+    RecvByteBlocking(self, buffer);
 
     // Check for P2 Timeout from Tester to ECU
     OBD2_ASSERT_EQUAL_OR_ERR(false, LIBOBD_IsTimeoutExpired(self), OBD_ERR_COMM_P2_TIMEOUT_TESTER_ECU);
@@ -322,6 +322,9 @@ static obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self)
     // Send address byte at 5 baud rate
     SendByteBitBang(self, targetAddr, 5);
 
+    // Clear echo
+    LIBOBD_ReceiveByte(self, &invAddr);
+
     // Read Sync byte
     status = ReadByteInTimeframe(self, &syncByte, ISO9141_W1_TIME_MIN, ISO9141_W1_TIME_MAX);
     OBD2_ASSERT_OK(status);
@@ -338,8 +341,9 @@ static obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self)
     // Wait W4 (25-50ms) then send inverted KB2
     LIBOBD_Delay(self, ISO9141_W4_TIME_MIN);
     LIBOBD_SendByte(self, ~kb2);
-    if (status != OBD_STATUS_OK)
-        return OBD_GENERIC_ERROR;
+
+    // Clear echo
+    LIBOBD_ReceiveByte(self, &invAddr);
 
     // Receive inverted address from ECU (W4 timing: 25-50ms)
     status = ReadByteInTimeframe(self, &invAddr, ISO9141_W4_TIME_MIN, ISO9141_W4_TIME_MAX);
@@ -349,6 +353,18 @@ static obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self)
     // Store keyword bytes for protocol identification
     ctx->kb1 = kb1;
     ctx->kb2 = kb2;
+
+    // Functional addr
+    ctx->header.fmt.bit.a0 = 1;
+    ctx->header.fmt.bit.a1 = 1;
+
+    // ECU
+    ctx->header.trgAddr = 0x33;
+
+    // Tester
+    ctx->header.srcAddr = 0xF1;
+
+    LIBOBD_Delay(self, KWP_P2_TIME_MIN);
 
     return OBD_STATUS_OK;
 }
@@ -405,6 +421,7 @@ obd_status_t l2_kwp_connect(dataLink_if_t *self)
 {
     l2_kwp_ctx_t *ctx = (l2_kwp_ctx_t *)(self->pProtocolCtx);
     obd_status_t status;
+    memset(ctx, 0, sizeof(l2_kwp_ctx_t));
 
     status = LIBOBD_TimingInit(self);
     OBD2_ASSERT_OK(status);
@@ -430,17 +447,19 @@ obd_status_t l2_kwp_send_request(dataLink_if_t *self, const obd_request_t *req, 
     data_t data = {.req = *req, .len = len};
 
     // Construct the message
-    message_t message =
-    {
-        .header = ctx.header,
-        .data = data,
-        .cs = L2_KWP_ComputeChecksum(ctx.header, data)
-    };
+    message_t message = {0};
+    message.header = ctx.header;
+    message.header.fmt.bit.len = len + 1;
+    message.data = data;
+    message.cs = L2_KWP_ComputeChecksum(message.header, data);
 
     L2_KWP_PrepareMessage(&message, aMessage, &msgLen);
 
     status = L2_KWP_SendMessage(self, aMessage, msgLen);
     OBD2_ASSERT_OK(status);
+
+    // Clear echo
+    LIBOBD_ReceiveByte(self, aMessage);
 
     return OBD_STATUS_OK;
 }

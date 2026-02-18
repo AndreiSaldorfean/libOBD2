@@ -11,18 +11,22 @@
 #define OBD_GENERIC_ERROR            (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (obd_status_t)0x1U))
 #define OBD_ERR_NULL_PTR             (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (obd_status_t)0x2U))
 #define OBD_NOT_SUPPORTED            (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (obd_status_t)0x3U))
-#define OBD_ERR_TIMEOUT              (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (obd_status_t)0x4U))
+#define OBD_ERR_TIMEOUT_MAX          (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (obd_status_t)0x4U))
+#define OBD_ERR_TIMEOUT_MIN          (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (obd_status_t)0x5U))
 
-// Init err codes
+// Init status codes
 #define SRV_STATUS_INIT               (0x02)
 #define OBD_ERR_5BAUD_WRONG_SYNC_BYTE (OBD_MAKE_ERROR(SRV_STATUS_INIT, (obd_status_t)0x1U))
 #define OBD_ERR_5BAUD_WRONG_INV_ADDR  (OBD_MAKE_ERROR(SRV_STATUS_INIT, (obd_status_t)0x2U))
 
-// Comm err codes
+// Comm status codes
 #define SRV_STATUS_COMM                    (0x03)
 #define OBD_ERR_COMM_P2_TIMEOUT_TESTER_ECU (OBD_MAKE_ERROR(SRV_STATUS_COMM, (obd_status_t)0x1U))
 #define OBD_ERR_COMM_P3_TIMEOUT_ECU_TESTER (OBD_MAKE_ERROR(SRV_STATUS_COMM, (obd_status_t)0x2U))
 
+// Transport status codes
+#define SRV_STATUS_TRANSPORT               (0x04)
+#define OBD_RECV_NOT_READY   (OBD_MAKE_ERROR(SRV_STATUS_TRANSPORT, (obd_status_t)0x1U))
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef uint16_t obd_status_t;
 

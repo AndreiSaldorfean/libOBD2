@@ -7,6 +7,7 @@
 #include "srv_status.h"
 
 /* ================================================= MACROS ================================================ */
+#define MAX_BLOCKING_RECV_TIME (300U)
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
@@ -45,12 +46,32 @@ static inline obd_status_t ReadByteInTimeframe(dataLink_if_t *self, uint8_t *byt
     uint32_t timeElapsed = 0;
 
     timeStart = LIBOBD_GetTimeMs(self);
-    LIBOBD_ReceiveByte(self, byte);
+    LIBOBD_StartTimeout(self, timeMax);
+
+    while (OBD_RECV_NOT_READY == LIBOBD_ReceiveByte(self, byte))
+    {
+        if (LIBOBD_IsTimeoutExpired(self))
+            return OBD_ERR_TIMEOUT_MAX;
+    }
     timeEnd = LIBOBD_GetTimeMs(self);
+    LIBOBD_StopTimeout(self);
     timeElapsed = timeEnd - timeStart;
 
-    if (timeElapsed < timeMin || timeElapsed > timeMax)
-        return OBD_ERR_TIMEOUT;
+    if (timeElapsed < timeMin || timeElapsed >= timeMax)
+        return OBD_ERR_TIMEOUT_MIN;
+    return OBD_STATUS_OK;
+}
+
+static inline obd_status_t RecvByteBlocking(dataLink_if_t *self, uint8_t *byte)
+{
+    LIBOBD_StartTimeout(self, MAX_BLOCKING_RECV_TIME);
+
+    while (OBD_RECV_NOT_READY == LIBOBD_ReceiveByte(self, byte))
+    {
+        if (LIBOBD_IsTimeoutExpired(self))
+            return OBD_ERR_TIMEOUT_MAX;
+    }
+
     return OBD_STATUS_OK;
 }
 
