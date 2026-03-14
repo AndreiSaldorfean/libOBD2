@@ -18,11 +18,30 @@
 #include "uart_kwp_transport_port.h"
 #include "l2_kwp.h"
 
+#include "FreeRTOS.h"
+#include "FreeRTOSConfig.h"
+#include "task.h"
+
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 extern uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data);
+
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
+static void testerTask(void *param);
+static void ecuTask(void *param);
+
+/* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
+static void testerTask(void *param)
+{
+    (void)param;
+}
+
+static void ecuTask(void *param)
+{
+    (void)param;
+}
+
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */
 void test_LIBOBD2_0(void)
@@ -149,7 +168,25 @@ void test_LIBOBD2_1(void)
 
 void test_ceva_0(void)
 {
-    header_t hdr = {0};
-    data_t data = {0};
-    L2_KWP_ComputeChecksum(hdr, data);
+    TaskHandle_t testerHandler = NULL;
+    TaskHandle_t ecuHandler = NULL;
+    uint32_t status = 0;
+    (void)status;
+
+    status = xTaskCreate(
+        testerTask,
+        "Tester Task",
+        1024,
+        NULL,
+        tskIDLE_PRIORITY,
+        &testerHandler);
+
+    status = xTaskCreate(
+        ecuTask,
+        "Ecu Task",
+        1024,
+        NULL,
+        tskIDLE_PRIORITY,
+        &ecuHandler);
+
 }
