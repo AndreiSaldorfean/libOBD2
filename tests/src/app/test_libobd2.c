@@ -21,6 +21,7 @@
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
+extern uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data);
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */
@@ -32,7 +33,7 @@ void test_LIBOBD2_0(void)
     {
         .timeout_active = false,
         .timeout_expired = false,
-        .timeout_target_ms = 0,
+        .timeout_duration_ms = 0,
     };
 
     obd_timing_ops_t timerOps =
@@ -68,7 +69,7 @@ void test_LIBOBD2_0(void)
         .send_byte = UART_KWP_WriteByte,
         .recv_byte = UART_KWP_RecvByte,
         .send_pulse = UART_KWP_SendPulse,
-        .switch_mode = UART_KWP_ChangeBaud,
+        .switch_mode = UART_KWP_SwitchMode,
     };
 
 
@@ -110,7 +111,7 @@ void test_LIBOBD2_0(void)
 
 void test_LIBOBD2_1(void)
 {
-    uint32_t respBuffer[256];
+    // uint32_t respBuffer[256];
 
     obd_transport_ops_t transportOps =
     {
@@ -144,4 +145,11 @@ void test_LIBOBD2_1(void)
 
     status = LibOBD2_RequestService(&ctx, &request, 2, &response, &len);
     TEST_ASSERT_EQUAL_UINT32(OBD_ERR_NULL_PTR, status);
+}
+
+void test_ceva_0(void)
+{
+    header_t hdr = {0};
+    data_t data = {0};
+    L2_KWP_ComputeChecksum(hdr, data);
 }

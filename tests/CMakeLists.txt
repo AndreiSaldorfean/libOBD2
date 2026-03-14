@@ -5,12 +5,9 @@ set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 
 # TinyUSB sources
 set(TINYUSB_ROOT ${CMAKE_SOURCE_DIR}/../examples/libs/tinyusb)
-
+# Note: Sources from ../src/, ../utils/, and ../src/data_link/ are already
+# compiled into libOBD2.a - do not include them here to avoid multiple definitions
 file(GLOB SOURCES
-    "${CMAKE_SOURCE_DIR}/../utils/*.c"
-    "${CMAKE_SOURCE_DIR}/../src/*.c"
-    "${CMAKE_SOURCE_DIR}/../src/data_link/*.c"
-    "${CMAKE_SOURCE_DIR}/../src/data_link/l2_kwp/*.c"
     "${CMAKE_SOURCE_DIR}/src/startup/isr_vector.c"
     "${CMAKE_SOURCE_DIR}/src/startup/reset_handler.c"
     "${CMAKE_SOURCE_DIR}/src/*.c"
@@ -39,6 +36,7 @@ target_include_directories(${PROJECT_NAME}
     ../include/app/
     ../include/data_link/
     ../include/data_link/l2_kwp/
+    ../include/data_link/l2_iso9141/
     ./src/app
     ./Unity/src/
     ../examples/STM32F401CCU/src/ports/

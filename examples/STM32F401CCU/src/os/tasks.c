@@ -137,7 +137,7 @@ void TransceiverTask(void *param)
     obd_request_t request =
     {
             .sid = SID_SHOW_CURRENT_DATA,
-            .param = {0},
+            .param = {PID_01_COOLANT_TEMP},
     };
     obd_response_t response = {0};
     size_t respLen = 0;

@@ -1,52 +1,53 @@
 /* ================================================ INCLUDES =============================================== */
 #include "l2_kwp.h"
 #include "data_link_if.h"
-#include "l2_iso9141_init.h"
 #include "srv_status.h"
+#include "l2_iso9141_init.h"
 #include "timing_if.h"
 #include "transport_if.h"
 #include "utils.h"
 #include <string.h>
 #include "l2_kwp_utils.h"
+#include "libobd2.h"
 
 /* ================================================= MACROS ================================================ */
 
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-static uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data);
+OBD2_STATIC uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data);
 
-static obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len);
-static obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recvdMsg);
+OBD2_STATIC obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len);
+OBD2_STATIC obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recvdMsg);
 
 #if defined(SPT_FAST_INIT)
-static obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t *self);
+OBD2_STATIC obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t *self);
 #endif /* SPT_FAST_INIT */
 #if 0
-static obd_status_t L2_KWP_SRV_StopCommunication(dataLink_if_t* self);
+OBD2_STATIC obd_status_t L2_KWP_SRV_StopCommunication(dataLink_if_t* self);
 #endif
 #if defined(SPT_CHANGE_TIMING_PARAM)
-static obd_status_t L2_KWP_SRV_AccessTimingParameter(dataLink_if_t *self);
+OBD2_STATIC obd_status_t L2_KWP_SRV_AccessTimingParameter(dataLink_if_t *self);
 #endif /* SPT_CHANGE_TIMING_PARAM */
 #if defined(SPT_FAST_INIT)
-static obd_status_t L2_KWP_SRV_SendData( dataLink_if_t *self, message_t *sentMsg, message_t *recvdMsg);
+OBD2_STATIC obd_status_t L2_KWP_SRV_SendData( dataLink_if_t *self, message_t *sentMsg, message_t *recvdMsg);
 #endif
 
 #if defined(SPT_5BAUD_INIT)
-static obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self);
+OBD2_STATIC obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self);
 #endif /* SPT_5BAUD_INIT */
 
 #if defined(SPT_FAST_INIT)
-static obd_status_t L2_KWP_FastInit(dataLink_if_t *self);
+OBD2_STATIC obd_status_t L2_KWP_FastInit(dataLink_if_t *self);
 #endif /* SPT_FAST_INIT */
-static obd_status_t L2_KWP_Init(dataLink_if_t *self);
+OBD2_STATIC obd_status_t L2_KWP_Init(dataLink_if_t *self);
 #if defined(SPT_FAST_INIT)
-static void L2_KWP_IdleBasedOnConnStatus(dataLink_if_t *self);
+OBD2_STATIC void L2_KWP_IdleBasedOnConnStatus(dataLink_if_t *self);
 #endif /* SPT_FAST_INIT */
-static inline obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, header_t *header, size_t *headerLen);
+OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, header_t *header, size_t *headerLen);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-static uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data)
+OBD2_STATIC uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data)
 {
     uint8_t *hdr = (uint8_t *)&header;
     uint8_t *req = (uint8_t *)&data;
@@ -66,7 +67,7 @@ static uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data)
     return checksum % 256;
 }
 
-static inline obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, header_t *header, size_t *headerLen)
+OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, header_t *header, size_t *headerLen)
 {
     uint8_t *buffer = (uint8_t *)header;
     uint32_t p2TimeElapsed = 0;
@@ -102,7 +103,7 @@ static inline obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, header_t *head
     return OBD_STATUS_OK;
 }
 
-static obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len)
+OBD2_STATIC obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len)
 {
     uint32_t p3TimeElapsed = 0;
 
@@ -122,7 +123,7 @@ static obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t
     return OBD_STATUS_OK;
 }
 
-static obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recvdMsg)
+OBD2_STATIC obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recvdMsg)
 {
     uint8_t *pMsg = (uint8_t *)recvdMsg;
     obd_status_t status;
@@ -155,7 +156,7 @@ static obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recvdMsg)
 }
 
 #if defined(SPT_FAST_INIT)
-static void L2_KWP_IdleBasedOnConnStatus(dataLink_if_t *self)
+OBD2_STATIC void L2_KWP_IdleBasedOnConnStatus(dataLink_if_t *self)
 {
     l2_kwp_ctx_t *ctx = (l2_kwp_ctx_t *)self->pProtocolCtx;
 
@@ -172,7 +173,7 @@ static void L2_KWP_IdleBasedOnConnStatus(dataLink_if_t *self)
 }
 #endif /* SPT_FAST_INIT */
 
-void L2_KWP_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len)
+OBD2_STATIC void L2_KWP_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len)
 {
     size_t headerLen = (sentMsg->header.len == 0) ? 3 : 4;
     // size_t dataLen = sentMsg->data.len;
@@ -199,7 +200,7 @@ void L2_KWP_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len)
 
 /******************************************* ISO 14230-2 Services ********************************************/
 #if defined(SPT_FAST_INIT)
-static obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t *self)
+OBD2_STATIC obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t *self)
 {
     message_t recvdMsg = {0};
     obd_status_t status;
@@ -243,7 +244,7 @@ static obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t *self)
 #endif /* SPT_FAST_INIT */
 
 #if 0
-static obd_status_t L2_KWP_SRV_StopCommunication(dataLink_if_t* self)
+OBD2_STATIC obd_status_t L2_KWP_SRV_StopCommunication(dataLink_if_t* self)
 {
     message_t recvdMsg = {0};
     obd_status_t status;
@@ -274,7 +275,7 @@ static obd_status_t L2_KWP_SRV_StopCommunication(dataLink_if_t* self)
 #endif
 
 #if defined(SPT_FAST_INIT)
-static obd_status_t L2_KWP_SRV_SendData(dataLink_if_t *self, message_t *sentMsg, message_t *recvdMsg)
+OBD2_STATIC obd_status_t L2_KWP_SRV_SendData(dataLink_if_t *self, message_t *sentMsg, message_t *recvdMsg)
 {
     uint8_t aSentMsg[256] = {0};
     size_t sentMsgLen = 0;
@@ -307,10 +308,11 @@ static obd_status_t L2_KWP_SRV_SendData(dataLink_if_t *self, message_t *sentMsg,
 
 /********************************************* ISO 14230-2 INIT **********************************************/
 #if defined(SPT_5BAUD_INIT)
-static obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self)
+OBD2_STATIC obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self)
 {
     l2_kwp_ctx_t *ctx = (l2_kwp_ctx_t *)(self->pProtocolCtx);
     obd_status_t status;
+    (void)status;
     uint8_t syncByte = 0;
     uint8_t kb1 = 0;
     uint8_t kb2 = 0;
@@ -321,9 +323,6 @@ static obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self)
 
     // Send address byte at 5 baud rate
     SendByteBitBang(self, targetAddr, 5);
-
-    // Clear echo
-    LIBOBD_ReceiveByte(self, &invAddr);
 
     // Read Sync byte
     status = ReadByteInTimeframe(self, &syncByte, ISO9141_W1_TIME_MIN, ISO9141_W1_TIME_MAX);
@@ -339,11 +338,11 @@ static obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self)
     OBD2_ASSERT_OK(status);
 
     // Wait W4 (25-50ms) then send inverted KB2
-    LIBOBD_Delay(self, ISO9141_W4_TIME_MIN);
+    LIBOBD_Delay(self, ISO9141_W4_TIME_MIN-1);
     LIBOBD_SendByte(self, ~kb2);
 
     // Clear echo
-    LIBOBD_ReceiveByte(self, &invAddr);
+    // LIBOBD_ReceiveByte(self, &invAddr);
 
     // Receive inverted address from ECU (W4 timing: 25-50ms)
     status = ReadByteInTimeframe(self, &invAddr, ISO9141_W4_TIME_MIN, ISO9141_W4_TIME_MAX);
@@ -364,14 +363,14 @@ static obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self)
     // Tester
     ctx->header.srcAddr = 0xF1;
 
-    LIBOBD_Delay(self, KWP_P2_TIME_MIN);
+    LIBOBD_Delay(self, KWP_P2_TIME_MIN-1);
 
     return OBD_STATUS_OK;
 }
 #endif /* SPT_5BAUD_INIT */
 
 #if defined(SPT_FAST_INIT)
-static obd_status_t L2_KWP_FastInit(dataLink_if_t *self)
+OBD2_STATIC obd_status_t L2_KWP_FastInit(dataLink_if_t *self)
 {
     obd_status_t status;
 
@@ -397,7 +396,7 @@ static obd_status_t L2_KWP_FastInit(dataLink_if_t *self)
 }
 #endif /* SPT_FAST_INIT */
 
-static obd_status_t L2_KWP_Init(dataLink_if_t *self)
+OBD2_STATIC obd_status_t L2_KWP_Init(dataLink_if_t *self)
 {
     obd_status_t status;
 

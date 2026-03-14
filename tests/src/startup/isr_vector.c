@@ -56,7 +56,7 @@ void otg_fs_isr(void)
 /* TIM2 interrupt handler - defined in kwp_timer.c */
 extern void tim2_isr(void);
 
-__attribute__((section(".isr_vector"))) void (*const vector_table[])(void) = {
+__attribute__((section(".isr_vector"))) void (*const obd2VectorTable[])(void) = {
     (void (*)(void))(0x20000000 + 128 * 1024), // Initial stack pointer
     Reset_Handler,                             // Reset handler
     NMI_Handler,                               // NMI handler

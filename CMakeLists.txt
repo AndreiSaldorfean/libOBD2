@@ -10,6 +10,8 @@ file(GLOB SOURCES
 )
 add_library(${PROJECT_NAME} ${SOURCES})
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG)
+
 target_include_directories(${PROJECT_NAME}
     PRIVATE
     ./include/

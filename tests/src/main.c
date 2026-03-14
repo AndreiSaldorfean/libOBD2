@@ -4,6 +4,9 @@
 #include "unity_internals.h"
 #include "test_libobd2.h"
 #include "stdio.h"
+#include "FreeRTOS.h"
+#include "FreeRTOSConfig.h"
+#include "task.h"
 
 #include <stdint.h>
 #define STM32F4
@@ -54,6 +57,8 @@ int main()
 	/* Disable stdout buffering for immediate printf output */
 	setbuf(stdout, NULL);
 
+    vTaskStartScheduler();
+
     UNITY_BEGIN();
 
     RUN_TEST(test_LIBOBD2_0);
@@ -62,6 +67,8 @@ int main()
     RUN_TEST(test_TIMER_1);
 
     int result = UNITY_END();
+
+    while(true);
 
     return result;
 }

@@ -26,12 +26,6 @@ SECTIONS
     _etext = .;
   } >flash
 
-  .ARM.exidx : {
-      __exidx_start = .;
-      *(.ARM.exidx*)
-      __exidx_end = .;
-  } >flash
-
   .data : AT(_etext) {
     _sdata = .;
     *(.data*)

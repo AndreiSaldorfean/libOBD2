@@ -8,6 +8,13 @@
 #include <stddef.h>
 
 /* ================================================= MACROS ================================================ */
+#if defined(DEBUG)
+#define OBD2_STATIC
+#define OBD2_INLINE
+#else
+#define OBD2_STATIC static
+#define OBD2_INLINE inline
+#endif /* DEBUG */
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
 {
