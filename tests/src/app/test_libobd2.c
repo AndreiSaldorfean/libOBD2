@@ -3,6 +3,7 @@
 #include "data_link_if.h"
 #include "kwp_timer.h"
 #include "libobd2.h"
+#include "projdefs.h"
 #include "timing_if.h"
 #define STM32F4
 #include "libopencm3/stm32/f4/memorymap.h"
@@ -17,31 +18,20 @@
 #include <stdio.h>
 #include "uart_kwp_transport_port.h"
 #include "l2_kwp.h"
+#include "libopencm3/stm32/f4/timer.h"
 
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
 #include "task.h"
 
 /* ================================================= MACROS ================================================ */
+#define TIM2_PRESCALER      83U
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 extern uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data);
 
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-static void testerTask(void *param);
-static void ecuTask(void *param);
-
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-static void testerTask(void *param)
-{
-    (void)param;
-}
-
-static void ecuTask(void *param)
-{
-    (void)param;
-}
-
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */
 void test_LIBOBD2_0(void)
@@ -166,27 +156,84 @@ void test_LIBOBD2_1(void)
     TEST_ASSERT_EQUAL_UINT32(OBD_ERR_NULL_PTR, status);
 }
 
-void test_ceva_0(void)
+void test_Tester_ECU(void)
 {
-    TaskHandle_t testerHandler = NULL;
-    TaskHandle_t ecuHandler = NULL;
     uint32_t status = 0;
     (void)status;
 
-    status = xTaskCreate(
-        testerTask,
-        "Tester Task",
-        1024,
-        NULL,
-        tskIDLE_PRIORITY,
-        &testerHandler);
+    uartKwp_ctx_t uartCtxTester =
+    {
+            .usartClk    = RCC_USART1,
+            .usartNum    = USART1,
+            .baudRate    = 10400,
+            .dataBits    = 8,
+            .stopBits    = USART_STOPBITS_1,
+            .mode        = USART_MODE_TX_RX,
+            .parity      = USART_PARITY_NONE,
+            .flowControl = USART_FLOWCONTROL_NONE,
+            .usartTxPin  = GPIO9,
+            .usartRxPin  = GPIO10,
 
-    status = xTaskCreate(
-        ecuTask,
-        "Ecu Task",
-        1024,
-        NULL,
-        tskIDLE_PRIORITY,
-        &ecuHandler);
+            .gpioRcc     = RCC_GPIOA,
+            .gpio        = GPIOA,
+    };
 
+    static timerCtx_t tmrCtxTester =
+    {
+        .timeout_active    = false,
+        .timeout_expired   = false,
+        .timeout_callback  = NULL,
+        .timeout_user_data = NULL,
+        .timeout_start_ms  = 0,
+        .timerClk          = RCC_TIM2,
+        .rstTimer          = RST_TIM2,
+        .timer             = TIM2,
+        .timerPrescaler    = TIM2_PRESCALER,
+        .event             = TIM_EGR_UG,
+        .flag              = TIM_SR_UIF
+    };
+
+    uartKwp_ctx_t uartCtxEcu =
+    {
+            .usartClk    = RCC_USART2,
+            .usartNum    = USART2,
+            .baudRate    = 10400,
+            .dataBits    = 8,
+            .stopBits    = USART_STOPBITS_1,
+            .mode        = USART_MODE_TX_RX,
+            .parity      = USART_PARITY_NONE,
+            .flowControl = USART_FLOWCONTROL_NONE,
+            .usartTxPin  = GPIO2,
+            .usartRxPin  = GPIO3,
+
+            .gpioRcc     = RCC_GPIOA,
+            .gpio        = GPIOA,
+    };
+
+    timerCtx_t tmrCtxEcu =
+    {
+        .timeout_active    = false,
+        .timeout_expired   = false,
+        .timeout_callback  = NULL,
+        .timeout_user_data = NULL,
+        .timeout_start_ms  = 0,
+        .timerClk          = RCC_TIM3,
+        .rstTimer          = RST_TIM3,
+        .timer             = TIM3,
+        .timerPrescaler    = TIM2_PRESCALER,
+        .event             = TIM_EGR_UG,
+        .flag              = TIM_SR_UIF
+    };
+    uint8_t buffer = 0;
+
+    UART_KWP_Init((void*)&uartCtxTester);
+    UART_KWP_Init((void*)&uartCtxEcu);
+
+    KWP_TMR_Init((void*)&tmrCtxTester);
+    KWP_TMR_Init((void*)&tmrCtxEcu);
+
+    UART_KWP_WriteByte((void*)&uartCtxTester, 0x66);
+    while(OBD_STATUS_OK != UART_KWP_RecvByte((void*)&uartCtxEcu, &buffer));
+
+    TEST_ASSERT_EQUAL_UINT8(0x66, buffer);
 }

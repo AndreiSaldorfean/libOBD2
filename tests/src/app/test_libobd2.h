@@ -8,5 +8,6 @@
 /* =============================================== MODULE API ============================================== */
 void test_LIBOBD2_0(void);
 void test_LIBOBD2_1(void);
+void test_Tester_ECU(void);
 
 #endif /* TEST_LIBOBD2_H */

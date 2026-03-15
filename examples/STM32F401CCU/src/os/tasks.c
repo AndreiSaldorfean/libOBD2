@@ -8,6 +8,7 @@
 #include "init.h"
 #include "srv_status.h"
 #include "uart_kwp_transport_port.h"
+#include "libopencm3/stm32/f4/timer.h"
 #include "kwp_timer.h"
 #include "libobd2.h"
 #include "l2_kwp.h"
@@ -18,6 +19,7 @@
 #define GPIOC_MODER13_SHIFT (26)
 #define GPIOC_MODER13_MASK  (0xC000000)
 #define GPIOC_OTYPE *(volatile uint32_t*)(uintptr_t)(0x40020800UL + 0x4)
+#define TIM2_PRESCALER      83U
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
@@ -52,7 +54,13 @@ static void configDataLink(dataLink_if_t* dl)
         .timeout_expired   = false,
         .timeout_callback  = NULL,
         .timeout_user_data = NULL,
-        .timeout_start_ms = 0,
+        .timeout_start_ms  = 0,
+        .timerClk          = RCC_TIM2,
+        .rstTimer          = RST_TIM2,
+        .timer             = TIM2,
+        .timerPrescaler    = TIM2_PRESCALER,
+        .event             = TIM_EGR_UG,
+        .flag              = TIM_SR_UIF
     };
 
     static obd_timing_ops_t timerOps =

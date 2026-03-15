@@ -1,10 +1,12 @@
-#include <stddef.h>
+// #include <stddef.h>
+// #include <stdio.h>
 
-void UnityOutputCharSilent(int a)
-{
-    (void)a;
-}
+// void UnityOutputCharSilent(int a)
+// {
+//     putchar(a);
+// }
 
-void UnityOutputFlushSilent(void)
-{
-}
+// void UnityOutputFlushSilent(void)
+// {
+//     fflush(stdout);
+// }

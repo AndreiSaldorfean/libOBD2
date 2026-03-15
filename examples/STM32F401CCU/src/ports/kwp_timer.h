@@ -15,6 +15,13 @@ typedef struct
     void              *timeout_user_data;
     volatile bool      timeout_active;
     volatile bool      timeout_expired;
+
+    uint32_t timerClk;
+    uint32_t rstTimer;
+    uint32_t timer;
+    uint32_t timerPrescaler;
+    uint32_t event;
+    uint32_t flag;
 }timerCtx_t;
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */

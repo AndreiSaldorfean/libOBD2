@@ -95,19 +95,22 @@ int _write(int file, char *ptr, uint32_t len)
             tud_task();
         }
 
-        /* Write data to CDC - wait for buffer space if needed */
-        uint32_t written = 0;
-        while (written < len)
+        /* Write data to CDC, converting \n to \r\n */
+        for (uint32_t i = 0; i < len; i++)
         {
-            /* Wait for write buffer space to be available */
+            /* Wait for write buffer space */
             while (tud_cdc_write_available() == 0)
             {
                 tud_cdc_write_flush();
                 tud_task();
             }
 
-            uint32_t count = tud_cdc_write(ptr + written, len - written);
-            written += count;
+            /* Convert LF to CRLF for proper terminal display */
+            if (ptr[i] == '\n')
+            {
+                tud_cdc_write_char('\r');
+            }
+            tud_cdc_write_char(ptr[i]);
         }
 
         /* Flush and give USB a bit of time to transmit */

@@ -27,7 +27,6 @@ static volatile timerCtx_t *g_timer_ctx = NULL;  /* For ISR access */
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-static void tim_setup(void);
 static inline uint32_t get_time_us(void);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
@@ -41,45 +40,6 @@ static inline uint32_t get_time_us(void)
     return timer_get_counter(TIM2);
 }
 
-static void tim_setup(void)
-{
-    /* Enable TIM2 clock */
-    rcc_periph_clock_enable(RCC_TIM2);
-
-    /* Reset TIM2 peripheral to defaults */
-    rcc_periph_reset_pulse(RST_TIM2);
-
-    /* Disable counter during configuration */
-    timer_disable_counter(TIM2);
-
-    /*
-     * Configure TIM2 as free-running 32-bit microsecond counter.
-     * No interrupts needed - just read the counter directly.
-     */
-    timer_set_prescaler(TIM2, TIM2_PRESCALER);
-
-    /* Disable preload for immediate prescaler update */
-    timer_disable_preload(TIM2);
-    timer_continuous_mode(TIM2);
-
-    /* Set period to max (32-bit) - free-running counter */
-    timer_set_period(TIM2, 0xFFFFFFFF);
-
-    /* Generate update event to load prescaler immediately */
-    timer_generate_event(TIM2, TIM_EGR_UG);
-
-    /* Clear the update flag that was set by the UG event */
-    timer_clear_flag(TIM2, TIM_SR_UIF);
-
-    /* Reset counter to 0 */
-    timer_set_counter(TIM2, 0);
-
-    /* Start the counter */
-    timer_enable_counter(TIM2);
-
-    /* No interrupts - pure polling */
-}
-
 /* ================================================ MODULE API ============================================= */
 obd_status_t KWP_TMR_Init(void *pHandle)
 {
@@ -88,8 +48,39 @@ obd_status_t KWP_TMR_Init(void *pHandle)
     /* Store context */
     g_timer_ctx = ctx;
 
-    /* Setup the hardware timer */
-    tim_setup();
+    /* Enable TIM2 clock */
+    rcc_periph_clock_enable(ctx->timerClk);
+
+    /* Reset TIM2 peripheral to defaults */
+    rcc_periph_reset_pulse(ctx->rstTimer);
+
+    /* Disable counter during configuration */
+    timer_disable_counter(ctx->timer);
+
+    /*
+     * Configure TIM2 as free-running 32-bit microsecond counter.
+     * No interrupts needed - just read the counter directly.
+     */
+    timer_set_prescaler(ctx->timer, ctx->timerPrescaler);
+
+    /* Disable preload for immediate prescaler update */
+    timer_disable_preload(ctx->timer);
+    timer_continuous_mode(ctx->timer);
+
+    /* Set period to max (32-bit) - free-running counter */
+    timer_set_period(ctx->timer, 0xFFFFFFFF);
+
+    /* Generate update event to load prescaler immediately */
+    timer_generate_event(ctx->timer, ctx->event);
+
+    /* Clear the update flag that was set by the UG event */
+    timer_clear_flag(ctx->timer, ctx->flag);
+
+    /* Reset counter to 0 */
+    timer_set_counter(ctx->timer, 0);
+
+    /* Start the counter */
+    timer_enable_counter(ctx->timer);
 
     return OBD_STATUS_OK;
 }
