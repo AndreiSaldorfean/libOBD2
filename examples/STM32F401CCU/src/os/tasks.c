@@ -1,44 +1,291 @@
-#include <stdint.h>
-#define STM32F4
+/* ================================================ INCLUDES =============================================== */
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
-#include "libopencm3/stm32/gpio.h"
-#include "libopencm3/stm32/rcc.h"
-#include "libopencm3/stm32/usart.h"
+#include "data_link_if.h"
+#include "iso15031_5.h"
 #include "task.h"
-#include <stddef.h>
-#include <unistd.h>
+#include "tasks.h"
+#include "init.h"
+#include "srv_status.h"
+#include "uart_kwp_transport_port.h"
+#include "libopencm3/stm32/f4/timer.h"
+#include "kwp_timer.h"
+#include "libobd2.h"
+#include "l2_kwp.h"
+#include "utils.h"
 
-// int __errno_var = 0;
-static void clock_setup(void) {
-  /* Enable GPIOD clock for LED & USARTs. */
-  rcc_periph_clock_enable(RCC_GPIOD);
-  rcc_periph_clock_enable(RCC_GPIOA);
+/* ================================================= MACROS ================================================ */
+#define GPIOC_MODE_REGISTER *(volatile uint32_t*)(uintptr_t)(0x40020800UL)
+#define GPIOC_MODER13_SHIFT (26)
+#define GPIOC_MODER13_MASK  (0xC000000)
+#define GPIOC_OTYPE *(volatile uint32_t*)(uintptr_t)(0x40020800UL + 0x4)
+#define TIM2_PRESCALER      83U
+/* ============================================ LOCAL VARIABLES ============================================ */
+/* ============================================ GLOBAL VARIABLES =========================================== */
+/* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
+// TODO: Add proper demo app
+#if 0
+static void configDummyTranciever(timerCtx_t* tmrCtx, uartKwp_ctx_t *uartCtx)
+{
+        tmrCtx->timeout_active    = false;
+        tmrCtx->timeout_expired   = false;
+        tmrCtx->timeout_callback  = NULL;
+        tmrCtx->timeout_user_data = NULL;
+        tmrCtx->timeout_start_ms = 0;
 
-  /* Enable clocks for USART2. */
-  rcc_periph_clock_enable(RCC_USART2);
+        uartCtx->usartClk    = RCC_USART1;
+        uartCtx->usartNum    = USART1;
+        uartCtx->baudRate    = 10400;
+        uartCtx->dataBits    = 8;
+        uartCtx->stopBits    = USART_STOPBITS_1;
+        uartCtx->mode        = USART_MODE_TX_RX;
+        uartCtx->parity      = USART_PARITY_NONE;
+        uartCtx->flowControl = USART_FLOWCONTROL_NONE;
+        uartCtx->usartTxPin  = GPIO9;
+        uartCtx->usartRxPin  = GPIO10;
+
+        uartCtx->gpioRcc     = RCC_GPIOA;
+        uartCtx->gpio        = GPIOA;
 }
 
-static void usart_setup(void) {
-  /* Setup USART2 parameters. */
-  usart_set_baudrate(USART2, 115200);
-  usart_set_databits(USART2, 8);
-  usart_set_stopbits(USART2, USART_STOPBITS_1);
-  usart_set_mode(USART2, USART_MODE_TX);
-  usart_set_parity(USART2, USART_PARITY_NONE);
-  usart_set_flow_control(USART2, USART_FLOWCONTROL_NONE);
+static void configDataLink(dataLink_if_t* dl)
+{
+    static timerCtx_t tmrCtx =
+    {
+        .timeout_active    = false,
+        .timeout_expired   = false,
+        .timeout_callback  = NULL,
+        .timeout_user_data = NULL,
+        .timeout_start_ms  = 0,
+        .timerClk          = RCC_TIM2,
+        .rstTimer          = RST_TIM2,
+        .timer             = TIM2,
+        .timerPrescaler    = TIM2_PRESCALER,
+        .event             = TIM_EGR_UG,
+        .flag              = TIM_SR_UIF
+    };
 
-  /* Finally enable the USART. */
-  usart_enable(USART2);
+    static obd_timing_ops_t timerOps =
+    {
+            .timer_init         = KWP_TMR_Init,
+            .delay_ms           = KWP_TMR_DelayMs,
+            .get_time_ms        = KWP_TMR_GetTimeMs,
+            .is_timeout_expired = KWP_TMR_IsTimeoutExpired,
+            .start_timeout      = KWP_TMR_StartTimeout,
+            .stop_timeout       = KWP_TMR_StopTimeout,
+    };
+
+    static uartKwp_ctx_t uartCtx =
+    {
+            .usartClk    = RCC_USART1,
+            .usartNum    = USART1,
+            .baudRate    = 10400,
+            .dataBits    = 8,
+            .stopBits    = USART_STOPBITS_1,
+            .mode        = USART_MODE_TX_RX,
+            .parity      = USART_PARITY_NONE,
+            .flowControl = USART_FLOWCONTROL_NONE,
+            .usartTxPin  = GPIO9,
+            .usartRxPin  = GPIO10,
+
+            .gpioRcc     = RCC_GPIOA,
+            .gpio        = GPIOA,
+    };
+
+    static obd_transport_ops_t transportOps =
+    {
+        .init        = UART_KWP_Init,
+        .send_byte   = UART_KWP_WriteByte,
+        .recv_byte   = UART_KWP_RecvByte,
+        .send_pulse  = UART_KWP_SendPulse,
+        .switch_mode = UART_KWP_SwitchMode,
+    };
+
+
+    static l2_kwp_ctx_t kwpCtx =
+    {
+        .conStatus = {0u},
+        .header    =
+        {
+            .fmt     = {0x10U},
+            .trgAddr = 0x33,
+            .srcAddr = 0xF1,
+            .len     = 1
+        },
+    };
+
+
+    dl->pProtocolCtx     = &kwpCtx;
+    dl->pTimingOps       = &timerOps;
+    dl->pTimingHandle    = &tmrCtx;
+    dl->pTransportHandle = &uartCtx;
+    dl->pTransportOps    = &transportOps;
+    dl->connect          = l2_kwp_connect;
+    dl->send_request     = l2_kwp_send_request;
+    dl->recv_response    = l2_kwp_recv_response;
+}
+/* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
+/* ================================================ MODULE API ============================================= */
+void TransceiverTask(void *param)
+{
+    obd_status_t status;
+    dataLink_if_t dataLink;
+
+    (void)param;
+    (void)status;
+
+    configDataLink(&dataLink);
+
+    obd_ctx_t ctx =
+    {
+            .pDataLink = &dataLink,
+            .connectionStatus = 0
+    };
+
+    status = LibOBD2_Init(&ctx);
+
+    obd_request_t request =
+    {
+            .sid = SID_SHOW_CURRENT_DATA,
+            .param = {PID_01_COOLANT_TEMP},
+    };
+    obd_response_t response = {0};
+    size_t respLen = 0;
+
+    for (;;)
+    {
+        LibOBD2_RequestService(&ctx, &request, 1, &response, &respLen);
+
+        vTaskDelay(1000/portTICK_PERIOD_MS);
+    }
 }
 
-static void gpio_setup(void) {
-  /* Setup GPIO pin GPIO12 on GPIO port D for LED. */
-  gpio_mode_setup(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO12);
+void DummySlowInitEcu(void *param)
+{
+    obd_status_t status;
+    uint8_t buffer;
 
-  /* Setup GPIO pins for USART2 transmit. */
-  gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO2);
+    (void)param;
+    (void)status;
 
-  /* Setup USART2 TX pin as alternate function. */
-  gpio_set_af(GPIOA, GPIO_AF7, GPIO2);
+    timerCtx_t tmrCtx;
+    uartKwp_ctx_t uartCtx;
+
+    configDummyTranciever(&tmrCtx, &uartCtx);
+
+    {
+        rcc_periph_clock_enable(RCC_GPIOC);
+
+        uint32_t pinmode = (GPIOC_MODER13_MASK & (0x01<<GPIOC_MODER13_SHIFT));
+
+        GPIOC_MODE_REGISTER |= pinmode;
+    }
+
+    KWP_TMR_Init(&tmrCtx);
+    UART_KWP_Init(&uartCtx);
+
+    KWP_TMR_DelayMs(&tmrCtx, 25);
+    GPIOC_ODR ^= (1 << 13);
+
+    UART_KWP_WriteByte(&uartCtx, 0x55);
+    KWP_TMR_DelayMs(&tmrCtx, 10);
+    UART_KWP_WriteByte(&uartCtx, 0x08);
+    KWP_TMR_DelayMs(&tmrCtx, 10);
+    UART_KWP_WriteByte(&uartCtx, 0x08);
+    KWP_TMR_DelayMs(&tmrCtx, 30);
+
+    while(OBD_RECV_NOT_READY == UART_KWP_RecvByte(&uartCtx, &buffer));
+    KWP_TMR_DelayMs(&tmrCtx, 30);
+    UART_KWP_WriteByte(&uartCtx, 0xCC);
+
+    GPIOC_ODR ^= (1 << 13);
 }
+
+void DummyFastInitEcu(void *param)
+{
+    obd_status_t status;
+    uint8_t buffer[10];
+
+    (void)param;
+    (void)status;
+
+    timerCtx_t tmrCtx;
+    uartKwp_ctx_t uartCtx;
+
+    configDummyTranciever(&tmrCtx, &uartCtx);
+
+    {
+        rcc_periph_clock_enable(RCC_GPIOC);
+
+        uint32_t pinmode = (GPIOC_MODER13_MASK & (0x01<<GPIOC_MODER13_SHIFT));
+
+        GPIOC_MODE_REGISTER |= pinmode;
+    }
+
+    KWP_TMR_Init(&tmrCtx);
+    UART_KWP_Init(&uartCtx);
+
+    KWP_TMR_DelayMs(&tmrCtx, 25);
+    GPIOC_ODR ^= (1 << 13);
+
+    for (int i=0; i < 5; i++)
+    {
+        /* Receive byte (blocking) */
+        UART_KWP_RecvByte(&uartCtx, buffer + i);
+    }
+
+
+    GPIOC_ODR ^= (1 << 13);
+    KWP_TMR_DelayMs(&tmrCtx, 25);
+
+    UART_KWP_WriteByte(&uartCtx, 0x83);
+    UART_KWP_WriteByte(&uartCtx, 0xF1);
+    UART_KWP_WriteByte(&uartCtx, 0x10);
+    UART_KWP_WriteByte(&uartCtx, 0xC1);
+    UART_KWP_WriteByte(&uartCtx, 0xE9);
+    UART_KWP_WriteByte(&uartCtx, 0x8F);
+    UART_KWP_WriteByte(&uartCtx, 0xBD);
+
+    GPIOC_ODR ^= (1 << 13);
+}
+
+void DummyReceiver(void *param)
+{
+    (void)param;
+
+    timerCtx_t tmrCtx;
+    uartKwp_ctx_t uartCtx;
+
+    configDummyTranciever(&tmrCtx, &uartCtx);
+
+    KWP_TMR_Init(&tmrCtx);
+    UART_KWP_Init(&uartCtx);
+
+    uint8_t rxBuffer[16] = {0};
+    (void)rxBuffer;
+    uint8_t idx = 0;
+
+    for (;;)
+    {
+        uint8_t byte;
+
+        /* Receive byte (blocking) */
+        UART_KWP_RecvByte(&uartCtx, &byte);
+
+        /* Store in buffer */
+        rxBuffer[idx % 16] = byte;
+        idx++;
+
+        /* Optional: Print received byte via some debug output */
+        /* For now, just toggle LED or set breakpoint here to inspect rxBuffer */
+
+        /* If we received 6 bytes (expected message length), reset */
+        if (idx >= 6)
+        {
+            /* Check if received: 0x83 0xF1 0x10 0xC1 0x8F 0xBD */
+            /* Set breakpoint here to inspect rxBuffer */
+            idx = 0;
+        }
+    }
+}
+#endif

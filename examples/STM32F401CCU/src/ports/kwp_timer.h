@@ -9,11 +9,19 @@
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
 {
-    uint32_t          timeout_target_ms;
-    timing_callback_t timeout_callback;
-    void             *timeout_user_data;
-    bool              timeout_active;
-    bool              timeout_expired;
+    volatile uint32_t  timeout_start_ms;     /* Timestamp when timeout started */
+    volatile uint32_t  timeout_duration_ms;  /* Timeout duration for wrap-around safe comparison */
+    timing_callback_t  timeout_callback;
+    void              *timeout_user_data;
+    volatile bool      timeout_active;
+    volatile bool      timeout_expired;
+
+    uint32_t timerClk;
+    uint32_t rstTimer;
+    uint32_t timer;
+    uint32_t timerPrescaler;
+    uint32_t event;
+    uint32_t flag;
 }timerCtx_t;
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */

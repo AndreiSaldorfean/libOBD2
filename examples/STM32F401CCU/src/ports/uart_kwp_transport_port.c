@@ -21,48 +21,53 @@ obd_status_t UART_KWP_Init(void* handle)
     rcc_periph_clock_enable(ctx->gpioRcc);
     rcc_periph_clock_enable(ctx->usartClk);
 
-    gpio_mode_setup(ctx->gpio, GPIO_MODE_AF, GPIO_PUPD_NONE, ctx->usartTxPin);
-    gpio_mode_setup(ctx->gpio, GPIO_MODE_AF, GPIO_PUPD_NONE, ctx->usartRxPin);
+    /* Configure USART BEFORE setting up GPIO pins */
+    usart_set_baudrate(ctx->usartNum, ctx->baudRate);
+    usart_set_databits(ctx->usartNum, ctx->dataBits);
+    usart_set_stopbits(ctx->usartNum, ctx->stopBits);
+    usart_set_mode(ctx->usartNum, ctx->mode);
+    usart_set_parity(ctx->usartNum, ctx->parity);
+    usart_set_flow_control(ctx->usartNum, ctx->flowControl);
+    usart_enable(ctx->usartNum);
 
+    /* Set ODR HIGH before any mode change (works even in input mode) */
+    gpio_set(ctx->gpio, ctx->usartTxPin);
+
+    /* Set alternate function BEFORE switching mode */
     gpio_set_af(ctx->gpio, GPIO_AF7, ctx->usartTxPin);
     gpio_set_af(ctx->gpio, GPIO_AF7, ctx->usartRxPin);
 
-    /* Usart setup for kline comm */
-    {
-        /* Setup usart parameters. */
-        usart_set_baudrate(ctx->usartNum, ctx->baudRate);
-        usart_set_databits(ctx->usartNum, ctx->dataBits);
-        usart_set_stopbits(ctx->usartNum, ctx->stopBits);
-        usart_set_mode(ctx->usartNum, ctx->mode);
-        usart_set_parity(ctx->usartNum, ctx->parity);
-        usart_set_flow_control(ctx->usartNum, ctx->flowControl);
-
-        /* Finally enable the usart. */
-        usart_enable(ctx->usartNum);
-    }
+    /* Now switch to alternate function - USART already driving HIGH */
+    gpio_mode_setup(ctx->gpio, GPIO_MODE_AF, GPIO_PUPD_NONE, ctx->usartTxPin);
+    gpio_mode_setup(ctx->gpio, GPIO_MODE_AF, GPIO_PUPD_NONE, ctx->usartRxPin);
 
     return OBD_STATUS_OK;
 }
 
-obd_status_t UART_KWP_WriteByte(void* handle, uint8_t data)
+void UART_KWP_WriteByte(void* handle, uint8_t data)
 {
     uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
 
     usart_send_blocking(ctx->usartNum, data);
 
-    return OBD_STATUS_OK;
+    /* Wait for transmission to fully complete (shift register empty) */
+    while (!(USART_SR(ctx->usartNum) & USART_SR_TC));
 }
 
 obd_status_t UART_KWP_RecvByte(void* handle, uint8_t *recv_buffer)
 {
     uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
 
-    *recv_buffer = usart_recv_blocking(ctx->usartNum);
+    if((USART_SR(ctx->usartNum) & USART_SR_RXNE))
+    {
+        *recv_buffer = usart_recv(ctx->usartNum);
+        return OBD_STATUS_OK;
+    }
 
-    return OBD_STATUS_OK;
+    return OBD_RECV_NOT_READY;
 }
 
-obd_status_t UART_KWP_SendPulse(void* handle, bool pulse)
+void UART_KWP_SendPulse(void* handle, bool pulse)
 {
     uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
 
@@ -75,24 +80,27 @@ obd_status_t UART_KWP_SendPulse(void* handle, bool pulse)
         gpio_clear(ctx->gpio, ctx->usartTxPin);
     }
 
-    return OBD_STATUS_OK;
 }
 
-void UART_KWP_ChangeBaud(void* handle, uint8_t mode)
+void UART_KWP_SwitchMode(void* handle, uint8_t mode)
 {
     uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
 
     switch (mode)
     {
         case FAST_INIT_WAKEUP_START:
+        case SLOW_INIT_5BAUD_START:
         {
             // Disable USART first
             usart_disable(ctx->usartNum);
             // Switch TX pin to GPIO output for bit-banging
             gpio_mode_setup(ctx->gpio, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, ctx->usartTxPin);
+            // Set line HIGH (idle state for K-line)
+            gpio_set(ctx->gpio, ctx->usartTxPin);
             break;
         }
         case FAST_INIT_WAKEUP_END:
+        case SLOW_INIT_5BAUD_END:
         {
             // Switch TX pin back to USART alternate function
             gpio_mode_setup(ctx->gpio, GPIO_MODE_AF, GPIO_PUPD_NONE, ctx->usartTxPin);
