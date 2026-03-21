@@ -10,11 +10,14 @@ file(GLOB SOURCES
 )
 add_library(${PROJECT_NAME} ${SOURCES})
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG)
+
 target_include_directories(${PROJECT_NAME}
     PRIVATE
     ./include/
     ./utils/
     ./include/data_link/l2_kwp
+    ./include/data_link/l2_iso9141/
     ./include/data_link/
     ./include/app/
     ./interface/
