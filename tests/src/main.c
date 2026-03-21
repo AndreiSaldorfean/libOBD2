@@ -17,6 +17,7 @@
 #include "libopencm3/stm32/rcc.h"
 #include "libopencm3/cm3/nvic.h"
 #include "tusb.h"
+#include "l2_kwp_test.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -77,6 +78,29 @@ int main()
     RUN_TEST(test_TIMER_0);
     RUN_TEST(test_TIMER_1);
     #endif
+
+    /* ======================= Unit tests ======================= */
+    RUN_TEST(test_Tester_ECU);
+    RUN_TEST(test_L2_KWP_ComputeChecksum_000);
+    RUN_TEST(test_L2_KWP_SendMessage_000);
+    RUN_TEST(test_L2_KWP_RecvMessage_000);
+#if defined(SPT_FAST_INIT)
+    RUN_TEST(test_L2_KWP_SRV_StartCommunication_000);
+    RUN_TEST(test_L2_KWP_SRV_SendData_000);
+    RUN_TEST(test_L2_KWP_FastInit_000);
+    RUN_TEST(test_L2_KWP_IdleBasedOnConnStatus_000);
+#endif /* SPT_FAST_INIT */
+#if defined(SPT_CHANGE_TIMING_PARAM)
+    void test_L2_KWP_SRV_AccessTimingParameter_000);
+#endif /* SPT_CHANGE_TIMING_PARAM */
+#if defined(SPT_5BAUD_INIT)
+    void test_L2_KWP_5BaudInit_000);
+#endif /* SPT_5BAUD_INIT */
+    RUN_TEST(test_L2_KWP_Init_000);
+    RUN_TEST(test_L2_KWP_ReadHeader_000);
+    RUN_TEST(test_PrepareMessage_000);
+    /* ======================= Unit tests ======================= */
+
     RUN_TEST(test_Tester_ECU);
 
     int result = UNITY_END();
