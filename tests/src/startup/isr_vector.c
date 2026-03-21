@@ -56,8 +56,8 @@ void otg_fs_isr(void)
 /* TIM2 interrupt handler - defined in kwp_timer.c */
 extern void tim2_isr(void);
 
-__attribute__((section(".isr_vector"))) void (*const vector_table[])(void) = {
-    (void (*)(void))(0x20000000 + 128 * 1024), // Initial stack pointer
+/* NOTE: Renamed vector_table to obd2VectorTable due to collision with libopencm3 */
+__attribute__((section(".isr_vector"))) void (*const obd2VectorTable[])(void) = {
     Reset_Handler,                             // Reset handler
     NMI_Handler,                               // NMI handler
     HardFault_Handler,                         // Hard fault handler

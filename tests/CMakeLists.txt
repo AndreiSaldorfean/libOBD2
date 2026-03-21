@@ -7,15 +7,12 @@ set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 set(TINYUSB_ROOT ${CMAKE_SOURCE_DIR}/../examples/libs/tinyusb)
 
 file(GLOB SOURCES
-    "${CMAKE_SOURCE_DIR}/../utils/*.c"
-    "${CMAKE_SOURCE_DIR}/../src/*.c"
-    "${CMAKE_SOURCE_DIR}/../src/data_link/*.c"
-    "${CMAKE_SOURCE_DIR}/../src/data_link/l2_kwp/*.c"
     "${CMAKE_SOURCE_DIR}/src/startup/isr_vector.c"
     "${CMAKE_SOURCE_DIR}/src/startup/reset_handler.c"
     "${CMAKE_SOURCE_DIR}/src/*.c"
     "${CMAKE_SOURCE_DIR}/src/os/*.c"
-    "${CMAKE_SOURCE_DIR}/src/app/*.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/*.c"
+    "${CMAKE_SOURCE_DIR}/src/int/*.c"
     "${CMAKE_SOURCE_DIR}/Unity/src/*.c"
     "${CMAKE_SOURCE_DIR}/../libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c"
     "${CMAKE_SOURCE_DIR}/../examples/libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
@@ -39,7 +36,9 @@ target_include_directories(${PROJECT_NAME}
     ../include/app/
     ../include/data_link/
     ../include/data_link/l2_kwp/
-    ./src/app
+    ../include/data_link/l2_iso9141/
+    ./src/int/
+    ./src/unit/
     ./Unity/src/
     ../examples/STM32F401CCU/src/ports/
     ../examples/libs/FreeRTOS-Kernel/include/
@@ -53,19 +52,12 @@ target_include_directories(${PROJECT_NAME}
     ${TINYUSB_ROOT}/src/portable/synopsys/dwc2
     ${TINYUSB_ROOT}/hw
 )
-# include_directories(SYSTEM
-#     /home/rudy/tools/arm-gnu-toolchain/lib/gcc/arm-none-eabi/14.2.1/
-#     /home/rudy/tools/arm-gnu-toolchain/lib/gcc/
-#     /home/rudy/tools/arm-gnu-toolchain/arm-none-eabi/lib/)
+
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     CFG_TUSB_MCU=OPT_MCU_STM32F4
     CFG_TUSB_OS=OPT_OS_FREERTOS
     STM32F401xC
     UNITY_EXCLUDE_SETJMP_H
-    UNITY_OUTPUT_CHAR=UnityOutputCharSilent
-    UNITY_OUTPUT_FLUSH=UnityOutputFlushSilent
-    "UNITY_OUTPUT_CHAR_HEADER_DECLARATION=UnityOutputCharSilent(int)"
-    "UNITY_OUTPUT_FLUSH_HEADER_DECLARATION=UnityOutputFlushSilent(void)"
 )
 
 set( FREERTOS_PORT "GCC_ARM_CM4F" CACHE STRING "" FORCE)
@@ -92,7 +84,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/../examples/libs/libopencm3/lib/libopencm3_stm32f4.a
     freertos_config
     freertos_kernel
-    ${CMAKE_SOURCE_DIR}/../build/libOBD2.a
+    ${CMAKE_SOURCE_DIR}/../builds/library/libOBD2.a
     )
 
 # Generate .bin file from .elf

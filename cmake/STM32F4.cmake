@@ -9,13 +9,15 @@ set(CMAKE_C_FLAGS
     -Wall \
     --specs=nano.specs \
     -Wextra \
+    -Wextra \
+    -Werror \
     -g \
     -O0 \
     -Wa,-alh=output.lst")
 
 set(CMAKE_EXE_LINKER_FLAGS
     "-lc \
-    -T${CMAKE_SOURCE_DIR}/linker/stm32f4.ld \
+    -T${CMAKE_CURRENT_LIST_DIR}/../utils/linker/STM32F4/stm32f4_${MEMORY}.ld \
     -Wl,-Map=output.map \
     -lgcc \
     -Wl,--gc-sections")

@@ -8,12 +8,18 @@
 #include <stddef.h>
 
 /* ================================================= MACROS ================================================ */
-// #define SPT_5BAUD_INIT
+#if defined(DEBUG)
+#define OBD2_STATIC
+#define OBD2_INLINE
+#else
+#define OBD2_STATIC static
+#define OBD2_INLINE inline
+#endif /* DEBUG */
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
 {
-    const dataLink_if_t *pDataLink;
-    void* pDataLinkHandle;
+    dataLink_if_t *pDataLink;
+    // void* pDataLinkHandle;
     bool connectionStatus;
 } obd_ctx_t;
 

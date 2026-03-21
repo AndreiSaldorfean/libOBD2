@@ -31,10 +31,10 @@ typedef struct
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 obd_status_t UART_KWP_Init(void* handle);
-obd_status_t UART_KWP_WriteByte(void* handle, uint8_t data);
+void UART_KWP_WriteByte(void* handle, uint8_t data);
 obd_status_t UART_KWP_RecvByte(void* handle, uint8_t *recv_buffer);
-obd_status_t UART_KWP_SendPulse(void* handle, bool pulse);
-void UART_KWP_ChangeBaud(void* handle, uint8_t mode);
+void UART_KWP_SendPulse(void* handle, bool pulse);
+void UART_KWP_SwitchMode(void* handle, uint8_t mode);
 
 
 #endif /* UART_KWP_TRANSPORT_PORT_H */

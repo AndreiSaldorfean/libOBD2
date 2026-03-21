@@ -2,7 +2,7 @@ ENTRY(Reset_Handler)
 
 MEMORY
 {
-  flash (rx): ORIGIN = 0x08000000, LENGTH = 1024K
+  flash (rx):  ORIGIN = 0x08000000, LENGTH = 1024K
   ram   (rwx): ORIGIN = 0x20000000, LENGTH = 128K
   ccm   (rwx): ORIGIN = 0x10000000, LENGTH = 64K
 }
@@ -11,11 +11,11 @@ __stack_size__ = 16K;
 
 SECTIONS
 {
-  . = ORIGIN(flash);
+  . = ORIGIN(ram);
 
   .isr_vector : {
     KEEP(*(.isr_vector))
-  } >flash
+  } >ram
 
   .text : {
     *(.text*)
@@ -24,15 +24,9 @@ SECTIONS
     KEEP(*(.fini))
     *(.ARM.exidx*)
     _etext = .;
-  } >flash
+  } >ram
 
-  .ARM.exidx : {
-      __exidx_start = .;
-      *(.ARM.exidx*)
-      __exidx_end = .;
-  } >flash
-
-  .data : AT(_etext) {
+  .data : {
     _sdata = .;
     *(.data*)
     _edata = .;
