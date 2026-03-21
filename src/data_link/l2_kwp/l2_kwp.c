@@ -16,35 +16,26 @@
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 OBD2_STATIC uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data);
-
 OBD2_STATIC obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len);
 OBD2_STATIC obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recvdMsg);
-
-#if defined(SPT_FAST_INIT)
-OBD2_STATIC obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t *self);
-#endif /* SPT_FAST_INIT */
 #if 0
 OBD2_STATIC obd_status_t L2_KWP_SRV_StopCommunication(dataLink_if_t* self);
 #endif
+#if defined(SPT_FAST_INIT)
+OBD2_STATIC obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t *self);
+OBD2_STATIC obd_status_t L2_KWP_SRV_SendData( dataLink_if_t *self, message_t *sentMsg, message_t *recvdMsg);
+OBD2_STATIC obd_status_t L2_KWP_FastInit(dataLink_if_t *self);
+OBD2_STATIC void L2_KWP_IdleBasedOnConnStatus(dataLink_if_t *self);
+#endif /* SPT_FAST_INIT */
 #if defined(SPT_CHANGE_TIMING_PARAM)
 OBD2_STATIC obd_status_t L2_KWP_SRV_AccessTimingParameter(dataLink_if_t *self);
 #endif /* SPT_CHANGE_TIMING_PARAM */
-#if defined(SPT_FAST_INIT)
-OBD2_STATIC obd_status_t L2_KWP_SRV_SendData( dataLink_if_t *self, message_t *sentMsg, message_t *recvdMsg);
-#endif
-
 #if defined(SPT_5BAUD_INIT)
 OBD2_STATIC obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self);
 #endif /* SPT_5BAUD_INIT */
-
-#if defined(SPT_FAST_INIT)
-OBD2_STATIC obd_status_t L2_KWP_FastInit(dataLink_if_t *self);
-#endif /* SPT_FAST_INIT */
 OBD2_STATIC obd_status_t L2_KWP_Init(dataLink_if_t *self);
-#if defined(SPT_FAST_INIT)
-OBD2_STATIC void L2_KWP_IdleBasedOnConnStatus(dataLink_if_t *self);
-#endif /* SPT_FAST_INIT */
 OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, header_t *header, size_t *headerLen);
+OBD2_STATIC void L2_KWP_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 OBD2_STATIC uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data)
