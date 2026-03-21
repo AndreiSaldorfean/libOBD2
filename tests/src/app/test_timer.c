@@ -20,11 +20,12 @@
 void test_TIMER_0(void)
 {
     bool timeoutExpired = true;
+    (void)timeoutExpired;
     timerCtx_t tmrCtx =
     {
         .timeout_active = false,
         .timeout_expired = false,
-        .timeout_target_ms = 0,
+        .timeout_duration_ms = 0,
     };
 
     KWP_TMR_Init(&tmrCtx);
@@ -62,7 +63,7 @@ void test_TIMER_1(void)
         .timeout_expired = false,
         .timeout_callback = NULL,
         .timeout_user_data = NULL,
-        .timeout_target_ms = 0,
+        .timeout_duration_ms = 0,
     };
     uint32_t time1 = 0;
     uint32_t time2 = 0;
