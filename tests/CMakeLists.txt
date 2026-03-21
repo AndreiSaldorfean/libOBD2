@@ -11,7 +11,8 @@ file(GLOB SOURCES
     "${CMAKE_SOURCE_DIR}/src/startup/reset_handler.c"
     "${CMAKE_SOURCE_DIR}/src/*.c"
     "${CMAKE_SOURCE_DIR}/src/os/*.c"
-    "${CMAKE_SOURCE_DIR}/src/app/*.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/*.c"
+    "${CMAKE_SOURCE_DIR}/src/int/*.c"
     "${CMAKE_SOURCE_DIR}/Unity/src/*.c"
     "${CMAKE_SOURCE_DIR}/../libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c"
     "${CMAKE_SOURCE_DIR}/../examples/libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
@@ -36,7 +37,8 @@ target_include_directories(${PROJECT_NAME}
     ../include/data_link/
     ../include/data_link/l2_kwp/
     ../include/data_link/l2_iso9141/
-    ./src/app
+    ./src/int/
+    ./src/unit/
     ./Unity/src/
     ../examples/STM32F401CCU/src/ports/
     ../examples/libs/FreeRTOS-Kernel/include/
