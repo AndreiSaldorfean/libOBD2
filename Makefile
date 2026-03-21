@@ -84,9 +84,9 @@ stm_fx:
 # debug app for flash
 stm_fd:
 	@if $(MAKE) -q; then \
-		./builds/demo_flash/tests.sh -d; \
+		./builds/demo_flash/demo.sh -d; \
 	else \
-		./builds/demo_flash/tests.sh -ld; \
+		./builds/demo_flash/demo.sh -ld; \
 	fi
 
 test_f: test_f_clean
