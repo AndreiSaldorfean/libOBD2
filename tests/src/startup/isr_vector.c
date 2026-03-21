@@ -57,7 +57,7 @@ void otg_fs_isr(void)
 extern void tim2_isr(void);
 
 /* NOTE: Renamed vector_table to obd2VectorTable due to collision with libopencm3 */
-    (void (*)(void))(0x20000000 + 128 * 1024), // Initial stack pointer
+__attribute__((section(".isr_vector"))) void (*const obd2VectorTable[])(void) = {
     Reset_Handler,                             // Reset handler
     NMI_Handler,                               // NMI handler
     HardFault_Handler,                         // Hard fault handler
