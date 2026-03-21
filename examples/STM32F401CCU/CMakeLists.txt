@@ -34,6 +34,7 @@ target_include_directories(${PROJECT_NAME}
     ../../include/app/
     ./inc/
     ./src/ports/
+    ./src/os/
     ../libs/libopencm3/include/
     ../libs/FreeRTOS-Kernel/include/
     ../libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/

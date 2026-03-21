@@ -7,9 +7,6 @@
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-void TransceiverTask(void *param);
-void DummyFastInitEcu(void *param);
-void DummySlowInitEcu(void *param);
-void DummyReceiver(void *param);
+void TesterTask(void *param);
 
 #endif /* TASKS_H */

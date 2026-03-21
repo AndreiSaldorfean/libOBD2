@@ -24,30 +24,6 @@
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 // TODO: Add proper demo app
-#if 0
-static void configDummyTranciever(timerCtx_t* tmrCtx, uartKwp_ctx_t *uartCtx)
-{
-        tmrCtx->timeout_active    = false;
-        tmrCtx->timeout_expired   = false;
-        tmrCtx->timeout_callback  = NULL;
-        tmrCtx->timeout_user_data = NULL;
-        tmrCtx->timeout_start_ms = 0;
-
-        uartCtx->usartClk    = RCC_USART1;
-        uartCtx->usartNum    = USART1;
-        uartCtx->baudRate    = 10400;
-        uartCtx->dataBits    = 8;
-        uartCtx->stopBits    = USART_STOPBITS_1;
-        uartCtx->mode        = USART_MODE_TX_RX;
-        uartCtx->parity      = USART_PARITY_NONE;
-        uartCtx->flowControl = USART_FLOWCONTROL_NONE;
-        uartCtx->usartTxPin  = GPIO9;
-        uartCtx->usartRxPin  = GPIO10;
-
-        uartCtx->gpioRcc     = RCC_GPIOA;
-        uartCtx->gpio        = GPIOA;
-}
-
 static void configDataLink(dataLink_if_t* dl)
 {
     static timerCtx_t tmrCtx =
@@ -124,9 +100,10 @@ static void configDataLink(dataLink_if_t* dl)
     dl->send_request     = l2_kwp_send_request;
     dl->recv_response    = l2_kwp_recv_response;
 }
+
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */
-void TransceiverTask(void *param)
+void TesterTask(void *param)
 {
     obd_status_t status;
     dataLink_if_t dataLink;
@@ -159,133 +136,3 @@ void TransceiverTask(void *param)
         vTaskDelay(1000/portTICK_PERIOD_MS);
     }
 }
-
-void DummySlowInitEcu(void *param)
-{
-    obd_status_t status;
-    uint8_t buffer;
-
-    (void)param;
-    (void)status;
-
-    timerCtx_t tmrCtx;
-    uartKwp_ctx_t uartCtx;
-
-    configDummyTranciever(&tmrCtx, &uartCtx);
-
-    {
-        rcc_periph_clock_enable(RCC_GPIOC);
-
-        uint32_t pinmode = (GPIOC_MODER13_MASK & (0x01<<GPIOC_MODER13_SHIFT));
-
-        GPIOC_MODE_REGISTER |= pinmode;
-    }
-
-    KWP_TMR_Init(&tmrCtx);
-    UART_KWP_Init(&uartCtx);
-
-    KWP_TMR_DelayMs(&tmrCtx, 25);
-    GPIOC_ODR ^= (1 << 13);
-
-    UART_KWP_WriteByte(&uartCtx, 0x55);
-    KWP_TMR_DelayMs(&tmrCtx, 10);
-    UART_KWP_WriteByte(&uartCtx, 0x08);
-    KWP_TMR_DelayMs(&tmrCtx, 10);
-    UART_KWP_WriteByte(&uartCtx, 0x08);
-    KWP_TMR_DelayMs(&tmrCtx, 30);
-
-    while(OBD_RECV_NOT_READY == UART_KWP_RecvByte(&uartCtx, &buffer));
-    KWP_TMR_DelayMs(&tmrCtx, 30);
-    UART_KWP_WriteByte(&uartCtx, 0xCC);
-
-    GPIOC_ODR ^= (1 << 13);
-}
-
-void DummyFastInitEcu(void *param)
-{
-    obd_status_t status;
-    uint8_t buffer[10];
-
-    (void)param;
-    (void)status;
-
-    timerCtx_t tmrCtx;
-    uartKwp_ctx_t uartCtx;
-
-    configDummyTranciever(&tmrCtx, &uartCtx);
-
-    {
-        rcc_periph_clock_enable(RCC_GPIOC);
-
-        uint32_t pinmode = (GPIOC_MODER13_MASK & (0x01<<GPIOC_MODER13_SHIFT));
-
-        GPIOC_MODE_REGISTER |= pinmode;
-    }
-
-    KWP_TMR_Init(&tmrCtx);
-    UART_KWP_Init(&uartCtx);
-
-    KWP_TMR_DelayMs(&tmrCtx, 25);
-    GPIOC_ODR ^= (1 << 13);
-
-    for (int i=0; i < 5; i++)
-    {
-        /* Receive byte (blocking) */
-        UART_KWP_RecvByte(&uartCtx, buffer + i);
-    }
-
-
-    GPIOC_ODR ^= (1 << 13);
-    KWP_TMR_DelayMs(&tmrCtx, 25);
-
-    UART_KWP_WriteByte(&uartCtx, 0x83);
-    UART_KWP_WriteByte(&uartCtx, 0xF1);
-    UART_KWP_WriteByte(&uartCtx, 0x10);
-    UART_KWP_WriteByte(&uartCtx, 0xC1);
-    UART_KWP_WriteByte(&uartCtx, 0xE9);
-    UART_KWP_WriteByte(&uartCtx, 0x8F);
-    UART_KWP_WriteByte(&uartCtx, 0xBD);
-
-    GPIOC_ODR ^= (1 << 13);
-}
-
-void DummyReceiver(void *param)
-{
-    (void)param;
-
-    timerCtx_t tmrCtx;
-    uartKwp_ctx_t uartCtx;
-
-    configDummyTranciever(&tmrCtx, &uartCtx);
-
-    KWP_TMR_Init(&tmrCtx);
-    UART_KWP_Init(&uartCtx);
-
-    uint8_t rxBuffer[16] = {0};
-    (void)rxBuffer;
-    uint8_t idx = 0;
-
-    for (;;)
-    {
-        uint8_t byte;
-
-        /* Receive byte (blocking) */
-        UART_KWP_RecvByte(&uartCtx, &byte);
-
-        /* Store in buffer */
-        rxBuffer[idx % 16] = byte;
-        idx++;
-
-        /* Optional: Print received byte via some debug output */
-        /* For now, just toggle LED or set breakpoint here to inspect rxBuffer */
-
-        /* If we received 6 bytes (expected message length), reset */
-        if (idx >= 6)
-        {
-            /* Check if received: 0x83 0xF1 0x10 0xC1 0x8F 0xBD */
-            /* Set breakpoint here to inspect rxBuffer */
-            idx = 0;
-        }
-    }
-}
-#endif

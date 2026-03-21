@@ -15,51 +15,22 @@ int main(void)
 {
     sysInit();
 
-    /* TODO: Add proper demo app */
-    #if 0
-    TaskHandle_t gHelloWorld = NULL;
-
-    // uint32_t status = xTaskCreate(
-    //     DummyFastInitEcu,
-    //     "Dummy Transmitter Task",
-    //     1024,
-    //     NULL,
-    //     tskIDLE_PRIORITY,
-    //     &gHelloWorld);
-
-    /* === Board A: Transmitter === */
-    // uint32_t status = xTaskCreate(
-    //     DummySlowInitEcu,
-    //     "Dummy Transmitter Task",
-    //     1024,
-    //     NULL,
-    //     tskIDLE_PRIORITY,
-    //     &gHelloWorld);
-
-    /* === Board B: Receiver === */
-    // uint32_t status = xTaskCreate(
-    //     DummyReceiver,
-    //     "Dummy Receiver Task",
-    //     1024,
-    //     NULL,
-    //     tskIDLE_PRIORITY,
-    //     &gHelloWorld);
+    TaskHandle_t testerTaskHandle = NULL;
 
     /* === Normal Transceiver (client) === */
     uint32_t status = xTaskCreate(
-        TransceiverTask,
-        "Transceiver Task",
+        TesterTask,
+        "Tester Task",
         1024,
         NULL,
         tskIDLE_PRIORITY,
-        &gHelloWorld);
+        &testerTaskHandle);
 
     if (status != pdPASS)
     {
         while (1)
             ;
     }
-    #endif
 
     vTaskStartScheduler();
 
