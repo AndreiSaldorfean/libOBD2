@@ -1,5 +1,5 @@
-#ifndef TEST_TIMER_H
-#define TEST_TIMER_H
+#ifndef TIMER_TEST_H
+#define TIMER_TEST_H
 /* ================================================ INCLUDES =============================================== */
 /* ================================================= MACROS ================================================ */
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
@@ -9,4 +9,4 @@
 void test_TIMER_0(void);
 void test_TIMER_1(void);
 
-#endif /* TEST_TIMER_H */
+#endif /* TIMER_TEST_H */

@@ -1,5 +1,5 @@
 /* ================================================ INCLUDES =============================================== */
-#include "test_timer.h"
+#include "timer_test.h"
 #include "libobd2.h"
 #include "srv_status.h"
 #include "transport_if.h"
