@@ -7,11 +7,12 @@ set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 set(TINYUSB_ROOT ${CMAKE_SOURCE_DIR}/../libs/tinyusb)
 
 file(GLOB SOURCES
-    "${CMAKE_SOURCE_DIR}/src/startup/isr_vector.c"
-    "${CMAKE_SOURCE_DIR}/src/startup/reset_handler.c"
+    "${CMAKE_SOURCE_DIR}/src/startup/*.c"
+    "${CMAKE_SOURCE_DIR}/src/startup/*.c"
     "${CMAKE_SOURCE_DIR}/src/*.c"
     "${CMAKE_SOURCE_DIR}/src/os/*.c"
     "${CMAKE_SOURCE_DIR}/src/ports/*.c"
+    "${CMAKE_SOURCE_DIR}/../../utils/*.c"
     "${CMAKE_SOURCE_DIR}/../libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c"
     "${CMAKE_SOURCE_DIR}/../libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
     ${TINYUSB_ROOT}/src/*.c
@@ -29,6 +30,7 @@ target_include_directories(${PROJECT_NAME}
     ../../include/data_link/l2_kwp/
     ../../include/
     ../../interface/
+    ../../utils/
     ../../include/app/
     ./inc/
     ./src/ports/
@@ -80,7 +82,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/../libs/libopencm3/lib/libopencm3_stm32f4.a
     freertos_config
     freertos_kernel
-    ${CMAKE_SOURCE_DIR}/../../build/libOBD2.a
+    ${CMAKE_SOURCE_DIR}/../../builds/library/libOBD2.a
     )
 
 # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
@@ -116,3 +118,9 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 #     COMMAND /bin/zsh ${CMAKE_SOURCE_DIR}/utils/add_path_to_comp_com
 #     DEPENDS ${PROJECT_NAME}
 # )
+
+# Generate .bin file from .elf
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${PROJECT_NAME}> ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.bin
+    COMMENT "Generating ${PROJECT_NAME}.bin"
+)

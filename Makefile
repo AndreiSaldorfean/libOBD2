@@ -1,39 +1,118 @@
 all: clean
-	cmake -S . -B build -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/ArmToolchain.cmake
+	cmake -S . -B builds/library -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/STM32F4.cmake -DMEMORY="flash"
 b:
-	cmake --build build -j12
-flash:
-	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
-	  -c "program /home/rudy/Projects/libOBD2/examples/STM32F401CCU/build/libOBD2.elf verify reset exit"
-open:
-	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "init; reset halt"
-ren:
-	renode --console utils/stm_dev.resc
+	cmake --build builds/library -j12
 clean:
-	rm -rf build
+	rm -rf builds/library
 
-stm32f401ccu: stm32f401ccu_clean
-	cmake -S ./examples/STM32F401CCU/ -B ./examples/STM32F401CCU/build -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=../../cmake/ArmToolchain.cmake
+################################ RAM BUILD TARGETS ################################
+stm_r: stm_r
+	cmake -S . -B builds/library -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/STM32F4.cmake -DMEMORY="ram"
+	cmake --build builds/library -j12
+	python3 utils/gen.py --app=demo --memory=ram
 
-stm32f401ccu_b:
-	cmake --build ./examples/STM32F401CCU/build -j12
+stm_rb:
+	cmake --build ./builds/demo_ram -j12
 
-stm32f401ccu_clean:
-	rm -rf ./examples/STM32F401CCU/build
+stm_r_clean:
+	rm -rf ./builds/demo_ram
 
-unit_test: unit_test_clean
-	cmake -S ./tests/ -B ./tests/build -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=../cmake/ArmToolchain.cmake
+# execute app for ram
+stm_rx:
+	@if $(MAKE) -q; then \
+		./builds/demo_ram/demo.sh -r; \
+	else \
+		./builds/demo_ram/demo.sh -lr; \
+	fi
 
-unit_test_b:
-	cmake --build ./tests/build -j12
+# debug app for ram
+stm_rd:
+	@if $(MAKE) -q; then \
+		./builds/demo_ram/tests.sh -d; \
+	else \
+		./builds/demo_ram/tests.sh -ld; \
+	fi
 
-flash_unit:
-	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
-	  -c "program /home/rudy/Projects/libOBD2/tests/build/libOBD2.elf verify reset exit"
+# create build directory for tests for ram
+test_r: test_r_clean
+	cmake -S . -B builds/library -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/STM32F4.cmake -DMEMORY="ram"
+	cmake --build builds/library -j12
+	python3 utils/gen.py --app=tests --memory=ram
 
-uf:
-	dfu-util -a 0 -s 0x08000000:leave -D ./tests/build/libOBD2.bin
+# build tests for ram
+test_rb:
+	cmake --build ./builds/tests_ram -j12
 
-unit_test_clean:
-	rm -rf ./tests/build
+# execute tests for ram
+test_rx:
+	./builds/tests_ram/tests.sh -r
+test_rlx:
+	./builds/tests_ram/tests.sh -lr
+
+# debug tests for ram
+test_rd:
+	@if $(MAKE) -q; then \
+		./builds/tests_ram/tests.sh -d; \
+	else \
+		./builds/tests_ram/tests.sh -ld; \
+	fi
+
+test_r_clean:
+	rm -rf ./builds/tests_ram
+################################ FLASH BUILD TARGETS ################################
+
+################################ FLASH BUILD TARGETS ################################
+stm_f: stm_f_clean
+	cmake -S . -B builds/library -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/STM32F4.cmake -DMEMORY="flash"
+	cmake --build builds/library -j12
+	python3 utils/gen.py --app=demo --memory=flash
+
+stm_fb:
+	cmake --build ./builds/demo_flash -j12
+
+stm_f_clean:
+	rm -rf ./builds/demo_flash
+
+# execute app for flash
+stm_fx:
+	@if $(MAKE) -q; then \
+		./builds/demo_flash/demo.sh -r; \
+	else \
+		./builds/demo_flash/demo.sh -lr; \
+	fi
+
+# debug app for flash
+stm_fd:
+	@if $(MAKE) -q; then \
+		./builds/demo_flash/tests.sh -d; \
+	else \
+		./builds/demo_flash/tests.sh -ld; \
+	fi
+
+test_f: test_f_clean
+	cmake -S . -B builds/library -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/STM32F4.cmake -DMEMORY="flash"
+	cmake --build builds/library -j12
+	python3 utils/gen.py --app=tests --memory=flash
+
+test_fb:
+	cmake --build ./builds/tests_flash -j12
+
+test_f_clean:
+	rm -rf ./builds/tests_flash
+
+# execute test for flash
+test_fx:
+	./builds/tests_flash/tests.sh -r
+
+test_flx:
+	./builds/tests_flash/tests.sh -lr
+
+# debug test for flash
+test_fd:
+	@if $(MAKE) -q; then \
+		./builds/tests_flash/tests.sh -d; \
+	else \
+		./builds/tests_flash/tests.sh -ld; \
+	fi
+################################ FLASH BUILD TARGETS ################################
 
