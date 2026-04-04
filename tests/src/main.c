@@ -28,6 +28,7 @@ void setUp(void) { }
 
 void tearDown(void) { }
 
+#if !defined(DEBUG)
 static void usart_setup(void)
 {
     /* Use internal HSI oscillator - works on all F401CCU boards without crystal */
@@ -58,14 +59,17 @@ static void usart_setup(void)
     /* Enable USB interrupt after initialization */
     nvic_enable_irq(NVIC_OTG_FS_IRQ);
 }
+#endif /* DEBUG */
 /* ================================================ MODULE API ============================================= */
 
 int main()
 {
+    #if !defined(DEBUG)
 	usart_setup();
 
 	/* Disable stdout buffering for immediate printf output */
 	setbuf(stdout, NULL);
+    #endif /* DEBUG */
 
     printf("============= UNIT BEGIN ==============\n");
 
@@ -107,9 +111,11 @@ int main()
 
     while(true)
     {
+        #if !defined(DEBUG)
         tud_cdc_write_flush();
         tud_task();
+        #endif /* DEBUG */
     }
 
-    return result;
+    return 0;
 }

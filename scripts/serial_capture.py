@@ -133,12 +133,12 @@ Examples:
     args = parser.parse_args()
 
     # Wait for serial device to appear
-    for i in range(10):
+    for i in range(50):
         try:
             with open(args.port):
                 break
         except (FileNotFoundError, PermissionError):
-            if i == 9:
+            if i == 49:
                 print(f"ERROR: Serial port {args.port} not found", file=sys.stderr)
                 sys.exit(1)
             time.sleep(0.3)
