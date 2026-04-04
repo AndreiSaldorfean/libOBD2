@@ -6,13 +6,18 @@
 #include "timing_if.h"
 #include "transport_if.h"
 #include <stddef.h>
+#include "utils.h"
 
 /* ================================================= MACROS ================================================ */
+#define LIBOBD_SetTimeSample(handle, val)    (handle->pTimingOps->timeSample = val)
+#define LIBOBD_GetTimeSample(handle)         (handle->pTimingOps->timeSample)
 #define LIBOBD_TimingInit(handle)            (handle->pTimingOps->timer_init(handle->pTimingHandle))
 #define LIBOBD_GetTimeMs(handle)             (handle->pTimingOps->get_time_ms(handle->pTimingHandle))
 #define LIBOBD_Delay(handle, delay)          (handle->pTimingOps->delay_ms(handle->pTimingHandle, delay))
+// TODO: Fix the name start timeout, a better name would be start_timer
 #define LIBOBD_StartTimeout(handle, timeout) (handle->pTimingOps->start_timeout(handle->pTimingHandle, timeout, NULL, NULL))
 #define LIBOBD_StopTimeout(handle)           (handle->pTimingOps->stop_timeout(handle->pTimingHandle))
+// TODO: Fix the name timeout expired is redundant or hard to understand, a better name would be is_timeout or checkTimeout
 #define LIBOBD_IsTimeoutExpired(handle)      (handle->pTimingOps->is_timeout_expired(handle->pTimingHandle))
 
 #define LIBOBD_TransportInit(handle)      (handle->pTransportOps->init(handle->pTransportHandle))

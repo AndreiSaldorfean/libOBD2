@@ -6,6 +6,7 @@
 #include "timing_if.h"
 #include "transport_if.h"
 #include "utils.h"
+#include <stdio.h>
 #include <string.h>
 #include "l2_kwp_utils.h"
 #include "libobd2.h"
@@ -65,12 +66,16 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
     obd_status_t status;
 
     // Format byte
-    RecvByteBlocking(self, buffer);
+    while (OBD_RECV_NOT_READY == LIBOBD_ReceiveByte(self, buffer))
+    {
+        // Check for P2 Timeout from Tester to ECU
+        YIELD;
+        OBD2_ASSERT_EQUAL_OR_ERR(false, LIBOBD_IsTimeoutExpired(self), OBD_ERR_COMM_P2_TIMEOUT_MAX_TESTER_ECU);
+    }
 
-    // Check for P2 Timeout from Tester to ECU
-    OBD2_ASSERT_EQUAL_OR_ERR(false, LIBOBD_IsTimeoutExpired(self), OBD_ERR_COMM_P2_TIMEOUT_TESTER_ECU);
     p2TimeElapsed = LIBOBD_GetTimeMs(self);
-    if (p2TimeElapsed < KWP_P2_TIME_MIN) return OBD_ERR_COMM_P2_TIMEOUT_TESTER_ECU ;
+    p2TimeElapsed -= LIBOBD_GetTimeSample(self);
+    if (p2TimeElapsed < KWP_P2_TIME_MIN) return OBD_ERR_COMM_P2_TIMEOUT_MIN_TESTER_ECU;
 
     // Target byte
     status = ReadByteInTimeframe(self, buffer + 1, KWP_P1_TIME_MIN, KWP_P1_TIME_MAX);
@@ -97,11 +102,13 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
 OBD2_STATIC obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len)
 {
     uint32_t p3TimeElapsed = 0;
+    uint32_t timingSample  = 0;
 
     // Check for P3 Timeout from P2 end to Tester
-    OBD2_ASSERT_EQUAL_OR_ERR(false, LIBOBD_IsTimeoutExpired(self), OBD_ERR_COMM_P3_TIMEOUT_ECU_TESTER);
+    OBD2_ASSERT_EQUAL_OR_ERR(false, LIBOBD_IsTimeoutExpired(self), OBD_ERR_COMM_P3_TIMEOUT_MAX_ECU_TESTER);
     p3TimeElapsed = LIBOBD_GetTimeMs(self);
-    if (p3TimeElapsed < KWP_P3_TIME_MIN) return OBD_ERR_COMM_P3_TIMEOUT_ECU_TESTER;
+    p3TimeElapsed -= LIBOBD_GetTimeSample(self);
+    if (p3TimeElapsed  < KWP_P3_TIME_MIN) return OBD_ERR_COMM_P3_TIMEOUT_MIN_ECU_TESTER;
 
     for (size_t idx = 0; idx < len; idx++)
     {
@@ -109,6 +116,9 @@ OBD2_STATIC obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, s
         LIBOBD_Delay(self, KWP_P4_TIME_MIN);
     }
 
+
+    timingSample = LIBOBD_GetTimeMs(self);
+    LIBOBD_SetTimeSample(self, timingSample);
     LIBOBD_StartTimeout(self, KWP_P2_TIME_MAX);
 
     return OBD_STATUS_OK;

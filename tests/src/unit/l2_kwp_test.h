@@ -8,6 +8,8 @@
 /* =============================================== MODULE API ============================================== */
 void test_L2_KWP_ComputeChecksum_000(void);
 void test_L2_KWP_SendMessage_000(void);
+void test_L2_KWP_SendMessage_001(void);
+void test_L2_KWP_SendMessage_002(void);
 void test_L2_KWP_RecvMessage_000(void);
 #if defined(SPT_FAST_INIT)
 void test_L2_KWP_SRV_StartCommunication_000(void);

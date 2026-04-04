@@ -6,6 +6,7 @@
 #include "l2_kwp.h"
 #include "srv_status.h"
 #include "libobd2.h"
+#include <stdio.h>
 
 /* ================================================= MACROS ================================================ */
 #define MAX_BLOCKING_RECV_TIME (300U)
@@ -13,9 +14,9 @@
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-OBD2_STATIC OBD2_INLINE  void SendByteBitBang(dataLink_if_t *self, uint8_t byte, uint8_t buadRate)
+static inline void SendByteBitBang(dataLink_if_t *self, uint8_t byte, uint8_t baudRate)
 {
-    const uint16_t delay = (1000 / buadRate);
+    const uint16_t delay = (1000 / baudRate);
 
     // Set line HIGH (idle) and switch to bit-bang mode for 5 baud
     LIBOBD_SwitchMode(self, SLOW_INIT_5BAUD_START);
@@ -40,7 +41,7 @@ OBD2_STATIC OBD2_INLINE  void SendByteBitBang(dataLink_if_t *self, uint8_t byte,
     LIBOBD_SwitchMode(self, SLOW_INIT_5BAUD_END);
 }
 
-OBD2_STATIC OBD2_INLINE obd_status_t ReadByteInTimeframe(dataLink_if_t *self, uint8_t *byte, uint16_t timeMin, uint16_t timeMax)
+static inline obd_status_t ReadByteInTimeframe(dataLink_if_t *self, uint8_t *byte, uint16_t timeMin, uint16_t timeMax)
 {
     uint32_t timeStart = 0;
     uint32_t timeEnd = 0;
@@ -64,7 +65,7 @@ OBD2_STATIC OBD2_INLINE obd_status_t ReadByteInTimeframe(dataLink_if_t *self, ui
     return OBD_STATUS_OK;
 }
 
-OBD2_STATIC OBD2_INLINE obd_status_t RecvByteBlocking(dataLink_if_t *self, uint8_t *byte)
+static inline obd_status_t RecvByteBlocking(dataLink_if_t *self, uint8_t *byte)
 {
     LIBOBD_StartTimeout(self, MAX_BLOCKING_RECV_TIME);
 
