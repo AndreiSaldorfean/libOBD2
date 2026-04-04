@@ -51,6 +51,7 @@ OBD2_STATIC OBD2_INLINE obd_status_t ReadByteInTimeframe(dataLink_if_t *self, ui
 
     while (OBD_RECV_NOT_READY == LIBOBD_ReceiveByte(self, byte))
     {
+        YIELD;
         if (LIBOBD_IsTimeoutExpired(self))
             return OBD_ERR_TIMEOUT_MAX;
     }

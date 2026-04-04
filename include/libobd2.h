@@ -8,13 +8,14 @@
 #include <stddef.h>
 
 /* ================================================= MACROS ================================================ */
-#if defined(DEBUG)
-#define OBD2_STATIC
-#define OBD2_INLINE
+#if defined(SPT_FREERTOS)
+#include "FreeRTOS.h"
+#include "FreeRTOSConfig.h"
+#include "task.h"
+#define YIELD taskYIELD()
 #else
-#define OBD2_STATIC static
-#define OBD2_INLINE inline
-#endif /* DEBUG */
+#define YIELD
+#endif
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
 {

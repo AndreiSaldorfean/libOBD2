@@ -5,6 +5,17 @@
 #include "srv_status.h"
 
 /* ================================================= MACROS ================================================ */
+#if defined(UNIT_TESTS)
+#define OBD2_STATIC
+#define OBD2_INLINE
+#else
+#define OBD2_STATIC static
+#define OBD2_INLINE inline
+#endif /* DEBUG */
+
+#define LIBOBD_DEC(var) (if ((var - 1) != 0) var--)
+#define LIBOBD_INC(var) (var++)
+
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 /* ============================================ INLINE FUNCTIONS =========================================== */
 #define OBD2_CHECK_NULLPTR(var) \
