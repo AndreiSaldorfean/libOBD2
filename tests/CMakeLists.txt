@@ -8,8 +8,6 @@ set(TINYUSB_ROOT ${CMAKE_SOURCE_DIR}/../examples/libs/tinyusb)
 
 file(GLOB SOURCES
     "${CMAKE_SOURCE_DIR}/Unity/src/unity.c"
-    "${CMAKE_SOURCE_DIR}/src/startup/isr_vector.c"
-    "${CMAKE_SOURCE_DIR}/src/startup/reset_handler.c"
     "${CMAKE_SOURCE_DIR}/src/main.c"
     "${CMAKE_SOURCE_DIR}/src/unit/*.c"
     "${CMAKE_SOURCE_DIR}/src/unit/ecu_ports/stm32f4/*.c"
@@ -17,6 +15,7 @@ file(GLOB SOURCES
     "${CMAKE_SOURCE_DIR}/src/usb_descriptors.c"
     "${CMAKE_SOURCE_DIR}/../examples/libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
     "${CMAKE_SOURCE_DIR}/../ports/stm32f4/*.c"
+    "${CMAKE_SOURCE_DIR}/../ports/stm32f4/startup/*.c"
     ${TINYUSB_ROOT}/src/tusb.c
     ${TINYUSB_ROOT}/src/common/tusb_fifo.c
     ${TINYUSB_ROOT}/src/device/usbd.c
@@ -38,6 +37,8 @@ target_include_directories(${PROJECT_NAME}
     ../include
     ../include/freertos/
     ../ports/stm32f4/
+    ../ports/stm32f4/startup/
+    ../ports/stm32f4/config/
     ../utils
     ../interface/
     ../include/app/

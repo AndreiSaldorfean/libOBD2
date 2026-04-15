@@ -7,7 +7,7 @@ add_library(freertos_config INTERFACE)
 
 target_include_directories(freertos_config SYSTEM
     INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/freertos/
+        ${CMAKE_CURRENT_SOURCE_DIR}/ports/stm32f4/config #TODO: change stm32f4 with a variable
 )
 
 target_compile_definitions(freertos_config

@@ -33,48 +33,10 @@ void setUp(void) { }
 
 void tearDown(void) { }
 
-#if !defined(DEBUG)
-static void usart_setup(void)
-{
-    /* Use internal HSI oscillator - works on all F401CCU boards without crystal */
-    rcc_clock_setup_pll(&rcc_hsi_configs[RCC_CLOCK_3V3_84MHZ]);
-
-    /* Enable GPIO clocks for USB */
-    rcc_periph_clock_enable(RCC_GPIOA);
-
-    /*
-     * Force USB re-enumeration by pulling D+ (PA12) LOW briefly.
-     * This signals disconnect to the host, forcing it to re-enumerate
-     * when we release it. Needed after MCU reset via debugger.
-     */
-    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO12);
-    gpio_clear(GPIOA, GPIO12);
-    for (volatile int i = 0; i < 800000; i++) { __asm__("nop"); }  /* ~50ms delay */
-
-    /* Setup USB pins PA11 (D-) and PA12 (D+) BEFORE enabling USB clock */
-    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO11 | GPIO12);
-    gpio_set_af(GPIOA, GPIO_AF10, GPIO11 | GPIO12);
-
-    /* Enable USB OTG FS clock */
-    rcc_periph_clock_enable(RCC_OTGFS);
-
-    /* Initialize TinyUSB */
-    tusb_init();
-
-    /* Enable USB interrupt after initialization */
-    nvic_enable_irq(NVIC_OTG_FS_IRQ);
-}
-#endif /* DEBUG */
 /* ================================================ MODULE API ============================================= */
-
 int main()
 {
-    #if !defined(DEBUG)
-	usart_setup();
-
-	/* Disable stdout buffering for immediate printf output */
-	setbuf(stdout, NULL);
-    #endif /* DEBUG */
+    sysInit();
 
     UART_KWP_Init(&uartCtxTx);
     UART_KWP_Init(&uartCtxRx);

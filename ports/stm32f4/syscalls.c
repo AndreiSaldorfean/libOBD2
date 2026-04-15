@@ -19,12 +19,7 @@ extern uint32_t __heap_end__; // heap starts here
 extern uint32_t _heap_start;
 extern uint32_t __stack_start__; // stack starts here (stack grows down)
 static uint32_t *heap = NULL;
-static SemaphoreHandle_t g_printMutex = NULL;
-
-void syscalls_init(void)
-{
-    g_printMutex = xSemaphoreCreateMutex();
-}
+extern SemaphoreHandle_t g_printMutex;
 
 extern int *__errno(void);
 

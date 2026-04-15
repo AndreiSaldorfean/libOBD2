@@ -22,6 +22,8 @@ typedef struct
     uint32_t usartRxPin;
 
     uint32_t gpioRcc;
+    uint32_t gpioOutType;
+    uint32_t gpioOutSpeed;
     uint32_t gpio;
 
     bool init;
