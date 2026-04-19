@@ -1,8 +1,7 @@
 /* ================================================ INCLUDES =============================================== */
 #include "ecuSim.h"
-#include "data_link_if.h"
-#include "l2_kwp.h"
-#include "l2_kwp_utils.h"
+#include "datalink.h"
+#include "l2_kwp2000.h"
 #include <stdint.h>
 #define STM32F4
 #include <stddef.h>

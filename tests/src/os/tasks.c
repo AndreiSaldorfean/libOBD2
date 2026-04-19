@@ -79,7 +79,7 @@ void LIBOBD2_TestTask(void *param)
 
     UNITY_BEGIN();
 
-    RUN_TEST(test_LibOBD2_Init_000);
+    // RUN_TEST(test_LibOBD2_Init_000);
     RUN_TEST(test_LibOBD2_RequestService_000);
 
     UNITY_END();

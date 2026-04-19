@@ -1,12 +1,15 @@
 /* ================================================ INCLUDES =============================================== */
 #include "libobd2_test.h"
+#include "datalink.h"
 #include "ecu_uart.h"
 #include "l2_iso9141.h"
-#include "l2_kwp_utils.h"
+#include "l2_kwp2000.h"
+#include "l2_kwp_utils_test.h"
 #include "libobd2.h"
 #include "libobd2_test_utils.h"
-#include "srv_status.h"
+#include "statusRetCodes.h"
 #include "unity.h"
+#include <stddef.h>
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -35,6 +38,10 @@ static void test_LibOBD2_Init_000_Sender(void *param)
 
     actual = LibOBD2_Init(&ctx);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "LibOBD2_Init");
+
+    obd_response_t response = {0};
+    size_t respLen = 0;
+    LibOBD2_RequestService(&ctx, &request_00, 1, &response, &respLen);
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
@@ -99,7 +106,7 @@ void test_LibOBD2_Init_000(void)
     status = xTaskCreate(
         test_LibOBD2_Init_000_Sender,
         "Receiver Task",
-        256,
+        1024,
         NULL,
         tskIDLE_PRIORITY + 3,
         &receiverTAsk);
@@ -108,7 +115,7 @@ void test_LibOBD2_Init_000(void)
     status = xTaskCreate(
         test_LibOBD2_Init_000_Receiver,
         "Sender Task",
-        256,
+        1024,
         NULL,
         tskIDLE_PRIORITY + 3,
         &senderTask);
@@ -125,5 +132,18 @@ void test_LibOBD2_Init_000(void)
 
 void test_LibOBD2_RequestService_000(void)
 {
-    TEST_ASSERT(1);
+    dataLink_if_t *pDataLinkRx = &dataLink_rx;
+    obd_status_t expected = {0};
+    obd_status_t actual   = {0};
+    obd_response_t response = {0};
+    size_t respLen = 0;
+
+    UnitySetTestFile(__FILE__);
+
+    LIBOBD_Delay(pDataLinkRx, 2000);
+
+    actual = LibOBD2_Init(&ctx);
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "LibOBD2_Init");
+
+    LibOBD2_RequestService(&ctx, &request_00, 1, &response, &respLen);
 }

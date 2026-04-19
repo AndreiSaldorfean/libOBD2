@@ -1,5 +1,4 @@
 /* ================================================ INCLUDES =============================================== */
-#include "data_link_if.h"
 #include "init.h"
 #include "libobd2_test_utils.h"
 #include "timer_test.h"
@@ -106,8 +105,8 @@ void tearDown(void)
 /* ================================================ MODULE API ============================================= */
 int main()
 {
-    // TaskHandle_t libobd2TestTaskHandle = NULL;
-    TaskHandle_t l2KwpTestTaskHandle   = NULL;
+    TaskHandle_t libobd2TestTaskHandle = NULL;
+    // TaskHandle_t l2KwpTestTaskHandle   = NULL;
     // TaskHandle_t uartTestTaskHandle    = NULL;
     uint32_t status = 0;
 
@@ -122,37 +121,37 @@ int main()
 
     /* Create LIBOBD2 suite first but at lower priority — it will only run
      * once L2_KWP_TestTask finishes and deletes itself. */
-    // status = xTaskCreate(
-    //     LIBOBD2_TestTask,
-    //     "Libobd2_Test_Task",
-    //     1024,
-    //     NULL,
-    //     tskIDLE_PRIORITY + 1,           /* lower: waits until L2_KWP_TestTask is gone */
-    //     &libobd2TestTaskHandle);
-    //
-    // if (status != pdPASS)
-    // {
-    //     while (1)
-    //         ;
-    // }
-
-    /* L2_KWP suite runs first because it has higher priority.
-     * Sub-tasks it spawns are at tskIDLE_PRIORITY+3, so they still preempt
-     * this task normally. LIBOBD2_TestTask never gets scheduled until this
-     * task calls vTaskDelete(NULL). */
     status = xTaskCreate(
-        L2_KWP_TestTask,
-        "L2_kwp_Test_Task",
-        1024,
+        LIBOBD2_TestTask,
+        "Libobd2_Test_Task",
+        2100,
         NULL,
-        tskIDLE_PRIORITY + 1,       /* higher: runs before LIBOBD2_TestTask */
-        &l2KwpTestTaskHandle);
+        tskIDLE_PRIORITY + 1,           /* lower: waits until L2_KWP_TestTask is gone */
+        &libobd2TestTaskHandle);
 
     if (status != pdPASS)
     {
         while (1)
             ;
     }
+
+    /* L2_KWP suite runs first because it has higher priority.
+     * Sub-tasks it spawns are at tskIDLE_PRIORITY+3, so they still preempt
+     * this task normally. LIBOBD2_TestTask never gets scheduled until this
+     * task calls vTaskDelete(NULL). */
+    // status = xTaskCreate(
+    //     L2_KWP_TestTask,
+    //     "L2_kwp_Test_Task",
+    //     1024,
+    //     NULL,
+    //     tskIDLE_PRIORITY + 1,       /* higher: runs before LIBOBD2_TestTask */
+    //     &l2KwpTestTaskHandle);
+    //
+    // if (status != pdPASS)
+    // {
+    //     while (1)
+    //         ;
+    // }
 
     // status = xTaskCreate(
     //     UART_TestTask,

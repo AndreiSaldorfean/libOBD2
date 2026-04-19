@@ -30,7 +30,10 @@ add_subdirectory(
 target_link_libraries(freertos_kernel PUBLIC freertos_config)
 target_link_libraries(freertos_kernel_port PUBLIC freertos_config)
 file(GLOB SOURCES
-    "./src/*.c"
+    "./src/modules/app/*.c"
+    "./src/modules/datalink/common/*.c"
+    "./src/modules/datalink/specific/l2_iso9141/*.c"
+    "./src/modules/datalink/specific/l2_kwp2000/*.c"
     "./utils/*.c"
     "./src/data_link/l2_kwp/*.c"
 )
@@ -50,12 +53,10 @@ target_include_directories(${PROJECT_NAME}
     PUBLIC
     ./include/
     ./utils/
-    ./include/data_link/l2_kwp
-    ./include/data_link/l2_iso9141/
-    ./include/data_link/
-    ./include/app/
-    ./interface/
-    ./include/freertos/
+    ./src/modules/datalink/common
+    ./src/modules/datalink/specific/l2_iso9141/
+    ./src/modules/datalink/specific/l2_kwp2000/
+    ./src/modules/app/
     ./examples/libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/
     ./examples/libs/FreeRTOS-Kernel/include/
 )

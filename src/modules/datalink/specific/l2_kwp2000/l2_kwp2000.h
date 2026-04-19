@@ -1,12 +1,13 @@
-#ifndef KWP2000_H
-#define KWP2000_H
+#ifndef L2_KWP2000_H
+#define L2_KWP2000_H
 
 /* ================================================ INCLUDES =============================================== */
-#include "srv_status.h"
+#include "statusRetCodes.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include "data_link_if.h"
+#include "datalink.h"
 #include <stddef.h>
+#include "string.h"
 
 /* ================================================= MACROS ================================================ */
 #define SPT_5BAUD_INIT
@@ -31,6 +32,7 @@
 
 #define PULSE_HIGH (1U)
 #define PULSE_LOW (0U)
+#define MAX_BLOCKING_RECV_TIME (300U)
 /********************************************* SERVICES SECTION **********************************************/
 #define START_COMM_REQ \
     ((data_t){ \
@@ -105,10 +107,80 @@ typedef struct
 }l2_kwp_ctx_t;
 
 /* ============================================ INLINE FUNCTIONS =========================================== */
+static inline void SendByteBitBang(dataLink_if_t *self, uint8_t byte, uint8_t baudRate)
+{
+    const uint16_t delay = (1000 / baudRate);
+
+    // Set line HIGH (idle) and switch to bit-bang mode for 5 baud
+    LIBOBD_SwitchMode(self, SLOW_INIT_5BAUD_START);
+
+    // Start bit (LOW)
+    LIBOBD_SendPulse(self, PULSE_LOW);
+    LIBOBD_Delay(self, delay);
+
+    // Byte
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        uint8_t bit = (byte >> i) & 0x01;
+        LIBOBD_SendPulse(self, bit ? PULSE_HIGH : PULSE_LOW);
+        LIBOBD_Delay(self, delay);
+    }
+
+    // Stop bit (HIGH)
+    LIBOBD_SendPulse(self, PULSE_HIGH);
+    LIBOBD_Delay(self, delay);
+
+    // Switch to 10400 baud for response
+    LIBOBD_SwitchMode(self, SLOW_INIT_5BAUD_END);
+}
+
+static inline obd_status_t ReadByteInTimeframe(dataLink_if_t *self, uint8_t *byte, uint16_t timeMin, uint16_t timeMax)
+{
+    obd_status_t status = {0};
+    uint32_t timeStart = 0;
+    uint32_t timeEnd = 0;
+    uint32_t timeElapsed = 0;
+
+    timeStart = LIBOBD_GetTimeMs(self);
+    LIBOBD_StartTimeout(self, timeMax);
+
+    while (!LIBOBD_ReceiveByte(self, byte))
+    {
+        status.timeout = OBD_ERR_TIMEOUT_MAX;
+        OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD_IsTimeoutExpired(self));
+    }
+
+    timeEnd = LIBOBD_GetTimeMs(self);
+    LIBOBD_StopTimeout(self);
+    timeElapsed = timeEnd - timeStart;
+
+    if (timeElapsed < timeMin)
+        status.timeout = OBD_ERR_TIMEOUT_MIN;
+
+    memset(&status, 0, sizeof(obd_status_t));
+exit:
+    return status;
+}
+
+static inline obd_status_t RecvByteBlocking(dataLink_if_t *self, uint8_t *byte)
+{
+    obd_status_t status = {0};
+
+    LIBOBD_StartTimeout(self, MAX_BLOCKING_RECV_TIME);
+
+    while (!LIBOBD_ReceiveByte(self, byte))
+    {
+        status.timeout = OBD_ERR_TIMEOUT_MAX;
+        OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD_IsTimeoutExpired(self));
+    }
+
+exit:
+    return status;
+}
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 obd_status_t l2_kwp_connect(dataLink_if_t *pDataLink);
 obd_status_t l2_kwp_send_request(dataLink_if_t *self, const obd_request_t *req, size_t len);
 obd_status_t l2_kwp_recv_response(dataLink_if_t *self, obd_response_t *resp, size_t* len);
 
-#endif /* KWP2000_H */
+#endif /* L2_KWP2000_H */

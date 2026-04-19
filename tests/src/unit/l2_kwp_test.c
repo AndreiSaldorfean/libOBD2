@@ -1,16 +1,14 @@
 /* ================================================ INCLUDES =============================================== */
-#include "data_link_if.h"
+#include "datalink.h"
 #include "ecuSim.h"
 #include "ecu_ports/stm32f4/ecu_uart.h"
 #include "l2_iso9141.h"
-#include "l2_kwp_utils.h"
 #include "libobd2.h"
 #include "libobd2_test_utils.h"
 #include "projdefs.h"
 #include <stddef.h>
 #include <sys/unistd.h>
 #define STM32F4
-#include "srv_status.h"
 #include "transport_if.h"
 #include "iso15031_5.h"
 #include "tusb.h"
@@ -20,7 +18,7 @@
 #include <time.h>
 #include "kwp_timer.h"
 #include "utils.h"
-#include "l2_kwp.h"
+#include "l2_kwp2000.h"
 
 /* ================================================= MACROS ================================================ */
 #define MSG_00_SIZE        (0x6U)
@@ -221,7 +219,7 @@ static void test_L2_KWP_ReadHeader_000_Receiver(void *param)
     LIBOBD_Delay(pDataLinkRx, KWP_P2_TIME_MIN);
 
     actual = L2_KWP_ReadHeader(pDataLinkRx, &header, &headerLen);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(expected, actual, "L2_KWP_ReadHeader return");
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "L2_KWP_ReadHeader return");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(header_00.fmt.val, header.fmt.val, "fmt");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(header_00.trgAddr, header.trgAddr,  "trgAddr");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(header_00.srcAddr, header.srcAddr,  "srcAddr");

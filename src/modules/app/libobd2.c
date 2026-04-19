@@ -1,7 +1,7 @@
 /* ================================================ INCLUDES =============================================== */
 #include "libobd2.h"
-#include "data_link_if.h"
-#include "srv_status.h"
+#include "datalink.h"
+#include "statusRetCodes.h"
 #include "utils.h"
 #include <assert.h>
 
