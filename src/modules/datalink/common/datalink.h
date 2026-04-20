@@ -6,6 +6,7 @@
 #include "timing_if.h"
 #include "transport_if.h"
 #include <stddef.h>
+#include <string.h>
 #include "utils.h"
 
 /* ================================================= MACROS ================================================ */
@@ -62,6 +63,9 @@ typedef struct
 
 /* Forward declaration */
 typedef struct dataLink_if dataLink_if_t;
+typedef obd_status_t (*dl_connect_t)(dataLink_if_t*, uint8_t*);
+typedef obd_status_t (*dl_send_request_t)(dataLink_if_t *pDataLink, const obd_request_t *req, size_t len);
+typedef obd_status_t (*dl_recv_response_t)(dataLink_if_t *pDataLink, obd_response_t *resp, size_t *len);
 
 struct dataLink_if
 {
@@ -77,13 +81,92 @@ struct dataLink_if
     void *pProtocolCtx;
 
     /* Data link operations */
-    obd_status_t (*connect)(dataLink_if_t *pDataLink);
-    obd_status_t (*send_request)(dataLink_if_t *pDataLink, const obd_request_t *req, size_t len);
-    obd_status_t (*recv_response)(dataLink_if_t *pDataLink, obd_response_t *resp, size_t *len);
+    dl_connect_t connect;
+    dl_send_request_t send_request;
+    dl_recv_response_t recv_response;
 };
 
+
+enum
+{
+    ISO9141,
+    KWP2000
+};
 /* ============================================ INLINE FUNCTIONS =========================================== */
+static inline void SendByteBitBang(dataLink_if_t *self, uint8_t byte, uint8_t baudRate)
+{
+    const uint16_t delay = (1000 / baudRate);
+
+    // Set line HIGH (idle) and switch to bit-bang mode for 5 baud
+    LIBOBD_SwitchMode(self, SLOW_INIT_5BAUD_START);
+
+    // Start bit (LOW)
+    LIBOBD_SendPulse(self, PULSE_LOW);
+    LIBOBD_Delay(self, delay);
+
+    // Byte
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        uint8_t bit = (byte >> i) & 0x01;
+        LIBOBD_SendPulse(self, bit ? PULSE_HIGH : PULSE_LOW);
+        LIBOBD_Delay(self, delay);
+    }
+
+    // Stop bit (HIGH)
+    LIBOBD_SendPulse(self, PULSE_HIGH);
+    LIBOBD_Delay(self, delay);
+
+    // Switch to 10400 baud for response
+    LIBOBD_SwitchMode(self, SLOW_INIT_5BAUD_END);
+}
+
+static inline obd_status_t ReadByteInTimeframe(dataLink_if_t *self, uint8_t *byte, uint16_t timeMin, uint16_t timeMax)
+{
+    obd_status_t status = {0};
+    uint32_t timeStart = 0;
+    uint32_t timeEnd = 0;
+    uint32_t timeElapsed = 0;
+
+    timeStart = LIBOBD_GetTimeMs(self);
+    LIBOBD_StartTimeout(self, timeMax);
+
+    while (!LIBOBD_ReceiveByte(self, byte))
+    {
+        status.timeout = OBD_ERR_TIMEOUT_MAX;
+        OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD_IsTimeoutExpired(self));
+    }
+
+    timeEnd = LIBOBD_GetTimeMs(self);
+    LIBOBD_StopTimeout(self);
+    timeElapsed = timeEnd - timeStart;
+
+    if (timeElapsed < timeMin)
+        status.timeout = OBD_ERR_TIMEOUT_MIN;
+
+    memset(&status, 0, sizeof(obd_status_t));
+exit:
+    return status;
+}
+
+static inline obd_status_t RecvByteBlocking(dataLink_if_t *self, uint8_t *byte)
+{
+    obd_status_t status = {0};
+
+    LIBOBD_StartTimeout(self, MAX_BLOCKING_RECV_TIME);
+
+    while (!LIBOBD_ReceiveByte(self, byte))
+    {
+        status.timeout = OBD_ERR_TIMEOUT_MAX;
+        OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD_IsTimeoutExpired(self));
+    }
+
+exit:
+    return status;
+}
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
+obd_status_t DL_Connect(dataLink_if_t *pDataLink);
+obd_status_t DL_SendRequest(dataLink_if_t *handle, const obd_request_t *req, size_t len);
+obd_status_t DL_RecvResponse(dataLink_if_t  *handle, obd_response_t *resp, size_t* len);
 
 #endif /* DATA_LINK_H */

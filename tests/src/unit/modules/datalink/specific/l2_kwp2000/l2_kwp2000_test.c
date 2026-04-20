@@ -463,6 +463,9 @@ void test_L2_KWP_RecvMessage_000(void)
         taskYIELD();
     }
 
+    /* Let the idle task reclaim deleted task stacks before next test */
+    vTaskDelay(pdMS_TO_TICKS(10));
+
     TEST_ASSERT_EQUAL(pdPASS, status);
 }
 
@@ -623,6 +626,9 @@ void test_L2_KWP_ReadHeader_000(void)
         taskYIELD();
     }
 
+    /* Let the idle task reclaim deleted task stacks before next test */
+    vTaskDelay(pdMS_TO_TICKS(10));
+
     TEST_ASSERT_EQUAL(pdPASS, status);
 }
 
@@ -688,6 +694,9 @@ void test_l2_kwp_connect_000(void)
         taskYIELD();
     }
 
+    /* Let the idle task reclaim deleted task stacks before next test */
+    vTaskDelay(pdMS_TO_TICKS(10));
+
     TEST_ASSERT_EQUAL(pdPASS, status);
 }
 
@@ -737,10 +746,14 @@ void test_l2_kwp_send_request_000(void)
     TEST_ASSERT_EQUAL(pdPASS, status);
     xTaskResumeAll();
 
+
     while ((g_sender_done == pdFALSE) || (g_receiver_done == pdFALSE))
     {
         taskYIELD();
     }
+
+    /* Let the idle task reclaim deleted task stacks before next test */
+    vTaskDelay(pdMS_TO_TICKS(10));
 
     TEST_ASSERT_EQUAL(pdPASS, status);
 }
@@ -787,6 +800,9 @@ void test_l2_kwp_recv_response_000(void)
     {
         taskYIELD();
     }
+
+    /* Let the idle task reclaim deleted task stacks before next test */
+    vTaskDelay(pdMS_TO_TICKS(10));
 
     TEST_ASSERT_EQUAL(pdPASS, status);
 }

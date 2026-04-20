@@ -4,7 +4,7 @@
 #include "ecu_uart.h"
 #include "l2_iso9141.h"
 #include "l2_kwp2000.h"
-#include "l2_kwp_utils_test.h"
+#include "l2_kwp2000_test.h"
 #include "libobd2.h"
 #include "libobd2_test_utils.h"
 #include "statusRetCodes.h"

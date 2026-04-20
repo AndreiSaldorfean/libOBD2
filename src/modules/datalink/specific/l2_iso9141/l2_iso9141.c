@@ -24,7 +24,7 @@ OBD2_STATIC uint8_t L2_ISO9141_ComputeChecksum(header_t header, data_t data)
     uint8_t *hdr = (uint8_t *)&header;
     uint8_t *req = (uint8_t *)&data;
     uint8_t checksum = 0;
-    uint8_t headerLen = (header.big.len == 0) ? 3 : 4;
+    uint8_t headerLen = (header.len == 0) ? 3 : 4;
 
     for (uint8_t idx = 0; idx < headerLen; idx++)
     {
@@ -130,16 +130,16 @@ exit:
 
 OBD2_STATIC void L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len)
 {
-    size_t headerLen = (sentMsg->header.big.len == 0) ? 3 : 4;
+    size_t headerLen = (sentMsg->header.len == 0) ? 3 : 4;
     // size_t dataLen = sentMsg->data.len;
     size_t idx = 0;
 
-    aSentMsg[idx++] = sentMsg->header.small.fmt.val;
-    aSentMsg[idx++] = sentMsg->header.small.trgAddr;
-    aSentMsg[idx++] = sentMsg->header.small.srcAddr;
+    aSentMsg[idx++] = sentMsg->header.fmt.val;
+    aSentMsg[idx++] = sentMsg->header.trgAddr;
+    aSentMsg[idx++] = sentMsg->header.srcAddr;
     if (headerLen == 4)
     {
-        aSentMsg[idx++] = sentMsg->header.big.len;
+        aSentMsg[idx++] = sentMsg->header.len;
     }
 
     aSentMsg[idx++] = sentMsg->data.req.sid;
@@ -211,13 +211,13 @@ OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* prot
     if (kb1 == 0x08 && kb2 == 0x08)
     {
         // Request
-        ctx->header.small.fmt.val = 0x68;
+        ctx->header.fmt.val = 0x68;
 
         // ECU
-        ctx->header.small.trgAddr = 0x6A;
+        ctx->header.trgAddr = 0x6A;
 
         // Tester
-        ctx->header.small.srcAddr = 0xF1;
+        ctx->header.srcAddr = 0xF1;
 
         *protocol = ISO9141;
     }
@@ -226,14 +226,14 @@ OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* prot
     {
         // Functional addr
         // Can use kwp2000 header and len
-        ctx->header.small.fmt.bit.a0 = 1;
-        ctx->header.small.fmt.bit.a1 = 1;
+        ctx->header.fmt.bit.a0 = 1;
+        ctx->header.fmt.bit.a1 = 1;
 
         // ECU
-        ctx->header.small.trgAddr = 0x33;
+        ctx->header.trgAddr = 0x33;
 
         // Tester
-        ctx->header.small.srcAddr = 0xF1;
+        ctx->header.srcAddr = 0xF1;
 
         *protocol = KWP2000;
     }
@@ -268,9 +268,9 @@ obd_status_t l2_iso9141_send_request(dataLink_if_t *self, const obd_request_t *r
     data_t data = {.req = *req, .len = len};
 
     // Construct the message
-    message.header.small.fmt = ctx.header.small.fmt;
-    message.header.small.trgAddr = ctx.header.small.trgAddr;
-    message.header.small.srcAddr = ctx.header.small.srcAddr;
+    message.header.fmt = ctx.header.fmt;
+    message.header.trgAddr = ctx.header.trgAddr;
+    message.header.srcAddr = ctx.header.srcAddr;
 
     message.data = data;
     message.cs = L2_ISO9141_ComputeChecksum(message.header, data);

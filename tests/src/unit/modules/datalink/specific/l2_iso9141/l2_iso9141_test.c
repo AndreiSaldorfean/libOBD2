@@ -28,23 +28,16 @@ static volatile BaseType_t g_receiver_done = pdFALSE;
 
 const header_t iso9141_header_00_ecu =
 {
-    .small =
-    {
-        .fmt = {.val = 0x48},
-        .trgAddr = 0x6B,
-        .srcAddr = 0x12,
-    }
-
+    .fmt = {.val = 0x48},
+    .trgAddr = 0x6B,
+    .srcAddr = 0x12,
 };
 
 const header_t iso9141_header_00 =
 {
-    .small =
-    {
-        .fmt = {.val = 0x68},
-        .trgAddr = 0x6A,
-        .srcAddr = 0xF1,
-    }
+    .fmt = {.val = 0x68},
+    .trgAddr = 0x6A,
+    .srcAddr = 0xF1,
 };
 
 const obd_request_t iso9141_request_01 =
@@ -261,9 +254,9 @@ static void test_L2_ISO9141_ReadHeader_000_Receiver(void *param)
 
     actual = L2_ISO9141_ReadHeader(pDataLinkRx, &header);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "L2_KWP_ReadHeader return");
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE(iso9141_header_00.small.fmt.val, header.small.fmt.val, "fmt");
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE(iso9141_header_00.small.trgAddr, header.small.trgAddr,  "trgAddr");
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE(iso9141_header_00.small.srcAddr, header.small.srcAddr,  "srcAddr");
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE(iso9141_header_00.fmt.val, header.fmt.val, "fmt");
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE(iso9141_header_00.trgAddr, header.trgAddr,  "trgAddr");
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE(iso9141_header_00.srcAddr, header.srcAddr,  "srcAddr");
 
     g_receiver_done = pdTRUE;
     vTaskDelete(NULL);
@@ -409,7 +402,7 @@ static void test_l2_ISO9141_recv_response_000_Receiver(void *param)
     LIBOBD_StartTimeout(pDataLinkRx, KWP_P2_TIME_MAX);
     LIBOBD_Delay(pDataLinkRx, KWP_P2_TIME_MIN);
 
-    actual = l2_kwp_recv_response(pDataLinkRx, &resp, &len);
+    actual = l2_iso9141_recv_response(pDataLinkRx, &resp, &len);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_recv_response return");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x81, resp.positive.sid, "resp sid");
 
@@ -511,6 +504,9 @@ void test_L2_ISO9141_RecvMessage_000(void)
         taskYIELD();
     }
 
+    /* Let the idle task reclaim deleted task stacks before next test */
+    vTaskDelay(pdMS_TO_TICKS(10));
+
     TEST_ASSERT_EQUAL(pdPASS, status);
 }
 
@@ -552,6 +548,9 @@ void test_L2_ISO9141_5BaudInit_000(void)
     {
         taskYIELD();
     }
+
+    /* Let the idle task reclaim deleted task stacks before next test */
+    vTaskDelay(pdMS_TO_TICKS(10));
 
     TEST_ASSERT_EQUAL(pdPASS, status);
 }
@@ -598,6 +597,9 @@ void test_L2_ISO9141_ReadHeader_000(void)
     {
         taskYIELD();
     }
+
+    /* Let the idle task reclaim deleted task stacks before next test */
+    vTaskDelay(pdMS_TO_TICKS(10));
 
     TEST_ASSERT_EQUAL(pdPASS, status);
 }
@@ -664,6 +666,9 @@ void test_l2_ISO9141_connect_000(void)
         taskYIELD();
     }
 
+    /* Let the idle task reclaim deleted task stacks before next test */
+    vTaskDelay(pdMS_TO_TICKS(10));
+
     TEST_ASSERT_EQUAL(pdPASS, status);
 }
 
@@ -711,6 +716,9 @@ void test_l2_ISO9141_send_request_000(void)
         taskYIELD();
     }
 
+    /* Let the idle task reclaim deleted task stacks before next test */
+    vTaskDelay(pdMS_TO_TICKS(10));
+
     TEST_ASSERT_EQUAL(pdPASS, status);
 }
 
@@ -756,6 +764,9 @@ void test_l2_ISO9141_recv_response_000(void)
     {
         taskYIELD();
     }
+
+    /* Let the idle task reclaim deleted task stacks before next test */
+    vTaskDelay(pdMS_TO_TICKS(10));
 
     TEST_ASSERT_EQUAL(pdPASS, status);
 }
