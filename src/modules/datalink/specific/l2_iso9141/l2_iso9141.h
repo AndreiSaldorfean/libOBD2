@@ -2,8 +2,10 @@
 #define L2_ISO9141_H
 
 /* ================================================ INCLUDES =============================================== */
+#include "statusRetCodes.h"
+#include "datalink.h"
 /* ================================================= MACROS ================================================ */
-/* Time in ms */
+
 #define ISO9141_W0_TIME_MIN (2U)   // Time the kline shall be kept high before init
 #define ISO9141_W1_TIME_MIN (60U)  // Time the kline shall be kept high before init
 #define ISO9141_W1_TIME_MAX (300U) // Time the kline shall be kept high before init
@@ -19,5 +21,8 @@
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
+obd_status_t l2_iso9141_connect(dataLink_if_t *self, uint8_t* protocol);
+obd_status_t l2_iso9141_send_request(dataLink_if_t *self, const obd_request_t *req, size_t len);
+obd_status_t l2_iso9141_recv_response(dataLink_if_t *self, obd_response_t *resp, size_t *len);
 
 #endif /* L2_ISO9141_H */

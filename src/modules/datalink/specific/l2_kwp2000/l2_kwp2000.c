@@ -108,25 +108,16 @@ exit:
 
 OBD2_STATIC obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len)
 {
-    uint32_t p3TimeElapsed = 0;
     uint32_t timingSample  = 0;
     obd_status_t status    = {0};
 
-    // Check for P3 Timeout from P2 end to Tester
-    status.timeout = OBD_ERR_COMM_P3_TIMEOUT_MAX_ECU_TESTER;
-    OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD_IsTimeoutExpired(self));
-    p3TimeElapsed = LIBOBD_GetTimeMs(self);
-    p3TimeElapsed -= LIBOBD_GetTimeSample(self);
-
-    status.timeout = OBD_ERR_COMM_P3_TIMEOUT_MIN_ECU_TESTER;
-    OBD2_IF_COND_GOTO_EXIT(p3TimeElapsed < KWP_P3_TIME_MIN);
+    LIBOBD_Delay(self, KWP_P3_TIME_MIN);
 
     for (size_t idx = 0; idx < len; idx++)
     {
         LIBOBD_SendByte(self, msg[idx]);
         LIBOBD_Delay(self, KWP_P4_TIME_MIN);
     }
-
 
     timingSample = LIBOBD_GetTimeMs(self);
     LIBOBD_SetTimeSample(self, timingSample);
@@ -136,7 +127,7 @@ OBD2_STATIC obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, s
     LIBOBD_FlushRx(self);
 
     memset(&status, 0, sizeof(obd_status_t));
-exit:
+
     return status;
 }
 
@@ -347,9 +338,6 @@ OBD2_STATIC obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self)
     // Send address byte at 5 baud rate
     SendByteBitBang(self, targetAddr, 5);
 
-    // Clear echo
-    // LIBOBD_FlushRx(self);
-
     // Read Sync byte
     status.response = OBD_ERR_5BAUD_SYNC_NOT_RECVD;
     status = ReadByteInTimeframe(self, &syncByte, ISO9141_W1_TIME_MIN, ISO9141_W1_TIME_MAX);
@@ -380,6 +368,12 @@ OBD2_STATIC obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self)
     OBD2_ASSERT_OK(status);
     status.response = OBD_ERR_5BAUD_WRONG_INV_ADDR;
     OBD2_ASSERT_EQUAL_OR_EXIT((uint8_t)(~targetAddr), invAddr);
+
+    // TODO: Take decision based on key bytes.
+    // - Possible kb value: 0x08 or 0x94
+    // - If 0x08 then 0x68 0x6A 0xF1 header is used always with 7 bytes of data max
+    // - If 0x94 then KWP2000 header is used.
+    // - This decision is taken based on trial and error. But can be helped by some car info
 
     // Store keyword bytes for protocol identification
     ctx->kb1 = kb1;
