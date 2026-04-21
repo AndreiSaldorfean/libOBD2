@@ -1,12 +1,14 @@
 /* ================================================ INCLUDES =============================================== */
-#include "test_timer.h"
+#include "libobd2_test_utils.h"
+#include "timer_test.h"
+#include "uart_kwp_transport_port.h"
 #include "unity.h"
 #include "unity_internals.h"
 #include "test_libobd2.h"
 #include "stdio.h"
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
-#include "task.h"
+#include "tasks.h"
 
 #include <stdint.h>
 #define STM32F4
@@ -17,6 +19,11 @@
 #include "libopencm3/stm32/rcc.h"
 #include "libopencm3/cm3/nvic.h"
 #include "tusb.h"
+#include "l2_kwp_test.h"
+#include "l2_kwp_utils_test.h"
+#include "task.h"
+#include "tasks.h"
+
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -27,6 +34,7 @@ void setUp(void) { }
 
 void tearDown(void) { }
 
+#if !defined(DEBUG)
 static void usart_setup(void)
 {
     /* Use internal HSI oscillator - works on all F401CCU boards without crystal */
@@ -57,35 +65,46 @@ static void usart_setup(void)
     /* Enable USB interrupt after initialization */
     nvic_enable_irq(NVIC_OTG_FS_IRQ);
 }
+#endif /* DEBUG */
 /* ================================================ MODULE API ============================================= */
 
 int main()
 {
+    #if !defined(DEBUG)
 	usart_setup();
 
 	/* Disable stdout buffering for immediate printf output */
 	setbuf(stdout, NULL);
+    #endif /* DEBUG */
 
-    printf("============= UNIT BEGIN ==============\n");
+    UART_KWP_Init(&uartCtxTx);
+    UART_KWP_Init(&uartCtxRx);
+    KWP_TMR_Init(&tmrCtx);
 
-    UNITY_BEGIN();
+    TaskHandle_t testerTaskHandle = NULL;
+    uint32_t status = 0;
 
-    /* TODO: Add proper unit tests and turn examples module to proper examples not bad integration tests */
-    #if 0
-    RUN_TEST(test_LIBOBD2_0);
-    RUN_TEST(test_LIBOBD2_1);
-    RUN_TEST(test_TIMER_0);
-    RUN_TEST(test_TIMER_1);
-    #endif
-    RUN_TEST(test_Tester_ECU);
+    status = xTaskCreate(
+        TestTask,
+        "Receiver Task",
+        1024,
+        NULL,
+        tskIDLE_PRIORITY,
+        &testerTaskHandle);
 
-    int result = UNITY_END();
+    if (status)
+    {
+        vTaskStartScheduler();
+    }
+
 
     while(true)
     {
+        #if !defined(DEBUG)
         tud_cdc_write_flush();
         tud_task();
+        #endif /* DEBUG */
     }
 
-    return result;
+    return 0;
 }

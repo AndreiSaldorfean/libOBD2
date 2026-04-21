@@ -32,6 +32,11 @@ typedef void (*timing_callback_t)(void *pUserData);
 typedef struct
 {
     /**
+     * @brief Buffer for saving timing samples with get_time_ms
+     */
+    uint32_t timeSample;
+
+    /**
      * @brief Get current timestamp in milliseconds
      * @param pHandle Platform-specific handle (e.g., timer peripheral)
      * @return Current time in milliseconds (can wrap around)

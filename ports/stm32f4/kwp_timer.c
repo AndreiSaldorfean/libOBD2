@@ -1,4 +1,6 @@
 /* ================================================ INCLUDES =============================================== */
+#include "libobd2.h"
+#include "projdefs.h"
 #include "kwp_timer.h"
 #include <stddef.h>
 #define STM32F4
@@ -8,6 +10,9 @@
 #include "libopencm3/stm32/f4/rcc.h"
 #include "libopencm3/stm32/f4/timer.h"
 #include "srv_status.h"
+#include "FreeRTOSConfig.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 /* ================================================= MACROS ================================================ */
 /*
@@ -96,6 +101,10 @@ obd_status_t KWP_TMR_DelayMs(void *pHandle, uint32_t delay_ms)
 {
     (void)pHandle;
 
+#if defined(DEBUG)
+    vTaskDelay(pdMS_TO_TICKS(delay_ms));
+#else
+    (void)pHandle;
     uint32_t start_us = get_time_us();
     uint32_t delay_us = delay_ms * 1000U;
 
@@ -103,6 +112,7 @@ obd_status_t KWP_TMR_DelayMs(void *pHandle, uint32_t delay_ms)
     while ((get_time_us() - start_us) < delay_us) {
         /* Busy wait */
     }
+#endif
 
     return OBD_STATUS_OK;
 }

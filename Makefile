@@ -1,3 +1,5 @@
+DEBUG=OFF
+
 all: clean
 	cmake -S . -B builds/library -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/STM32F4.cmake -DMEMORY="flash"
 b:
@@ -6,7 +8,7 @@ clean:
 	rm -rf builds/library
 
 ################################ RAM BUILD TARGETS ################################
-stm_r: stm_r
+stm_r: stm_r_clean
 	cmake -S . -B builds/library -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/STM32F4.cmake -DMEMORY="ram"
 	cmake --build builds/library -j12
 	python3 utils/gen.py --app=demo --memory=ram
@@ -37,7 +39,7 @@ stm_rd:
 test_r: test_r_clean
 	cmake -S . -B builds/library -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/STM32F4.cmake -DMEMORY="ram"
 	cmake --build builds/library -j12
-	python3 utils/gen.py --app=tests --memory=ram
+	python3 utils/gen.py --app=tests --memory=ram --debug=$(DEBUG)
 
 # build tests for ram
 test_rb:
@@ -84,15 +86,16 @@ stm_fx:
 # debug app for flash
 stm_fd:
 	@if $(MAKE) -q; then \
-		./builds/demo_flash/tests.sh -d; \
+		./builds/demo_flash/demo.sh -d; \
 	else \
-		./builds/demo_flash/tests.sh -ld; \
+		./builds/demo_flash/demo.sh -ld; \
 	fi
 
 test_f: test_f_clean
 	cmake -S . -B builds/library -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/STM32F4.cmake -DMEMORY="flash"
 	cmake --build builds/library -j12
-	python3 utils/gen.py --app=tests --memory=flash
+	python3 utils/gen.py --app=tests --memory=flash --debug=$(DEBUG)
+
 
 test_fb:
 	cmake --build ./builds/tests_flash -j12

@@ -1,38 +1,12 @@
-#ifndef LIBOBD2_H
-#define LIBOBD2_H
-
+#ifndef TIMER_TEST_H
+#define TIMER_TEST_H
 /* ================================================ INCLUDES =============================================== */
-#include "data_link_if.h"
-#include "srv_status.h"
-#include <stdbool.h>
-#include <stddef.h>
-
 /* ================================================= MACROS ================================================ */
-#if defined(SPT_FREERTOS)
-#include "FreeRTOS.h"
-#include "FreeRTOSConfig.h"
-#include "task.h"
-#define YIELD taskYIELD()
-#else
-#define YIELD
-#endif
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
-typedef struct
-{
-    dataLink_if_t *pDataLink;
-    // void* pDataLinkHandle;
-    bool connectionStatus;
-} obd_ctx_t;
-
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-obd_status_t LibOBD2_Init(obd_ctx_t *ctx);
-obd_status_t LibOBD2_RequestService(
-    obd_ctx_t *ctx,
-    const obd_request_t* request,
-    size_t requestLen,
-    obd_response_t* response,
-    size_t* responseLen);
+void test_TIMER_0(void);
+void test_TIMER_1(void);
 
-#endif /* LIBOBD2_H */
+#endif /* TIMER_TEST_H */

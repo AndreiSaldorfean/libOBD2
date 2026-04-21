@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(libOBD2 LANGUAGES C)
+project(test LANGUAGES C)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 
@@ -7,30 +7,36 @@ set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 set(TINYUSB_ROOT ${CMAKE_SOURCE_DIR}/../examples/libs/tinyusb)
 
 file(GLOB SOURCES
+    "${CMAKE_SOURCE_DIR}/Unity/src/unity.c"
     "${CMAKE_SOURCE_DIR}/src/startup/isr_vector.c"
     "${CMAKE_SOURCE_DIR}/src/startup/reset_handler.c"
-    "${CMAKE_SOURCE_DIR}/src/*.c"
-    "${CMAKE_SOURCE_DIR}/src/os/*.c"
+    "${CMAKE_SOURCE_DIR}/src/main.c"
     "${CMAKE_SOURCE_DIR}/src/unit/*.c"
-    "${CMAKE_SOURCE_DIR}/src/int/*.c"
-    "${CMAKE_SOURCE_DIR}/Unity/src/*.c"
-    "${CMAKE_SOURCE_DIR}/../libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c"
+    "${CMAKE_SOURCE_DIR}/src/os/*.c"
+    "${CMAKE_SOURCE_DIR}/src/usb_descriptors.c"
     "${CMAKE_SOURCE_DIR}/../examples/libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
-    "${CMAKE_SOURCE_DIR}/../examples/STM32F401CCU/src/ports/*.c"
-    ${TINYUSB_ROOT}/src/*.c
-    ${TINYUSB_ROOT}/src/common/*.c
-    ${TINYUSB_ROOT}/src/device/*.c
-    ${TINYUSB_ROOT}/src/class/cdc/*.c
+    "${CMAKE_SOURCE_DIR}/../ports/stm32f4/*.c"
+    ${TINYUSB_ROOT}/src/tusb.c
+    ${TINYUSB_ROOT}/src/common/tusb_fifo.c
+    ${TINYUSB_ROOT}/src/device/usbd.c
+    ${TINYUSB_ROOT}/src/device/usbd_control.c
+    ${TINYUSB_ROOT}/src/class/cdc/cdc_device.c
     ${TINYUSB_ROOT}/src/portable/synopsys/dwc2/dcd_dwc2.c
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
+
+target_compile_options(${PROJECT_NAME} PRIVATE
+    -Wno-error=overflow
+)
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
     ./inc/
     ../examples/libs/libopencm3/include/
     ../include
+    ../include/freertos/
+    ../ports/stm32f4/
     ../utils
     ../interface/
     ../include/app/
@@ -39,8 +45,8 @@ target_include_directories(${PROJECT_NAME}
     ../include/data_link/l2_iso9141/
     ./src/int/
     ./src/unit/
+    ./src/os/
     ./Unity/src/
-    ../examples/STM32F401CCU/src/ports/
     ../examples/libs/FreeRTOS-Kernel/include/
     ../examples/libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/
     ../examples/libs/cmsis_device_f4/Include
@@ -55,40 +61,28 @@ target_include_directories(${PROJECT_NAME}
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     CFG_TUSB_MCU=OPT_MCU_STM32F4
-    CFG_TUSB_OS=OPT_OS_FREERTOS
+    CFG_TUSB_OS=OPT_OS_NONE
     STM32F401xC
     UNITY_EXCLUDE_SETJMP_H
+    SPT_FREERTOS
 )
 
-set( FREERTOS_PORT "GCC_ARM_CM4F" CACHE STRING "" FORCE)
-set( FREERTOS_HEAP "4" CACHE STRING "" FORCE)
+add_subdirectory(${CMAKE_SOURCE_DIR}/.. ${CMAKE_BINARY_DIR}/libOBD2)
 
-add_library(freertos_config INTERFACE)
-
-target_include_directories(freertos_config SYSTEM
-INTERFACE
-    ${CMAKE_SOURCE_DIR}/inc
+target_compile_definitions(libOBD2
+    PRIVATE
+    UNIT_TESTS
+    SPT_FREERTOS
 )
 
-target_compile_definitions(freertos_config
-  INTERFACE
-    projCOVERAGE_TEST=0
-)
-
-add_subdirectory(
-    ${CMAKE_CURRENT_LIST_DIR}/../examples/libs/FreeRTOS-Kernel
-    ${CMAKE_BINARY_DIR}/FreeRTOS-Kernel
-)
-
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(${PROJECT_NAME} PUBLIC
     ${CMAKE_SOURCE_DIR}/../examples/libs/libopencm3/lib/libopencm3_stm32f4.a
-    freertos_config
-    freertos_kernel
-    ${CMAKE_SOURCE_DIR}/../builds/library/libOBD2.a
-    )
+    libOBD2
+)
 
 # Generate .bin file from .elf
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${PROJECT_NAME}> ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.bin
     COMMENT "Generating ${PROJECT_NAME}.bin"
 )
+

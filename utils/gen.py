@@ -37,8 +37,7 @@ def generate_gdb_script(build_dir: Path, memory: str) -> Path:
     """Generate a GDB script for load and debug operations."""
     gdb_script = build_dir / "firmware.gdb"
 
-    # For RAM we always need to load
-    needs_load_for_ram = memory == "ram"
+    ram_cmd = "monitor reset run"
 
     content = f"""\
 # GDB script for load/debug ({memory} configuration)
@@ -56,7 +55,7 @@ tmx
 if $DO_LOAD
     echo ==> Loading firmware...\\n
     load
-    monitor reset halt
+    {ram_cmd}
 end
 
 # If not debugging, quit
@@ -80,12 +79,36 @@ end
 
 def generate_app_script(build_dir: Path, app: str, memory: str) -> None:
     """Generate the app control script (demo.sh or tests.sh)."""
-    elf_name = "libOBD2.elf"
+    elf_name = "test.elf"
     script_name = f"{app}.sh"
     script_path = build_dir / script_name
+    run_block = """\
+# Run mode - just monitor serial for RAM-loaded firmware
+if [[ $DO_RUN -eq 1 ]]; then
+    echo "==> Running tests..."
+    ssh "$MYSERVER" bash -c '
+        python3 ~/projects/libOBD2/scripts/serial_capture.py --timeout 30
+    '
+    exit $?
+fi
+"""
 
     # Generate GDB script
     generate_gdb_script(build_dir, memory)
+
+    if memory == "flash":
+        run_block = """\
+if [[ $DO_RUN -eq 1 ]]; then
+echo "==> Running tests..."
+# Reset board and capture serial output with Python script
+ssh "$MYSERVER" '
+    openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "init; reset run; exit" 2>/dev/null
+    sleep 3
+    python3 ~/projects/libOBD2/scripts/serial_capture.py --timeout 30
+'
+exit $?
+fi
+"""
 
     script_content = f"""\
 #!/bin/bash
@@ -187,20 +210,7 @@ if [[ $DO_LOAD -eq 1 || $DO_DEBUG -eq 1 ]]; then
         exit 0
     fi
 fi
-
-# Run mode - reset (for flash) or load (for RAM) and monitor serial
-if [[ $DO_RUN -eq 1 ]]; then
-    echo "==> Running tests..."
-    # Reset board and capture serial output with Python script
-    ssh "$MYSERVER" bash -c '
-        # Reset board first
-        openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "init; reset; exit" 2>/dev/null
-
-        # Capture serial output with reliable Python script
-        python3 ~/projects/libOBD2/scripts/serial_capture.py --timeout 30
-    '
-    exit $?
-    fi
+{run_block}
 """
 
     script_path.write_text(script_content)
@@ -255,6 +265,11 @@ TOOLCHAIN={toolchain_path}
         f"-DMEMORY={memory}"
     ]
 
+    if "ON" == setup_build_directory.debug:
+        cmake_cmd.append("-DDEBUG=ON")
+    else:
+        cmake_cmd.append("-DDEBUG=OFF")
+
     print(f"  Command: {' '.join(cmake_cmd)}")
     result = subprocess.run(cmake_cmd, cwd=build_dir)
 
@@ -295,8 +310,18 @@ Examples:
         help="Memory target for firmware (default: flash)"
     )
 
+    parser.add_argument(
+        "--debug",
+        choices=["ON", "OFF"],
+        default="OFF",
+        required=False,
+        help="Enable debug mode (sets -DDEBUG=ON for CMake)"
+    )
+
     args = parser.parse_args()
 
+    # Pass debug flag to setup_build_directory via function attribute
+    setup_build_directory.debug = args.debug
     setup_build_directory(args.app, args.memory)
 
 
