@@ -1,4 +1,5 @@
 /* ================================================ INCLUDES =============================================== */
+#include "init.h"
 #include "libobd2_test_utils.h"
 #include "timer_test.h"
 #include "uart_kwp_transport_port.h"
@@ -9,7 +10,6 @@
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
 #include "tasks.h"
-#include "syscalls.h"
 #define STM32F4
 #include <stddef.h>
 #include <stdio.h>
@@ -43,24 +43,48 @@ int main()
     KWP_TMR_Init(&tmrCtxTx);
     KWP_TMR_Init(&tmrCtxRx);
 
-    TaskHandle_t testerTaskHandle = NULL;
+    TaskHandle_t l2KwpTestTaskHandle   = NULL;
+    TaskHandle_t libobd2TestTaskHandle = NULL;
     uint32_t status = 0;
 
+    /* Create LIBOBD2 suite first but at lower priority — it will only run
+     * once L2_KWP_TestTask finishes and deletes itself. */
     status = xTaskCreate(
-        TestTask,
-        "Receiver Task",
+        LIBOBD2_TestTask,
+        "Libobd2_Test_Task",
         1024,
         NULL,
-        tskIDLE_PRIORITY,
-        &testerTaskHandle);
+        tskIDLE_PRIORITY,           /* lower: waits until L2_KWP_TestTask is gone */
+        &libobd2TestTaskHandle);
 
-    if (status)
+    if (status != pdPASS)
     {
-        syscalls_init();
-        vTaskStartScheduler();
+        while (1)
+            ;
     }
 
+    /* L2_KWP suite runs first because it has higher priority.
+     * Sub-tasks it spawns are at tskIDLE_PRIORITY+3, so they still preempt
+     * this task normally. LIBOBD2_TestTask never gets scheduled until this
+     * task calls vTaskDelete(NULL). */
+    status = xTaskCreate(
+        L2_KWP_TestTask,
+        "L2_kwp_Test_Task",
+        1024,
+        NULL,
+        tskIDLE_PRIORITY + 1,       /* higher: runs before LIBOBD2_TestTask */
+        &l2KwpTestTaskHandle);
 
+    if (status != pdPASS)
+    {
+        while (1)
+            ;
+    }
+
+    vTaskStartScheduler();
+
+
+    /* Should never be reached */
     while(true)
     {
         #if !defined(DEBUG)

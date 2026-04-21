@@ -102,6 +102,11 @@ static void test_L2_KWP_RecvMessage_000_Receiver(void *param)
     (void)param;
     (void)dataLink_00;
 
+    /* Drain any stale byte left in USART2 DR by a previous test (e.g. SendMessage_002
+     * echo). UART_KWP_FlushRx is non-yielding so the Sender cannot race in and
+     * have its first real byte accidentally consumed here. */
+    LIBOBD_FlushRx(pDataLinkRx);
+
     timeSample = LIBOBD_GetTimeMs(pDataLinkRx);
     LIBOBD_SetTimeSample(pDataLinkRx , timeSample);
 

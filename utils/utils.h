@@ -28,6 +28,11 @@
        if (OBD_STATUS_OK != (val)) return (val); \
     }while(0)
 
+#define OBD2_ASSERT_OK_OR_ERR(val, err) \
+    do { \
+       if (OBD_STATUS_OK != (val)) return (err); \
+    }while(0)
+
 #define OBD2_ASSERT_EQUAL(val1, val2) \
     do { \
        if ((val1) != (val2)) return (val1); \

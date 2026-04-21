@@ -1,5 +1,6 @@
 /* ================================================ INCLUDES =============================================== */
 #include "tasks.h"
+#include "libobd2_test.h"
 #include "libobd2_test_utils.h"
 #include "timer_test.h"
 #include "uart_kwp_transport_port.h"
@@ -29,22 +30,11 @@
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */
-void TestTask(void *param)
+void L2_KWP_Tests(void *param)
 {
     (void)param;
     printf("============= UNIT BEGIN ==============\n");
-
     UNITY_BEGIN();
-
-    /* TODO: Add proper unit tests and turn examples module to proper examples not bad integration tests */
-    #if 0
-    RUN_TEST(test_LIBOBD2_0);
-    RUN_TEST(test_LIBOBD2_1);
-    RUN_TEST(test_TIMER_0);
-    RUN_TEST(test_TIMER_1);
-    #endif
-
-    /* ======================= Unit tests ======================= */
 
     /* ---------------------  l2_kwp_utils ---------------------- */
     RUN_TEST(test_ReadByteInTimeframe_000);
@@ -77,16 +67,19 @@ void TestTask(void *param)
     RUN_TEST(test_l2_kwp_recv_response_000);
     /* ------------------------  l2_kwp ------------------------- */
 
-    /* ======================= Unit tests ======================= */
+    UNITY_END();
+    vTaskDelete(NULL);
+}
+
+void LIBOBD2_TestTask(void *param)
+{
+    (void)param;
+
+    UNITY_BEGIN();
+
+    RUN_TEST(test_LibOBD2_Init_000);
+    RUN_TEST(test_LibOBD2_RequestService_000);
 
     UNITY_END();
-
-    while(true)
-    {
-        #if !defined(DEBUG)
-        tud_cdc_write_flush();
-        tud_task();
-        #endif /* DEBUG */
-    }
-
+    vTaskDelete(NULL);
 }
