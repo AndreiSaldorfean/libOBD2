@@ -113,8 +113,10 @@ uartKwp_ctx_t uartCtxTx =
         .usartTxPin  = GPIO9,
         .usartRxPin  = GPIO10,
 
-        .gpioRcc     = RCC_GPIOA,
-        .gpio        = GPIOA,
+        .gpioRcc      = RCC_GPIOA,
+        .gpioOutType  = GPIO_OTYPE_OD,
+        .gpioOutSpeed = GPIO_OSPEED_2MHZ,
+        .gpio         = GPIOA,
 };
 
 uartKwp_ctx_t uartCtxRx =
@@ -130,8 +132,10 @@ uartKwp_ctx_t uartCtxRx =
         .usartTxPin  = GPIO2,
         .usartRxPin  = GPIO3,
 
-        .gpioRcc     = RCC_GPIOA,
-        .gpio        = GPIOA,
+        .gpioRcc      = RCC_GPIOA,
+        .gpioOutType  = GPIO_OTYPE_OD,
+        .gpioOutSpeed = GPIO_OSPEED_2MHZ,
+        .gpio         = GPIOA,
 };
 
 obd_transport_ops_t transportOps =
@@ -190,14 +194,12 @@ dataLink_if_t dataLink_rx =
     .send_request     = l2_kwp_send_request,
     .recv_response    = l2_kwp_recv_response,
 };
-#if 0
-static obd_ctx_t ctx =
+obd_ctx_t ctx =
 {
         .pDataLink = &dataLink_00,
         // .pDataLinkHandle = &kwpCtx,
         .connectionStatus = 0
 };
-#endif
 
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */

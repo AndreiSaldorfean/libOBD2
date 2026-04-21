@@ -3,6 +3,7 @@
 /* ================================================ INCLUDES =============================================== */
 #include "l2_kwp.h"
 #include "kwp_timer.h"
+#include "libobd2.h"
 #include "uart_kwp_transport_port.h"
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
@@ -31,10 +32,7 @@ extern l2_kwp_ctx_t kwpCtx;
 extern dataLink_if_t dataLink_00;
 extern dataLink_if_t dataLink_tx;
 extern dataLink_if_t dataLink_rx;
-
-#if 0
-static obd_ctx_t ctx;
-#endif
+extern obd_ctx_t ctx;
 /* =============================================== MODULE API ============================================== */
 
 #endif /* LIBOBD2_TEST_UTILS_H */
