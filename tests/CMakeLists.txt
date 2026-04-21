@@ -67,6 +67,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     SPT_FREERTOS
 )
 
+if(DEBUG STREQUAL "ON")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG)
+endif()
+
 add_subdirectory(${CMAKE_SOURCE_DIR}/.. ${CMAKE_BINARY_DIR}/libOBD2)
 
 target_compile_definitions(libOBD2
