@@ -69,7 +69,6 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
     while (OBD_RECV_NOT_READY == LIBOBD_ReceiveByte(self, buffer))
     {
         // Check for P2 Timeout from Tester to ECU
-        YIELD;
         OBD2_ASSERT_EQUAL_OR_ERR(false, LIBOBD_IsTimeoutExpired(self), OBD_ERR_COMM_P2_TIMEOUT_MAX_TESTER_ECU);
     }
 
@@ -196,7 +195,9 @@ OBD2_STATIC void L2_KWP_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, si
     }
 
     aSentMsg[idx++] = sentMsg->cs;
-    *len = idx;
+
+    if (len != NULL)
+        *len = idx;
 }
 
 /******************************************* ISO 14230-2 Services ********************************************/
@@ -327,8 +328,8 @@ OBD2_STATIC obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self)
 
     // Read Sync byte
     status = ReadByteInTimeframe(self, &syncByte, ISO9141_W1_TIME_MIN, ISO9141_W1_TIME_MAX);
-    OBD2_ASSERT_OK(status);
     OBD2_ASSERT_EQUAL_OR_ERR(0x55, syncByte, OBD_ERR_5BAUD_WRONG_SYNC_BYTE);
+    OBD2_ASSERT_OK(status);
 
     // Receive KB1 (W2 timing: 5-20ms)
     status = ReadByteInTimeframe(self, &kb1, ISO9141_W2_TIME_MIN, ISO9141_W2_TIME_MAX);
@@ -339,7 +340,7 @@ OBD2_STATIC obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self)
     OBD2_ASSERT_OK(status);
 
     // Wait W4 (25-50ms) then send inverted KB2
-    LIBOBD_Delay(self, ISO9141_W4_TIME_MIN-1);
+    LIBOBD_Delay(self, ISO9141_W4_TIME_MIN);
     LIBOBD_SendByte(self, ~kb2);
 
     // Clear echo

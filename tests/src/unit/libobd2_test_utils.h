@@ -12,12 +12,16 @@
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
+extern const header_t header_00_ecu;
 extern const header_t header_00;
 extern const obd_request_t request_00;
 extern const data_t data_00;
 extern const message_t msg_00;
-extern timerCtx_t tmrCtx;
-extern obd_timing_ops_t timerOps;
+extern const message_t msg_00_ecu;
+extern timerCtx_t tmrCtxTx;
+extern timerCtx_t tmrCtxRx;
+extern obd_timing_ops_t timerOpsRx;
+extern obd_timing_ops_t timerOpsTx;
 extern uartKwp_ctx_t uartCtxTx;
 // extern timerCtx_t tmrCtxTx;
 extern uartKwp_ctx_t uartCtxRx;

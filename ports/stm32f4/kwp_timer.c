@@ -101,18 +101,12 @@ obd_status_t KWP_TMR_DelayMs(void *pHandle, uint32_t delay_ms)
 {
     (void)pHandle;
 
-#if defined(DEBUG)
-    vTaskDelay(pdMS_TO_TICKS(delay_ms));
-#else
-    (void)pHandle;
     uint32_t start_us = get_time_us();
     uint32_t delay_us = delay_ms * 1000U;
 
-    /* Blocking wait with microsecond precision - handles wrap-around */
-    while ((get_time_us() - start_us) < delay_us) {
-        /* Busy wait */
-    }
-#endif
+    /* Yield to scheduler while waiting - gives true ms precision from
+     * hardware timer (TIM2) without depending on configTICK_RATE_HZ */
+    while ((get_time_us() - start_us) < delay_us);
 
     return OBD_STATUS_OK;
 }

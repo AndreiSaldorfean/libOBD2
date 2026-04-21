@@ -53,7 +53,7 @@
  * settings.  Your application will certainly need a different value so set this
  * correctly. This is very often, but not always, equal to the main system clock
  * frequency. */
-#define configCPU_CLOCK_HZ    ( ( unsigned long ) 20000000 )
+#define configCPU_CLOCK_HZ    ( ( unsigned long ) 84000000 )
 
 /* configSYSTICK_CLOCK_HZ is an optional parameter for ARM Cortex-M ports only.
  *
@@ -77,7 +77,7 @@
 
 /* configTICK_RATE_HZ sets frequency of the tick interrupt in Hz, normally
  * calculated from the configCPU_CLOCK_HZ value. */
-#define configTICK_RATE_HZ                         100
+#define configTICK_RATE_HZ                         1000
 
 /* Set configUSE_PREEMPTION to 1 to use pre-emptive scheduling.  Set
  * configUSE_PREEMPTION to 0 to use co-operative scheduling.
@@ -374,20 +374,20 @@
  * application writer needs to provide a clock source if set to 1.  Defaults to
  * 0 if left undefined.  See https://www.freertos.org/rtos-run-time-stats.html.
  */
-#define configGENERATE_RUN_TIME_STATS           0
+#define configGENERATE_RUN_TIME_STATS           0  /* enable if you want CPU% per task */
 
 /* Set configUSE_TRACE_FACILITY to include additional task structure members
  * are used by trace and visualisation functions and tools.  Set to 0 to exclude
  * the additional information from the structures. Defaults to 0 if left
  * undefined. */
-#define configUSE_TRACE_FACILITY                0
+#define configUSE_TRACE_FACILITY                1
 
 /* Set to 1 to include the vTaskList() and vTaskGetRunTimeStats() functions in
  * the build.  Set to 0 to exclude these functions from the build.  These two
  * functions introduce a dependency on string formatting functions that would
  * otherwise not exist - hence they are kept separate.  Defaults to 0 if left
  * undefined. */
-#define configUSE_STATS_FORMATTING_FUNCTIONS    0
+#define configUSE_STATS_FORMATTING_FUNCTIONS    1
 
 /******************************************************************************/
 /* Co-routine related definitions. ********************************************/
@@ -658,9 +658,9 @@
 #define INCLUDE_vTaskDelay                     1
 #define INCLUDE_xTaskGetSchedulerState         1
 #define INCLUDE_xTaskGetCurrentTaskHandle      1
-#define INCLUDE_uxTaskGetStackHighWaterMark    0
+#define INCLUDE_uxTaskGetStackHighWaterMark    1
 #define INCLUDE_xTaskGetIdleTaskHandle         0
-#define INCLUDE_eTaskGetState                  0
+#define INCLUDE_eTaskGetState                  1
 #define INCLUDE_xTimerPendFunctionCall         0
 #define INCLUDE_xTaskAbortDelay                0
 #define INCLUDE_xTaskGetHandle                 0

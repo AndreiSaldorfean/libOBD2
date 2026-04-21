@@ -1,5 +1,7 @@
 /* ================================================ INCLUDES =============================================== */
 #include "l2_kwp.h"
+#include "libobd2.h"
+#include <stdio.h>
 #define STM32F4
 #include "libopencm3/stm32/f4/rcc.h"
 #include "libopencm3/stm32/usart.h"
@@ -48,6 +50,7 @@ void UART_KWP_WriteByte(void* handle, uint8_t data)
 {
     uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
 
+    YIELD;
     usart_send_blocking(ctx->usartNum, data);
 
     /* Wait for transmission to fully complete (shift register empty) */
@@ -64,12 +67,25 @@ obd_status_t UART_KWP_RecvByte(void* handle, uint8_t *recv_buffer)
         return OBD_STATUS_OK;
     }
 
+    YIELD;
+
     return OBD_RECV_NOT_READY;
+}
+
+void UART_KWP_FlushRx(void* handle)
+{
+    uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
+
+    /* STM32F4 USART has no FIFO - at most one byte can be pending in DR */
+    if (USART_SR(ctx->usartNum) & USART_SR_RXNE)
+        (void)usart_recv(ctx->usartNum);
 }
 
 void UART_KWP_SendPulse(void* handle, bool pulse)
 {
     uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
+
+    UART_KWP_FlushRx(handle);
 
     if (pulse)
     {
@@ -80,6 +96,7 @@ void UART_KWP_SendPulse(void* handle, bool pulse)
         gpio_clear(ctx->gpio, ctx->usartTxPin);
     }
 
+    YIELD;
 }
 
 void UART_KWP_SwitchMode(void* handle, uint8_t mode)

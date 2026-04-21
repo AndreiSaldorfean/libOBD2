@@ -53,9 +53,9 @@ void TestTask(void *param)
 
     /* ------------------------  l2_kwp ------------------------- */
     RUN_TEST(test_L2_KWP_ComputeChecksum_000);
-    // RUN_TEST(test_L2_KWP_SendMessage_000);
-    // RUN_TEST(test_L2_KWP_SendMessage_001);
-    // RUN_TEST(test_L2_KWP_SendMessage_002);
+    RUN_TEST(test_L2_KWP_SendMessage_000);
+    RUN_TEST(test_L2_KWP_SendMessage_001);
+    RUN_TEST(test_L2_KWP_SendMessage_002);
     RUN_TEST(test_L2_KWP_RecvMessage_000);
 #if defined(SPT_FAST_INIT)
     RUN_TEST(test_L2_KWP_SRV_StartCommunication_000);
@@ -72,6 +72,9 @@ void TestTask(void *param)
     RUN_TEST(test_L2_KWP_Init_000);
     RUN_TEST(test_L2_KWP_ReadHeader_000);
     RUN_TEST(test_PrepareMessage_000);
+    RUN_TEST(test_l2_kwp_connect_000);
+    RUN_TEST(test_l2_kwp_send_request_000);
+    RUN_TEST(test_l2_kwp_recv_response_000);
     /* ------------------------  l2_kwp ------------------------- */
 
     /* ======================= Unit tests ======================= */

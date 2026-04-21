@@ -9,8 +9,7 @@
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
 #include "tasks.h"
-
-#include <stdint.h>
+#include "syscalls.h"
 #define STM32F4
 #include <stddef.h>
 #include <stdio.h>
@@ -79,7 +78,8 @@ int main()
 
     UART_KWP_Init(&uartCtxTx);
     UART_KWP_Init(&uartCtxRx);
-    KWP_TMR_Init(&tmrCtx);
+    KWP_TMR_Init(&tmrCtxTx);
+    KWP_TMR_Init(&tmrCtxRx);
 
     TaskHandle_t testerTaskHandle = NULL;
     uint32_t status = 0;
@@ -94,6 +94,7 @@ int main()
 
     if (status)
     {
+        syscalls_init();
         vTaskStartScheduler();
     }
 

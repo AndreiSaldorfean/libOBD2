@@ -33,6 +33,7 @@ typedef struct
 obd_status_t UART_KWP_Init(void* handle);
 void UART_KWP_WriteByte(void* handle, uint8_t data);
 obd_status_t UART_KWP_RecvByte(void* handle, uint8_t *recv_buffer);
+void UART_KWP_FlushRx(void* handle);
 void UART_KWP_SendPulse(void* handle, bool pulse);
 void UART_KWP_SwitchMode(void* handle, uint8_t mode);
 

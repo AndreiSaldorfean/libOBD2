@@ -26,5 +26,8 @@ void test_L2_KWP_5BaudInit_000(void);
 void test_L2_KWP_Init_000(void);
 void test_L2_KWP_ReadHeader_000(void);
 void test_PrepareMessage_000(void);
+void test_l2_kwp_connect_000(void);
+void test_l2_kwp_send_request_000(void);
+void test_l2_kwp_recv_response_000(void);
 
 #endif /* L2_KWP_TEST_H */

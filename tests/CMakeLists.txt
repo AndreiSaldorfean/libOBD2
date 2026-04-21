@@ -12,6 +12,7 @@ file(GLOB SOURCES
     "${CMAKE_SOURCE_DIR}/src/startup/reset_handler.c"
     "${CMAKE_SOURCE_DIR}/src/main.c"
     "${CMAKE_SOURCE_DIR}/src/unit/*.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/ecu_ports/stm32f4/*.c"
     "${CMAKE_SOURCE_DIR}/src/os/*.c"
     "${CMAKE_SOURCE_DIR}/src/usb_descriptors.c"
     "${CMAKE_SOURCE_DIR}/../examples/libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
@@ -45,6 +46,7 @@ target_include_directories(${PROJECT_NAME}
     ../include/data_link/l2_iso9141/
     ./src/int/
     ./src/unit/
+    ./src/unit/ecu_ports/stm32f4/
     ./src/os/
     ./Unity/src/
     ../examples/libs/FreeRTOS-Kernel/include/

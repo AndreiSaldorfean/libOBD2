@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include "libopencm3/stm32/gpio.h"
 #include "libopencm3/stm32/rcc.h"
+#include "ecu_uart.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -24,8 +25,7 @@ void ECUSIM_SendMessage(dataLink_if_t *pDataLink, uint8_t *pMessage, size_t size
     for (size_t i = 0; i < size; i++)
     {
         LIBOBD_SendByte(pDataLink, pMessage[i]);
-
-        LIBOBD_Delay(pDataLink, KWP_P1_TIME_MIN);
+        LIBOBD_Delay(pDataLink, KWP_P1_TIME_MIN+5);
     }
 }
 

@@ -24,6 +24,7 @@
 #define LIBOBD_SendByte(handle, byte)     (handle->pTransportOps->send_byte(handle->pTransportHandle, byte))
 #define LIBOBD_ReceiveByte(handle, byte)  (handle->pTransportOps->recv_byte(handle->pTransportHandle, byte))
 #define LIBOBD_SendPulse(handle, pulse)   (handle->pTransportOps->send_pulse(handle->pTransportHandle, pulse))
+#define LIBOBD_FlushRx(handle)            (handle->pTransportOps->flush_rx(handle->pTransportHandle))
 #define LIBOBD_SwitchMode(handle, mode)   (handle->pTransportOps->switch_mode(handle->pTransportHandle, mode))
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
