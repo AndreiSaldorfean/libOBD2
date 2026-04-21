@@ -11,11 +11,20 @@
 #include "libopencm3/stm32/rcc.h"
 #include "tusb.h"
 #include <sys/stat.h>
+#include "FreeRTOSConfig.h"
+#include "FreeRTOS.h"
+#include "semphr.h"
 
 extern uint32_t __heap_end__; // heap starts here
 extern uint32_t _heap_start;
 extern uint32_t __stack_start__; // stack starts here (stack grows down)
 static uint32_t *heap = NULL;
+static SemaphoreHandle_t g_printMutex = NULL;
+
+void syscalls_init(void)
+{
+    g_printMutex = xSemaphoreCreateMutex();
+}
 
 extern int *__errno(void);
 
@@ -87,6 +96,12 @@ void *_sbrk(ptrdiff_t incr)
 
 int _write(int file, char *ptr, uint32_t len)
 {
+    (void)file;
+    (void)ptr;
+    (void)len;
+
+    #if !defined(DEBUG)
+    xSemaphoreTake(g_printMutex, portMAX_DELAY);
     if (file == STDOUT_FILENO || file == STDERR_FILENO)
     {
         /* Wait for USB CDC to connect if not already connected */
@@ -120,15 +135,23 @@ int _write(int file, char *ptr, uint32_t len)
             tud_task();
         }
 
+        xSemaphoreGive(g_printMutex);
         return len;
     }
 
     errno = EIO;
+    xSemaphoreGive(g_printMutex);
+    #endif
     return -1;
 }
 
 int _read(int file, char *ptr, int len)
 {
+    (void)file;
+    (void)ptr;
+    (void)len;
+
+    #if !defined(DEBUG)
     if (file != STDIN_FILENO)
     {
         errno = EBADF;
@@ -141,6 +164,7 @@ int _read(int file, char *ptr, int len)
         uint32_t count = tud_cdc_read(ptr, len);
         return count;
     }
+    #endif
 
     return 0; // No data available
 }
