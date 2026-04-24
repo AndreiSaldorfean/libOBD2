@@ -29,11 +29,13 @@
 
 /* ============================================ LOCAL VARIABLES ============================================ */
 static volatile timerCtx_t *g_timer_ctx = NULL;  /* For ISR access */
+bool isTimerStopped = 0;
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 static inline uint32_t get_time_us(void);
-
+void KWP_TMR_Pause(void);
+void KWP_TMR_Resume(void);
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 
 /**
@@ -45,8 +47,29 @@ static inline uint32_t get_time_us(void)
     return timer_get_counter(TIM2);
 }
 
+/**
+ * @brief Literally stop the TIM2 hardware counter.
+ *        Called from GDB hook-stop – the counter register freezes,
+ *        so all timeout calculations see no elapsed time.
+ */
+void KWP_TMR_Pause(void)
+{
+    timer_disable_counter(TIM2);
+    isTimerStopped = 1;
+}
+
+/**
+ * @brief Restart the TIM2 hardware counter.
+ *        Called from GDB hook-run – timing resumes from where it left off.
+ */
+void KWP_TMR_Resume(void)
+{
+    timer_enable_counter(TIM2);
+    isTimerStopped = 0;
+}
+
 /* ================================================ MODULE API ============================================= */
-obd_status_t KWP_TMR_Init(void *pHandle)
+bool KWP_TMR_Init(void *pHandle)
 {
     timerCtx_t *ctx = (timerCtx_t*)pHandle;
 
@@ -87,7 +110,7 @@ obd_status_t KWP_TMR_Init(void *pHandle)
     /* Start the counter */
     timer_enable_counter(ctx->timer);
 
-    return OBD_STATUS_OK;
+    return 1;
 }
 
 uint32_t KWP_TMR_GetTimeMs(void *pHandle)
@@ -97,7 +120,7 @@ uint32_t KWP_TMR_GetTimeMs(void *pHandle)
     return get_time_us() / 1000U;
 }
 
-obd_status_t KWP_TMR_DelayMs(void *pHandle, uint32_t delay_ms)
+void KWP_TMR_DelayMs(void *pHandle, uint32_t delay_ms)
 {
     (void)pHandle;
 
@@ -107,11 +130,9 @@ obd_status_t KWP_TMR_DelayMs(void *pHandle, uint32_t delay_ms)
     /* Yield to scheduler while waiting - gives true ms precision from
      * hardware timer (TIM2) without depending on configTICK_RATE_HZ */
     while ((get_time_us() - start_us) < delay_us);
-
-    return OBD_STATUS_OK;
 }
 
-obd_status_t KWP_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t callback, void *pUserData)
+bool KWP_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t callback, void *pUserData)
 {
     timerCtx_t *ctx = (timerCtx_t*)pHandle;
 
@@ -126,16 +147,16 @@ obd_status_t KWP_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_cal
 
     cm_enable_interrupts();
 
-    return OBD_STATUS_OK;
+    return 1;
 }
 
-obd_status_t KWP_TMR_StopTimeout(void *pHandle)
+bool KWP_TMR_StopTimeout(void *pHandle)
 {
     timerCtx_t *ctx = (timerCtx_t*)pHandle;
 
     ctx->timeout_active = false;
 
-    return OBD_STATUS_OK;
+    return 1;
 }
 
 bool KWP_TMR_IsTimeoutExpired(void *pHandle)
