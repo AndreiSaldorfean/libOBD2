@@ -5,7 +5,7 @@
 #include "uart_kwp_transport_port.h"
 #include "unity.h"
 #include "unity_internals.h"
-#include "test_libobd2.h"
+#include "libobd2_test.h"
 #include "stdio.h"
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
@@ -18,8 +18,8 @@
 #include "libopencm3/stm32/rcc.h"
 #include "libopencm3/cm3/nvic.h"
 #include "tusb.h"
-#include "l2_kwp_test.h"
-#include "l2_kwp_utils_test.h"
+#include "l2_kwp2000_test.h"
+#include "datalink_test.h"
 #include "task.h"
 #include "tasks.h"
 
@@ -122,7 +122,7 @@ int main()
     /* Create LIBOBD2 suite first but at lower priority — it will only run
      * once L2_KWP_TestTask finishes and deletes itself. */
     status = xTaskCreate(
-        LIBOBD2_TestTask,
+        L2_ISO9141_TestTask,
         "Libobd2_Test_Task",
         2100,
         NULL,

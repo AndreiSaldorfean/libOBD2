@@ -1,5 +1,5 @@
-#ifndef L2_KWP_UTILS_TEST_H
-#define L2_KWP_UTILS_TEST_H
+#ifndef DATALINK_TEST_H
+#define DATALINK_TEST_H
 /* ================================================ INCLUDES =============================================== */
 /* ================================================= MACROS ================================================ */
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
@@ -12,4 +12,4 @@ void test_SendByteBitBang_000(void);
 void test_ReadByteInTimeframe_000(void);
 void test_RecvByteBlocking_000(void);
 
-#endif /* L2_KWP_UTILS_TEST_H */
+#endif /* DATALINK_TEST_H */

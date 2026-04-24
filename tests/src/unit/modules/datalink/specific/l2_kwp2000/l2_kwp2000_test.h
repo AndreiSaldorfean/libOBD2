@@ -1,3 +1,4 @@
+
 #ifndef L2_KWP_TEST_H
 #define L2_KWP_TEST_H
 /* ================================================ INCLUDES =============================================== */
@@ -20,9 +21,6 @@ void test_L2_KWP_IdleBasedOnConnStatus_000(void);
 #if defined(SPT_CHANGE_TIMING_PARAM)
 void test_L2_KWP_SRV_AccessTimingParameter_000(void);
 #endif /* SPT_CHANGE_TIMING_PARAM */
-#if defined(SPT_5BAUD_INIT)
-void test_L2_KWP_5BaudInit_000(void);
-#endif /* SPT_5BAUD_INIT */
 void test_L2_KWP_Init_000(void);
 void test_L2_KWP_ReadHeader_000(void);
 void test_PrepareMessage_000(void);

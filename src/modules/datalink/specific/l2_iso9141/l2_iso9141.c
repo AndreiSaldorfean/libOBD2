@@ -110,15 +110,15 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *
     OBD2_ASSERT_OK(status);
 
     // Read data
-    while(OBD_ERR_TIMEOUT_MAX == status.timeout)
+    while(OBD_ERR_TIMEOUT_MAX != status.timeout)
     {
         status = ReadByteInTimeframe(self, pMsg + idx + 4, KWP_P1_TIME_MIN, KWP_P1_TIME_MAX);
         idx++;
     }
 
     // Remove cs from data field
-    recvdMsg->cs = pMsg[idx+3];
-    pMsg[idx+3] = 0x0;
+    recvdMsg->cs = pMsg[idx+2];
+    pMsg[idx+2] = 0x0;
 
     // P2 Timeout from ECU to ECU
     LIBOBD_StartTimeout(self, KWP_P2_TIME_MAX);
