@@ -1,5 +1,6 @@
 /* ================================================ INCLUDES =============================================== */
 #include "uart_test.h"
+#include "kwp_timer.h"
 #include "libobd2_test_utils.h"
 #include "uart_kwp_transport_port.h"
 #include "unity.h"
@@ -12,11 +13,22 @@
 /* ================================================ MODULE API ============================================= */
 void test_UART_000(void)
 {
-    void *handle = (void*)&uartCtxTx;
+    void *handleTester = (void*)&uartCtxTx;
+    void *handleEcu = (void*)&uartCtxRx;
+    void *tmrHandle = (void*)&tmrCtxTx;
     uint8_t byte = 0;
 
-    UART_KWP_WriteByte(handle, 0x1);
-    UART_KWP_RecvByte(handle, &byte);
+    UART_KWP_WriteByte(handleTester, 0x1);
+    KWP_TMR_DelayMs(tmrHandle, 1);
+    UART_KWP_RecvByte(handleTester, &byte);
+    TEST_ASSERT_EQUAL_HEX8(1, byte);
+    UART_KWP_RecvByte(handleEcu, &byte);
+    TEST_ASSERT_EQUAL_HEX8(1, byte);
 
-    TEST_ASSERT_EQUAL_HEX8(byte, 1);
+    UART_KWP_WriteByte(handleEcu, 0x42);
+    KWP_TMR_DelayMs(tmrHandle, 1);
+    UART_KWP_RecvByte(handleTester, &byte);
+    TEST_ASSERT_EQUAL_HEX8(0x42, byte);
+    UART_KWP_RecvByte(handleEcu, &byte);
+    TEST_ASSERT_EQUAL_HEX8(0x42, byte);
 }

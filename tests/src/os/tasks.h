@@ -8,5 +8,6 @@
 /* =============================================== MODULE API ============================================== */
 void L2_KWP_TestTask(void *param);
 void LIBOBD2_TestTask(void *param);
+void UART_TestTask(void *param);
 
 #endif /* TASK_H */

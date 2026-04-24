@@ -50,14 +50,14 @@ static void test_ReadByteInTimeframe_000_Sender(void* param)
 static void test_ReadByteInTimeframe_000_Receiver(void *param)
 {
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
-    obd_status_t status = 0;
+    obd_status_t status = {0};
     uint8_t byte = 0U;
     uint8_t expected = 0x66U;
     uint8_t actual = 0;
     (void)param;
 
     status = ReadByteInTimeframe(pDataLinkRx, &byte, KWP_P2_STAR_TIME_MIN, KWP_P2_STAR_TIME_MAX);
-    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
 
     actual = byte;
     TEST_ASSERT_EQUAL_HEX8(expected, actual);

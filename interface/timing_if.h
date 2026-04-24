@@ -41,7 +41,7 @@ typedef struct
      * @param pHandle Platform-specific handle (e.g., timer peripheral)
      * @return Current time in milliseconds (can wrap around)
      */
-    obd_status_t (*timer_init)(void *pHandle);
+    bool (*timer_init)(void *pHandle);
 
     /**
      * @brief Get current timestamp in milliseconds
@@ -61,7 +61,7 @@ typedef struct
      *   - FreeRTOS: vTaskDelay(pdMS_TO_TICKS(delay_ms))
      *   - POSIX: usleep(delay_ms * 1000)
      */
-    obd_status_t (*delay_ms)(void *pHandle, uint32_t delay_ms);
+    void (*delay_ms)(void *pHandle, uint32_t delay_ms);
 
     /**
      * @brief Start a one-shot timeout timer
@@ -73,7 +73,7 @@ typedef struct
      *
      * If callback is NULL, use is_timeout_expired() to poll.
      */
-    obd_status_t (*start_timeout)(void *pHandle, uint32_t timeout_ms,
+    bool (*start_timeout)(void *pHandle, uint32_t timeout_ms,
                                   timing_callback_t callback, void *pUserData);
 
     /**
@@ -81,7 +81,7 @@ typedef struct
      * @param pHandle Platform-specific handle
      * @return OBD_STATUS_OK on success
      */
-    obd_status_t (*stop_timeout)(void *pHandle);
+    bool (*stop_timeout)(void *pHandle);
 
     /**
      * @brief Check if timeout has expired (polling mode)

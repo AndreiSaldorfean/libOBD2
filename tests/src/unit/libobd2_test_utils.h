@@ -1,15 +1,44 @@
 #ifndef LIBOBD2_TEST_UTILS_H
 #define LIBOBD2_TEST_UTILS_H
 /* ================================================ INCLUDES =============================================== */
+#include "data_link_if.h"
 #include "l2_kwp.h"
 #include "kwp_timer.h"
 #include "libobd2.h"
+#include "srv_status.h"
 #include "uart_kwp_transport_port.h"
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
 #include "task.h"
+#include "unity.h"
+#include <stdio.h>
 
 /* ================================================= MACROS ================================================ */
+#define TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual) \
+    TEST_ASSERT_EQUAL_HEX16(expected.response, actual.response); \
+    TEST_ASSERT_EQUAL_HEX16(expected.timeout, actual.timeout)
+
+static inline void TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(obd_status_t expected, obd_status_t actual, const char* msg)
+{
+    int failed = 0;
+    if (expected.response != actual.response) {
+        UNITY_OUTPUT_CHAR('\r'); UNITY_OUTPUT_CHAR('\n');
+        UnityPrint(" resp: expected 0x"); UnityPrintNumberHex(expected.response, 4);
+        UnityPrint(" actual 0x");             UnityPrintNumberHex(actual.response,   4);
+        failed = 1;
+    }
+    if (expected.timeout != actual.timeout) {
+        UNITY_OUTPUT_CHAR('\r'); UNITY_OUTPUT_CHAR('\n');
+        UnityPrint(" timeout: expected 0x");  UnityPrintNumberHex(expected.timeout, 4);
+        UnityPrint(" actual 0x");             UnityPrintNumberHex(actual.timeout,   4);
+        failed = 1;
+    }
+    if (failed) {
+        UNITY_OUTPUT_CHAR('\r'); UNITY_OUTPUT_CHAR('\n');
+        TEST_FAIL_MESSAGE(msg);
+    }
+}
+
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */

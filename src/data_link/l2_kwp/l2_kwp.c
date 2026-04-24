@@ -63,24 +63,30 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
 {
     uint8_t *buffer = (uint8_t *)header;
     uint32_t p2TimeElapsed = 0;
-    obd_status_t status;
+    obd_status_t status = {0};
 
     // Format byte
-    while (OBD_RECV_NOT_READY == LIBOBD_ReceiveByte(self, buffer))
+    while (!LIBOBD_ReceiveByte(self, buffer))
     {
         // Check for P2 Timeout from Tester to ECU
-        OBD2_ASSERT_EQUAL_OR_ERR(false, LIBOBD_IsTimeoutExpired(self), OBD_ERR_COMM_P2_TIMEOUT_MAX_TESTER_ECU);
+        status.response = OBD_ERR_COMM_FMT_BYTE_NOT_RECVD;
+        status.timeout = OBD_ERR_COMM_P2_TIMEOUT_MAX_TESTER_ECU;
+        OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD_IsTimeoutExpired(self));
     }
 
     p2TimeElapsed = LIBOBD_GetTimeMs(self);
     p2TimeElapsed -= LIBOBD_GetTimeSample(self);
-    if (p2TimeElapsed < KWP_P2_TIME_MIN) return OBD_ERR_COMM_P2_TIMEOUT_MIN_TESTER_ECU;
+
+    status.timeout = OBD_ERR_COMM_P2_TIMEOUT_MIN_TESTER_ECU;
+    OBD2_IF_COND_GOTO_EXIT(p2TimeElapsed < KWP_P2_TIME_MIN);
 
     // Target byte
+    status.response = OBD_ERR_COMM_TRGT_BYTE_NOT_RECVD;
     status = ReadByteInTimeframe(self, buffer + 1, KWP_P1_TIME_MIN, KWP_P1_TIME_MAX);
     OBD2_ASSERT_OK(status);
 
     // Source byte
+    status.response = OBD_ERR_COMM_SRC_BYTE_NOT_RECVD;
     status = ReadByteInTimeframe(self, buffer + 2, KWP_P1_TIME_MIN, KWP_P1_TIME_MAX);
     OBD2_ASSERT_OK(status);
 
@@ -91,23 +97,30 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
         *headerLen = 4;
 
         // Length byte
+        status.response = OBD_ERR_COMM_LEN_BYTE_NOT_RECVD;
         status = ReadByteInTimeframe(self, buffer + 3, KWP_P1_TIME_MIN, KWP_P1_TIME_MAX);
         OBD2_ASSERT_OK(status);
     }
 
-    return OBD_STATUS_OK;
+    memset(&status, 0, sizeof(obd_status_t));
+exit:
+    return status;
 }
 
 OBD2_STATIC obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len)
 {
     uint32_t p3TimeElapsed = 0;
     uint32_t timingSample  = 0;
+    obd_status_t status    = {0};
 
     // Check for P3 Timeout from P2 end to Tester
-    OBD2_ASSERT_EQUAL_OR_ERR(false, LIBOBD_IsTimeoutExpired(self), OBD_ERR_COMM_P3_TIMEOUT_MAX_ECU_TESTER);
+    status.timeout = OBD_ERR_COMM_P3_TIMEOUT_MAX_ECU_TESTER;
+    OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD_IsTimeoutExpired(self));
     p3TimeElapsed = LIBOBD_GetTimeMs(self);
     p3TimeElapsed -= LIBOBD_GetTimeSample(self);
-    if (p3TimeElapsed  < KWP_P3_TIME_MIN) return OBD_ERR_COMM_P3_TIMEOUT_MIN_ECU_TESTER;
+
+    status.timeout = OBD_ERR_COMM_P3_TIMEOUT_MIN_ECU_TESTER;
+    OBD2_IF_COND_GOTO_EXIT(p3TimeElapsed < KWP_P3_TIME_MIN);
 
     for (size_t idx = 0; idx < len; idx++)
     {
@@ -120,7 +133,12 @@ OBD2_STATIC obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, s
     LIBOBD_SetTimeSample(self, timingSample);
     LIBOBD_StartTimeout(self, KWP_P2_TIME_MAX);
 
-    return OBD_STATUS_OK;
+    // Clear echo
+    LIBOBD_FlushRx(self);
+
+    memset(&status, 0, sizeof(obd_status_t));
+exit:
+    return status;
 }
 
 OBD2_STATIC obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recvdMsg)
@@ -139,6 +157,7 @@ OBD2_STATIC obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recv
                                       : recvdMsg->header.len;
 
     // Read data
+    status.response = OBD_ERR_COMM_DATA_BYTE_NOT_RECVD;
     for (int idx = 0; idx < len; idx++)
     {
         status = ReadByteInTimeframe(self, pMsg + idx + headerLen + 1, KWP_P1_TIME_MIN, KWP_P1_TIME_MAX);
@@ -146,13 +165,16 @@ OBD2_STATIC obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recv
     }
 
     // Read CS
+    status.response = OBD_ERR_COMM_CS_BYTE_NOT_RECVD;
     status = ReadByteInTimeframe(self, &recvdMsg->cs, KWP_P1_TIME_MIN, KWP_P1_TIME_MAX);
     OBD2_ASSERT_OK(status);
 
     // P2 Timeout from ECU to ECU
     LIBOBD_StartTimeout(self, KWP_P2_TIME_MAX);
 
-    return OBD_STATUS_OK;
+    memset(&status, 0, sizeof(obd_status_t));
+exit:
+    return status;
 }
 
 #if defined(SPT_FAST_INIT)
@@ -326,30 +348,39 @@ OBD2_STATIC obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self)
     // Send address byte at 5 baud rate
     SendByteBitBang(self, targetAddr, 5);
 
+    // Clear echo
+    // LIBOBD_FlushRx(self);
+
     // Read Sync byte
+    status.response = OBD_ERR_5BAUD_SYNC_NOT_RECVD;
     status = ReadByteInTimeframe(self, &syncByte, ISO9141_W1_TIME_MIN, ISO9141_W1_TIME_MAX);
-    OBD2_ASSERT_OK_OR_ERR(status, OBD_ERR_5BAUD_SYNC_NOT_RECVD);
-    OBD2_ASSERT_EQUAL_OR_ERR(0x55, syncByte, OBD_ERR_5BAUD_WRONG_SYNC_BYTE);
+    OBD2_ASSERT_OK(status);
+    status.response = OBD_ERR_5BAUD_WRONG_SYNC_BYTE;
+    OBD2_ASSERT_EQUAL_OR_EXIT(0x55, syncByte);
 
     // Receive KB1 (W2 timing: 5-20ms)
+    status.response = OBD_ERR_5BAUD_KB1_NOT_RECVD;
     status = ReadByteInTimeframe(self, &kb1, ISO9141_W2_TIME_MIN, ISO9141_W2_TIME_MAX);
-    OBD2_ASSERT_OK_OR_ERR(status, OBD_ERR_5BAUD_KB1_NOT_RECVD);
+    OBD2_ASSERT_OK(status);
 
     // Receive KB2 (W3 timing: 0-20ms)
+    status.response = OBD_ERR_5BAUD_KB2_NOT_RECVD;
     status = ReadByteInTimeframe(self, &kb2, ISO9141_W3_TIME_MIN, ISO9141_W3_TIME_MAX);
-    OBD2_ASSERT_OK_OR_ERR(status, OBD_ERR_5BAUD_KB2_NOT_RECVD);
+    OBD2_ASSERT_OK(status);
 
     // Wait W4 (25-50ms) then send inverted KB2
     LIBOBD_Delay(self, ISO9141_W4_TIME_MIN);
     LIBOBD_SendByte(self, ~kb2);
 
     // Clear echo
-    LIBOBD_ReceiveByte(self, &invAddr);
+    LIBOBD_FlushRx(self);
 
     // Receive inverted address from ECU (W4 timing: 25-50ms)
+    status.response = OBD_ERR_5BAUD_INV_ADDR_NOT_RECVD;
     status = ReadByteInTimeframe(self, &invAddr, ISO9141_W4_TIME_MIN, ISO9141_W4_TIME_MAX);
-    OBD2_ASSERT_OK_OR_ERR(status, OBD_ERR_5BAUD_INV_ADDR_NOT_RECVD);
-    OBD2_ASSERT_EQUAL_OR_ERR((uint8_t)(~targetAddr), invAddr, OBD_ERR_5BAUD_WRONG_INV_ADDR);
+    OBD2_ASSERT_OK(status);
+    status.response = OBD_ERR_5BAUD_WRONG_INV_ADDR;
+    OBD2_ASSERT_EQUAL_OR_EXIT((uint8_t)(~targetAddr), invAddr);
 
     // Store keyword bytes for protocol identification
     ctx->kb1 = kb1;
@@ -367,7 +398,9 @@ OBD2_STATIC obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self)
 
     LIBOBD_Delay(self, KWP_P2_TIME_MIN-1);
 
-    return OBD_STATUS_OK;
+    memset(&status, 0, sizeof(obd_status_t));
+exit:
+    return status;
 }
 #endif /* SPT_5BAUD_INIT */
 
@@ -400,7 +433,7 @@ OBD2_STATIC obd_status_t L2_KWP_FastInit(dataLink_if_t *self)
 
 OBD2_STATIC obd_status_t L2_KWP_Init(dataLink_if_t *self)
 {
-    obd_status_t status;
+    obd_status_t status = {0};
 
     #if defined(SPT_FAST_INIT)
     status = L2_KWP_FastInit(self);
@@ -412,7 +445,8 @@ OBD2_STATIC obd_status_t L2_KWP_Init(dataLink_if_t *self)
     OBD2_ASSERT_OK(status);
 #endif /* SPT_5BAUD_INIT */
 
-    return OBD_STATUS_OK;
+exit:
+    return status;
 }
 
 /********************************************* ISO 14230-2 INIT **********************************************/
@@ -421,21 +455,22 @@ OBD2_STATIC obd_status_t L2_KWP_Init(dataLink_if_t *self)
 obd_status_t l2_kwp_connect(dataLink_if_t *self)
 {
     l2_kwp_ctx_t *ctx = (l2_kwp_ctx_t *)(self->pProtocolCtx);
-    obd_status_t status;
+    obd_status_t status = {0};
     memset(ctx, 0, sizeof(l2_kwp_ctx_t));
 
-    status = LIBOBD_TimingInit(self);
-    OBD2_ASSERT_OK(status);
-
-    status = LIBOBD_TransportInit(self);
-    OBD2_ASSERT_OK(status);
+    status.response = OBD_ERR_CONN_TIMER_INIT_FAILED;
+    if(!LIBOBD_TimingInit(self)) goto exit;
+    status.response = OBD_ERR_CONN_TRANS_INIT_FAILED;
+    if(!LIBOBD_TransportInit(self)) goto exit;
 
     status = L2_KWP_Init(self);
     OBD2_ASSERT_OK(status);
 
     ctx->conStatus.bits.CONN_OK = 1;
 
-    return OBD_STATUS_OK;
+    memset(&status, 0, sizeof(obd_status_t));
+exit:
+    return status;
 }
 
 obd_status_t l2_kwp_send_request(dataLink_if_t *self, const obd_request_t *req, size_t len)
@@ -456,13 +491,16 @@ obd_status_t l2_kwp_send_request(dataLink_if_t *self, const obd_request_t *req, 
 
     L2_KWP_PrepareMessage(&message, aMessage, &msgLen);
 
+    status.response = OBD_ERR_COMM_SEND_MSG_FAILED;
     status = L2_KWP_SendMessage(self, aMessage, msgLen);
     OBD2_ASSERT_OK(status);
 
     // Clear echo
-    LIBOBD_ReceiveByte(self, aMessage);
+    LIBOBD_FlushRx(self);
 
-    return OBD_STATUS_OK;
+    memset(&status, 0, sizeof(obd_status_t));
+exit:
+    return status;
 }
 
 obd_status_t l2_kwp_recv_response(dataLink_if_t *self, obd_response_t *resp, size_t *len)
@@ -470,6 +508,7 @@ obd_status_t l2_kwp_recv_response(dataLink_if_t *self, obd_response_t *resp, siz
     message_t recvdMsg = {0};
     obd_status_t status;
 
+    status.response = OBD_ERR_COMM_RECV_MSG_FAILED;
     status = L2_KWP_RecvMessage(self, &recvdMsg);
     OBD2_ASSERT_OK(status);
 
@@ -481,5 +520,7 @@ obd_status_t l2_kwp_recv_response(dataLink_if_t *self, obd_response_t *resp, siz
         // do something
     }
 
-    return OBD_STATUS_OK;
+    memset(&status, 0, sizeof(obd_status_t));
+exit:
+    return status;
 }

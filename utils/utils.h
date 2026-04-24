@@ -20,27 +20,32 @@
 /* ============================================ INLINE FUNCTIONS =========================================== */
 #define OBD2_CHECK_NULLPTR(var) \
     do { \
-       if (NULL == (var)) return OBD_ERR_NULL_PTR; \
+       if (NULL == (var)) { status.response = OBD_ERR_NULL_PTR; goto exit; } \
     }while(0)
 
-#define OBD2_ASSERT_OK(val) \
+#define OBD2_ASSERT_OK(status) \
     do { \
-       if (OBD_STATUS_OK != (val)) return (val); \
+       if (OBD_STATUS_OK != (status.response) || (OBD_STATUS_OK != status.timeout)) goto exit; \
     }while(0)
 
-#define OBD2_ASSERT_OK_OR_ERR(val, err) \
+#define OBD2_ASSERT_OK_OR_ERR(status, err) \
     do { \
-       if (OBD_STATUS_OK != (val)) return (err); \
+       if (OBD_STATUS_OK != (status.response)){status.response = err ; goto err; } \
     }while(0)
 
 #define OBD2_ASSERT_EQUAL(val1, val2) \
     do { \
-       if ((val1) != (val2)) return (val1); \
+       if ((val1) != (val2)) goto exit \
     }while(0)
 
-#define OBD2_ASSERT_EQUAL_OR_ERR(val1, val2, err) \
+#define OBD2_IF_COND_GOTO_EXIT(cond) \
     do { \
-       if ((val1) != (val2)) return (err); \
+       if (cond) {goto exit;} \
+    }while(0)
+
+#define OBD2_ASSERT_EQUAL_OR_EXIT(val1, val2) \
+    do { \
+       if ((val1) != (val2)) {goto exit;} \
     }while(0)
 
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */

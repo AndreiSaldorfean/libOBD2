@@ -7,6 +7,7 @@
 #include "srv_status.h"
 #include "libobd2.h"
 #include <stdio.h>
+#include <string.h>
 
 /* ================================================= MACROS ================================================ */
 #define MAX_BLOCKING_RECV_TIME (300U)
@@ -43,6 +44,7 @@ static inline void SendByteBitBang(dataLink_if_t *self, uint8_t byte, uint8_t ba
 
 static inline obd_status_t ReadByteInTimeframe(dataLink_if_t *self, uint8_t *byte, uint16_t timeMin, uint16_t timeMax)
 {
+    obd_status_t status = {0};
     uint32_t timeStart = 0;
     uint32_t timeEnd = 0;
     uint32_t timeElapsed = 0;
@@ -50,31 +52,38 @@ static inline obd_status_t ReadByteInTimeframe(dataLink_if_t *self, uint8_t *byt
     timeStart = LIBOBD_GetTimeMs(self);
     LIBOBD_StartTimeout(self, timeMax);
 
-    while (OBD_RECV_NOT_READY == LIBOBD_ReceiveByte(self, byte))
+    while (!LIBOBD_ReceiveByte(self, byte))
     {
-        if (LIBOBD_IsTimeoutExpired(self))
-            return OBD_ERR_TIMEOUT_MAX;
+        status.timeout = OBD_ERR_TIMEOUT_MAX;
+        OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD_IsTimeoutExpired(self));
     }
+
     timeEnd = LIBOBD_GetTimeMs(self);
     LIBOBD_StopTimeout(self);
     timeElapsed = timeEnd - timeStart;
 
-    if (timeElapsed < timeMin || timeElapsed >= timeMax)
-        return OBD_ERR_TIMEOUT_MIN;
-    return OBD_STATUS_OK;
+    if (timeElapsed < timeMin)
+        status.timeout = OBD_ERR_TIMEOUT_MIN;
+
+    memset(&status, 0, sizeof(obd_status_t));
+exit:
+    return status;
 }
 
 static inline obd_status_t RecvByteBlocking(dataLink_if_t *self, uint8_t *byte)
 {
+    obd_status_t status = {0};
+
     LIBOBD_StartTimeout(self, MAX_BLOCKING_RECV_TIME);
 
-    while (OBD_RECV_NOT_READY == LIBOBD_ReceiveByte(self, byte))
+    while (!LIBOBD_ReceiveByte(self, byte))
     {
-        if (LIBOBD_IsTimeoutExpired(self))
-            return OBD_ERR_TIMEOUT_MAX;
+        status.timeout = OBD_ERR_TIMEOUT_MAX;
+        OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD_IsTimeoutExpired(self));
     }
 
-    return OBD_STATUS_OK;
+exit:
+    return status;
 }
 
 #endif /* KWP2000_UTILS_H */

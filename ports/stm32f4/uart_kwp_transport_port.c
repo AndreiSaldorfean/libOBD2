@@ -16,7 +16,7 @@
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */
-obd_status_t UART_KWP_Init(void* handle)
+bool UART_KWP_Init(void* handle)
 {
     uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
 
@@ -45,7 +45,7 @@ obd_status_t UART_KWP_Init(void* handle)
 
     gpio_set_output_options(ctx->gpio, ctx->gpioOutType, ctx->gpioOutSpeed ,ctx->usartTxPin);
 
-    return OBD_STATUS_OK;
+    return 1;
 }
 
 void UART_KWP_WriteByte(void* handle, uint8_t data)
@@ -59,28 +59,36 @@ void UART_KWP_WriteByte(void* handle, uint8_t data)
     while (!(USART_SR(ctx->usartNum) & USART_SR_TC));
 }
 
-obd_status_t UART_KWP_RecvByte(void* handle, uint8_t *recv_buffer)
+bool UART_KWP_RecvByte(void* handle, uint8_t *recv_buffer)
 {
     uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
 
     if((USART_SR(ctx->usartNum) & USART_SR_RXNE))
     {
         *recv_buffer = usart_recv(ctx->usartNum);
-        return OBD_STATUS_OK;
+        return 1;
     }
 
     YIELD;
 
-    return OBD_RECV_NOT_READY;
+    return 0;
 }
 
 void UART_KWP_FlushRx(void* handle)
 {
     uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
 
+    /* Wait for previous send to finish */
+    for (int i = 0; i < 1000; i++)
+    {
+        asm volatile ("nop");
+    }
+
     /* STM32F4 USART has no FIFO - at most one byte can be pending in DR */
-    if (USART_SR(ctx->usartNum) & USART_SR_RXNE)
-        (void)usart_recv(ctx->usartNum);
+    while ((USART_SR(ctx->usartNum) & USART_SR_RXNE))
+    {
+        usart_recv(ctx->usartNum);
+    }
 }
 
 void UART_KWP_SendPulse(void* handle, bool pulse)

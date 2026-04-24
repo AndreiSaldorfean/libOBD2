@@ -13,7 +13,7 @@
 /* ================================================ MODULE API ============================================= */
 obd_status_t LibOBD2_Init(obd_ctx_t *ctx)
 {
-    obd_status_t status = OBD_GENERIC_ERROR;
+    obd_status_t status = {0};
 
     OBD2_CHECK_NULLPTR(ctx);
     OBD2_CHECK_NULLPTR(ctx->pDataLink);
@@ -27,6 +27,7 @@ obd_status_t LibOBD2_Init(obd_ctx_t *ctx)
     status = Dl_Connect(self);
     OBD2_ASSERT_OK(status);
 
+exit:
     return status;
 }
 
@@ -37,7 +38,7 @@ obd_status_t LibOBD2_RequestService(
     obd_response_t* response,
     size_t* responseLen)
 {
-    obd_status_t status = OBD_GENERIC_ERROR;
+    obd_status_t status = {0};
 
     OBD2_CHECK_NULLPTR(ctx);
     OBD2_CHECK_NULLPTR(ctx->pDataLink);
@@ -57,6 +58,7 @@ obd_status_t LibOBD2_RequestService(
 
     status = Dl_ReceiveResponse(self, response, responseLen);
 
+exit:
     return status;
 }
 

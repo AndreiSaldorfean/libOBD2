@@ -68,8 +68,8 @@ static void test_L2_KWP_RecvMessage_000_Sender(void *param)
 {
     dataLink_if_t *pDataLinkTx = &dataLink_tx;
     message_t response = {0};
-    obd_status_t  expected = OBD_STATUS_OK;
-    obd_status_t actual = 0;
+    obd_status_t expected = {0};
+    obd_status_t actual   = {0};
     uint8_t aSentMsg[6];
     size_t len;
     message_t msg = msg_00_ecu;
@@ -82,7 +82,7 @@ static void test_L2_KWP_RecvMessage_000_Sender(void *param)
     L2_KWP_PrepareMessage(&msg, aSentMsg, &len);
 
     ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
-    TEST_ASSERT_EQUAL_HEX16(expected, actual);
+    TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 
     LIBOBD_FlushRx(pDataLinkTx);
 
@@ -94,18 +94,13 @@ static void test_L2_KWP_RecvMessage_000_Receiver(void *param)
 {
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
     message_t response = {0};
-    obd_status_t  expected = OBD_STATUS_OK;
-    obd_status_t actual = 0;
+    obd_status_t expected = {0};
+    obd_status_t actual   = {0};
     uint32_t timeSample = 0;
 
     (void)msg_00;
     (void)param;
     (void)dataLink_00;
-
-    /* Drain any stale byte left in USART2 DR by a previous test (e.g. SendMessage_002
-     * echo). UART_KWP_FlushRx is non-yielding so the Sender cannot race in and
-     * have its first real byte accidentally consumed here. */
-    LIBOBD_FlushRx(pDataLinkRx);
 
     timeSample = LIBOBD_GetTimeMs(pDataLinkRx);
     LIBOBD_SetTimeSample(pDataLinkRx , timeSample);
@@ -114,7 +109,7 @@ static void test_L2_KWP_RecvMessage_000_Receiver(void *param)
     LIBOBD_Delay(pDataLinkRx, KWP_P2_TIME_MIN);
 
     actual = L2_KWP_RecvMessage(pDataLinkRx, &response);
-    TEST_ASSERT_EQUAL_HEX16(expected, actual);
+    TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 
     LIBOBD_FlushRx(pDataLinkRx);
 
@@ -125,15 +120,15 @@ static void test_L2_KWP_RecvMessage_000_Receiver(void *param)
 static void test_L2_KWP_5BaudInit_000_Sender(void *param)
 {
     dataLink_if_t *pDataLinkTx = &dataLink_tx;
-    obd_status_t  expected = OBD_STATUS_OK;
-    obd_status_t actual = 0;
+    obd_status_t expected = {0};
+    obd_status_t actual   = {0};
 
     (void)param;
 
     UnitySetTestFile(__FILE__);
 
     actual = L2_KWP_5BaudInit(pDataLinkTx);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(expected, actual, "L2_KWP_5BaudInit");
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "L2_KWP_5BaudInit");
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
@@ -143,8 +138,8 @@ void test_L2_KWP_5BaudInit_000_Receiver(void *param)
 {
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
     // message_t response = {0};
-    obd_status_t  expected = OBD_STATUS_OK;
-    obd_status_t actual = 0;
+    obd_status_t  expected = {0};
+    obd_status_t actual = {0};
     // uint32_t timeSample = 0;
     uint8_t syncByte    = 0;
     uint8_t kb2Inverted = 0;
@@ -160,19 +155,26 @@ void test_L2_KWP_5BaudInit_000_Receiver(void *param)
 
     // Send sync byte
     LIBOBD_SendByte(pDataLinkRx, 0x55);
+    LIBOBD_FlushRx(pDataLinkRx);
 
     // Send KB1
     YIELD;
     LIBOBD_Delay(pDataLinkRx, ISO9141_W2_TIME_MIN);
     LIBOBD_SendByte(pDataLinkRx, 0x08);
+    LIBOBD_FlushRx(pDataLinkRx);
 
     // Send KB2
     LIBOBD_SendByte(pDataLinkRx, 0x08);
+    /* Wait just long enough for the KB2 echo (~1 byte at 10400 baud ≈ 1ms)
+     * to arrive and then flush it. Must be well under W4_TIME_MIN (25ms)
+     * so we don't accidentally flush the ~kb2 response sent by the tester. */
+    LIBOBD_Delay(pDataLinkRx, 3);
+    LIBOBD_FlushRx(pDataLinkRx);
 
     // Receive kb2 inverted
     actual = ReadByteInTimeframe(pDataLinkRx, &kb2Inverted, 0, ISO9141_W4_TIME_MAX+100);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(expected, actual, "ReadByteInTimeframe: kb2 inverted");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(~0x08, kb2Inverted, "Inverted keybyte");
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "ReadByteInTimeframe: kb2 inverted");
 
     // Send inverted address
     YIELD;
@@ -203,17 +205,12 @@ static void test_L2_KWP_ReadHeader_000_Receiver(void *param)
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
     header_t       header      = {0};
     size_t         headerLen   = 0;
-    obd_status_t   expected    = OBD_STATUS_OK;
-    obd_status_t   actual      = 0;
+    obd_status_t expected = {0};
+    obd_status_t actual   = {0};
     uint32_t       timeSample  = 0;
     // uint8_t        stale       = 0;
 
     (void)param;
-
-    // Drain any stale bytes (e.g. ~kb2 = 0xF7 left in USART2 RX by L2_KWP_5BaudInit)
-    // WITHOUT yielding so the sender cannot race in and put real data into the drain.
-    // USART2 DR holds at most one byte, so this loop runs 0 or 1 times.
-    // while (OBD_RECV_NOT_READY != LIBOBD_ReceiveByte(pDataLinkRx, &stale)) {}
 
     // Mirror the pattern used by test_L2_KWP_RecvMessage_000:
     //   set timeSample = now, start 50ms timeout, busy-wait 25ms so the
@@ -238,13 +235,13 @@ static void test_L2_KWP_Init_000_Sender(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkTx = &dataLink_tx;
-    obd_status_t   expected    = OBD_STATUS_OK;
-    obd_status_t   actual      = 0;
+    obd_status_t expected = {0};
+    obd_status_t actual   = {0};
 
     (void)param;
 
     actual = L2_KWP_Init(pDataLinkTx);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(expected, actual, "L2_KWP_Init");
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "L2_KWP_Init");
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
@@ -254,8 +251,8 @@ static void test_L2_KWP_Init_000_Receiver(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
-    obd_status_t   expected    = OBD_STATUS_OK;
-    obd_status_t   actual      = 0;
+    obd_status_t expected = {0};
+    obd_status_t actual   = {0};
     uint8_t        syncByte    = 0;
     uint8_t        kb2Inverted = 0;
 
@@ -280,7 +277,7 @@ static void test_L2_KWP_Init_000_Receiver(void *param)
 
     // Receive kb2 inverted
     actual = ReadByteInTimeframe(pDataLinkRx, &kb2Inverted, 0, ISO9141_W4_TIME_MAX);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(expected, actual, "ReadByteInTimeframe: kb2 inverted");
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "ReadByteInTimeframe: kb2 inverted");
 
     // Send inverted address
     YIELD;
@@ -295,13 +292,13 @@ static void test_l2_kwp_connect_000_Sender(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkTx = &dataLink_tx;
-    obd_status_t   expected    = OBD_STATUS_OK;
-    obd_status_t   actual      = 0;
+    obd_status_t expected = {0};
+    obd_status_t actual   = {0};
 
     (void)param;
 
     actual = l2_kwp_connect(pDataLinkTx);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(expected, actual,                "l2_kwp_connect");
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_connect");
     TEST_ASSERT_EQUAL_MESSAGE(1, kwpCtx.conStatus.bits.CONN_OK, "CONN_OK bit");
 
     g_sender_done = pdTRUE;
@@ -312,8 +309,8 @@ static void test_l2_kwp_connect_000_Receiver(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
-    obd_status_t   expected    = OBD_STATUS_OK;
-    obd_status_t   actual      = 0;
+    obd_status_t expected = {0};
+    obd_status_t actual   = {0};
     uint8_t        syncByte    = 0;
     uint8_t        kb2Inverted = 0;
 
@@ -338,7 +335,7 @@ static void test_l2_kwp_connect_000_Receiver(void *param)
 
     // Receive kb2 inverted
     actual = ReadByteInTimeframe(pDataLinkRx, &kb2Inverted, 0, ISO9141_W4_TIME_MAX);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(expected, actual, "ReadByteInTimeframe: kb2 inverted");
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "ReadByteInTimeframe: kb2 inverted");
 
     // Send inverted address
     YIELD;
@@ -353,8 +350,8 @@ static void test_l2_kwp_send_request_000_Sender(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkTx = &dataLink_tx;
-    obd_status_t   expected    = OBD_STATUS_OK;
-    obd_status_t   actual      = 0;
+    obd_status_t expected = {0};
+    obd_status_t actual   = {0};
     uint32_t       timeSample  = 0;
 
     (void)param;
@@ -366,7 +363,7 @@ static void test_l2_kwp_send_request_000_Sender(void *param)
 
     actual = l2_kwp_send_request(pDataLinkTx, &request_00, 1);
     LIBOBD_StopTimeout(pDataLinkTx);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(expected, actual, "l2_kwp_send_request");
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_send_request");
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
@@ -395,8 +392,8 @@ static void test_l2_kwp_recv_response_000_Sender(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t      *pDataLinkTx = &dataLink_tx;
-    obd_status_t  expected = OBD_STATUS_OK;
-    obd_status_t actual = 0;
+    obd_status_t expected = {0};
+    obd_status_t actual   = {0};
     uint8_t aSentMsg[6];
     size_t len;
     message_t msg = msg_00_ecu;
@@ -408,7 +405,7 @@ static void test_l2_kwp_recv_response_000_Sender(void *param)
     L2_KWP_PrepareMessage(&msg, aSentMsg, &len);
 
     ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
-    TEST_ASSERT_EQUAL_HEX16(expected, actual);
+    TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
@@ -420,8 +417,8 @@ static void test_l2_kwp_recv_response_000_Receiver(void *param)
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
     obd_response_t resp        = {0};
     size_t         len         = 0;
-    obd_status_t   expected    = OBD_STATUS_OK;
-    obd_status_t   actual      = 0;
+    obd_status_t expected = {0};
+    obd_status_t actual   = {0};
     uint32_t       timeSample  = 0;
 
     (void)param;
@@ -432,7 +429,7 @@ static void test_l2_kwp_recv_response_000_Receiver(void *param)
     LIBOBD_Delay(pDataLinkRx, KWP_P2_TIME_MIN);
 
     actual = l2_kwp_recv_response(pDataLinkRx, &resp, &len);
-    TEST_ASSERT_EQUAL_HEX16_MESSAGE(expected, actual,       "l2_kwp_recv_response return");
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_recv_response return");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x81, resp.positive.sid, "resp sid");
 
     g_receiver_done = pdTRUE;
@@ -471,8 +468,8 @@ void test_L2_KWP_ComputeChecksum_000(void)
 void test_L2_KWP_SendMessage_000(void)
 {
     dataLink_if_t *pDataLink = &dataLink_00;
-    obd_status_t  expected = OBD_STATUS_OK;
-    obd_status_t actual = 0;
+    obd_status_t expected    = {0};
+    obd_status_t actual      = {0};
     uint32_t timeSample = 0;
     uint8_t buffer[6];
     message_t msg = msg_00;
@@ -491,7 +488,7 @@ void test_L2_KWP_SendMessage_000(void)
 
     LIBOBD_StopTimeout(pDataLink);
 
-    TEST_ASSERT_EQUAL_HEX16(expected, actual);
+    TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 }
 
 // ==========================================================================================================
@@ -506,8 +503,8 @@ void test_L2_KWP_SendMessage_000(void)
 void test_L2_KWP_SendMessage_001(void)
 {
     dataLink_if_t *pDataLink = &dataLink_00;
-    obd_status_t  expected = OBD_STATUS_OK;
-    obd_status_t actual = 0;
+    obd_status_t expected    = {0};
+    obd_status_t actual      = {0};
     uint32_t timeSample = 0;
 
     (void)msg_00;
@@ -523,8 +520,8 @@ void test_L2_KWP_SendMessage_001(void)
 
         LIBOBD_StopTimeout(pDataLink);
 
-        expected = OBD_ERR_COMM_P3_TIMEOUT_MAX_ECU_TESTER;
-        TEST_ASSERT_EQUAL_HEX16(expected, actual);
+        expected.timeout = OBD_ERR_COMM_P3_TIMEOUT_MAX_ECU_TESTER;
+        TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
     }
 
     {
@@ -537,8 +534,8 @@ void test_L2_KWP_SendMessage_001(void)
 
         LIBOBD_StopTimeout(pDataLink);
 
-        expected = OBD_ERR_COMM_P3_TIMEOUT_MAX_ECU_TESTER;
-        TEST_ASSERT_EQUAL_HEX16(expected, actual);
+        expected.timeout = OBD_ERR_COMM_P3_TIMEOUT_MAX_ECU_TESTER;
+        TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
     }
 }
 
@@ -553,8 +550,8 @@ void test_L2_KWP_SendMessage_001(void)
 void test_L2_KWP_SendMessage_002(void)
 {
     dataLink_if_t *pDataLink = &dataLink_00;
-    obd_status_t  expected = OBD_STATUS_OK;
-    obd_status_t actual = 0;
+    obd_status_t  expected = {0};
+    obd_status_t actual = {0};
     uint32_t timeSample = 0;
 
     (void)msg_00;
@@ -570,8 +567,8 @@ void test_L2_KWP_SendMessage_002(void)
 
         LIBOBD_StopTimeout(pDataLink);
 
-        expected = OBD_ERR_COMM_P3_TIMEOUT_MIN_ECU_TESTER;
-        TEST_ASSERT_EQUAL_HEX16(expected, actual);
+        expected.timeout = OBD_ERR_COMM_P3_TIMEOUT_MIN_ECU_TESTER;
+        TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
     }
 
     {
@@ -583,8 +580,8 @@ void test_L2_KWP_SendMessage_002(void)
 
         LIBOBD_StopTimeout(pDataLink);
 
-        expected = OBD_ERR_COMM_P3_TIMEOUT_MIN_ECU_TESTER;
-        TEST_ASSERT_EQUAL_HEX16(expected, actual);
+        expected.timeout = OBD_ERR_COMM_P3_TIMEOUT_MIN_ECU_TESTER;
+        TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
     }
 }
 
@@ -597,14 +594,10 @@ void test_L2_KWP_RecvMessage_000(void)
 {
     TaskHandle_t senderTask = NULL;
     TaskHandle_t receiverTAsk = NULL;
-    dataLink_if_t *pDataLinkRx = &dataLink_rx;
     uint32_t status = 0;
 
     g_sender_done = pdFALSE;
     g_receiver_done = pdFALSE;
-
-    uint8_t stale = 0;
-    while (OBD_RECV_NOT_READY != LIBOBD_ReceiveByte(pDataLinkRx, &stale)) {}
 
     vTaskSuspendAll();
     status = xTaskCreate(
