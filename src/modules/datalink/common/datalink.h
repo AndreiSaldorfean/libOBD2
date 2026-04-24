@@ -26,6 +26,15 @@
 #define LIBOBD_SendPulse(handle, pulse)   (handle->pTransportOps->send_pulse(handle->pTransportHandle, pulse))
 #define LIBOBD_FlushRx(handle)            (handle->pTransportOps->flush_rx(handle->pTransportHandle))
 #define LIBOBD_SwitchMode(handle, mode)   (handle->pTransportOps->switch_mode(handle->pTransportHandle, mode))
+
+#define PULSE_HIGH (1U)
+#define PULSE_LOW (0U)
+#define MAX_BLOCKING_RECV_TIME (300U)
+
+#define FAST_INIT_WAKEUP_START  (0x1)
+#define FAST_INIT_WAKEUP_END    (0x2)
+#define SLOW_INIT_5BAUD_START   (0x3)
+#define SLOW_INIT_5BAUD_END     (0x4)
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
 {
