@@ -4,7 +4,7 @@
 /* ================================================ INCLUDES =============================================== */
 #include <stdint.h>
 #include <stdbool.h>
-#include "srv_status.h"
+#include "statusRetCodes.h"
 
 /* ================================================= MACROS ================================================ */
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
@@ -22,6 +22,8 @@ typedef struct
     uint32_t usartRxPin;
 
     uint32_t gpioRcc;
+    uint32_t gpioOutType;
+    uint32_t gpioOutSpeed;
     uint32_t gpio;
 
     bool init;
@@ -30,9 +32,10 @@ typedef struct
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-obd_status_t UART_KWP_Init(void* handle);
+bool UART_KWP_Init(void* handle);
+bool UART_KWP_RecvByte(void* handle, uint8_t *recv_buffer);
 void UART_KWP_WriteByte(void* handle, uint8_t data);
-obd_status_t UART_KWP_RecvByte(void* handle, uint8_t *recv_buffer);
+void UART_KWP_FlushRx(void* handle);
 void UART_KWP_SendPulse(void* handle, bool pulse);
 void UART_KWP_SwitchMode(void* handle, uint8_t mode);
 

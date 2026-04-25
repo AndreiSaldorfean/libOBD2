@@ -1,6 +1,7 @@
 /* ================================================ INCLUDES =============================================== */
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
+#include "cdc_device.h"
 #include "data_link_if.h"
 #include "iso15031_5.h"
 #include "task.h"
@@ -12,6 +13,7 @@
 #include "kwp_timer.h"
 #include "libobd2.h"
 #include "l2_kwp.h"
+#include "usbd.h"
 #include "utils.h"
 
 /* ================================================= MACROS ================================================ */
@@ -111,28 +113,35 @@ void TesterTask(void *param)
     (void)param;
     (void)status;
 
+    printf("================== TesterTask ==================\n");
+
     configDataLink(&dataLink);
 
     obd_ctx_t ctx =
     {
-            .pDataLink = &dataLink,
-            .connectionStatus = 0
+        .pDataLink = &dataLink,
+        .connectionStatus = 0
     };
 
     status = LibOBD2_Init(&ctx);
+    printf("status= %x\n", status);
 
     obd_request_t request =
     {
-            .sid = SID_SHOW_CURRENT_DATA,
-            .param = {PID_01_COOLANT_TEMP},
+        .sid = SID_SHOW_CURRENT_DATA,
+        .param = {PID_01_COOLANT_TEMP},
     };
     obd_response_t response = {0};
     size_t respLen = 0;
 
     for (;;)
     {
-        LibOBD2_RequestService(&ctx, &request, 1, &response, &respLen);
+        status = LibOBD2_RequestService(&ctx, &request, 1, &response, &respLen);
+        printf("status= %x\n", status);
 
         vTaskDelay(1000/portTICK_PERIOD_MS);
+
+        tud_cdc_write_flush();
+        tud_task();
     }
 }

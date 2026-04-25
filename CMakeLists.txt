@@ -7,7 +7,7 @@ add_library(freertos_config INTERFACE)
 
 target_include_directories(freertos_config SYSTEM
     INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/freertos/
+        ${CMAKE_CURRENT_SOURCE_DIR}/ports/stm32f4/config #TODO: change stm32f4 with a variable
 )
 
 target_compile_definitions(freertos_config
@@ -30,7 +30,10 @@ add_subdirectory(
 target_link_libraries(freertos_kernel PUBLIC freertos_config)
 target_link_libraries(freertos_kernel_port PUBLIC freertos_config)
 file(GLOB SOURCES
-    "./src/*.c"
+    "./src/modules/app/*.c"
+    "./src/modules/datalink/common/*.c"
+    "./src/modules/datalink/specific/l2_iso9141/*.c"
+    "./src/modules/datalink/specific/l2_kwp2000/*.c"
     "./utils/*.c"
     "./src/data_link/l2_kwp/*.c"
 )
@@ -39,20 +42,21 @@ add_library(${PROJECT_NAME} ${SOURCES})
 
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
-    DEBUG
     SPT_FREERTOS
 )
+
+if(DEBUG STREQUAL "ON")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG)
+endif()
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
     ./include/
     ./utils/
-    ./include/data_link/l2_kwp
-    ./include/data_link/l2_iso9141/
-    ./include/data_link/
-    ./include/app/
-    ./interface/
-    ./include/freertos/
+    ./src/modules/datalink/common
+    ./src/modules/datalink/specific/l2_iso9141/
+    ./src/modules/datalink/specific/l2_kwp2000/
+    ./src/modules/app/
     ./examples/libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/
     ./examples/libs/FreeRTOS-Kernel/include/
 )

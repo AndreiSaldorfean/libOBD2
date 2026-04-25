@@ -267,8 +267,6 @@ TOOLCHAIN={toolchain_path}
 
     if "ON" == setup_build_directory.debug:
         cmake_cmd.append("-DDEBUG=ON")
-    else:
-        cmake_cmd.append("-DDEBUG=OFF")
 
     print(f"  Command: {' '.join(cmake_cmd)}")
     result = subprocess.run(cmake_cmd, cwd=build_dir)

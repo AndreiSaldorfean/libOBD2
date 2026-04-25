@@ -1,16 +1,15 @@
 /* ================================================ INCLUDES =============================================== */
+#include "init.h"
 #include "libobd2_test_utils.h"
 #include "timer_test.h"
 #include "uart_kwp_transport_port.h"
 #include "unity.h"
 #include "unity_internals.h"
-#include "test_libobd2.h"
+#include "libobd2_test.h"
 #include "stdio.h"
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
 #include "tasks.h"
-
-#include <stdint.h>
 #define STM32F4
 #include <stddef.h>
 #include <stdio.h>
@@ -19,85 +18,159 @@
 #include "libopencm3/stm32/rcc.h"
 #include "libopencm3/cm3/nvic.h"
 #include "tusb.h"
-#include "l2_kwp_test.h"
-#include "l2_kwp_utils_test.h"
+#include "l2_kwp2000_test.h"
+#include "datalink_test.h"
 #include "task.h"
 #include "tasks.h"
 
 
 /* ================================================= MACROS ================================================ */
+#define GREEN_LED GPIO9
+#define RED_LED GPIO8
+
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-/* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-void setUp(void) { }
-
-void tearDown(void) { }
-
-#if !defined(DEBUG)
-static void usart_setup(void)
+static void gpio_setup(void)
 {
-    /* Use internal HSI oscillator - works on all F401CCU boards without crystal */
-    rcc_clock_setup_pll(&rcc_hsi_configs[RCC_CLOCK_3V3_84MHZ]);
+    dataLink_if_t *pDataLinkTx = &dataLink_tx;
 
-    /* Enable GPIO clocks for USB */
-    rcc_periph_clock_enable(RCC_GPIOA);
+    rcc_periph_clock_enable(RCC_GPIOB);
+    gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GREEN_LED | RED_LED);
+    gpio_clear(GPIOB, GREEN_LED | RED_LED);
+    LIBOBD_Delay(pDataLinkTx, 100);
 
-    /*
-     * Force USB re-enumeration by pulling D+ (PA12) LOW briefly.
-     * This signals disconnect to the host, forcing it to re-enumerate
-     * when we release it. Needed after MCU reset via debugger.
-     */
-    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO12);
-    gpio_clear(GPIOA, GPIO12);
-    for (volatile int i = 0; i < 800000; i++) { __asm__("nop"); }  /* ~50ms delay */
+    gpio_set(GPIOB, GREEN_LED);
+    LIBOBD_Delay(pDataLinkTx, 100);
 
-    /* Setup USB pins PA11 (D-) and PA12 (D+) BEFORE enabling USB clock */
-    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO11 | GPIO12);
-    gpio_set_af(GPIOA, GPIO_AF10, GPIO11 | GPIO12);
+    gpio_clear(GPIOB, GREEN_LED | RED_LED);
+    LIBOBD_Delay(pDataLinkTx, 100);
 
-    /* Enable USB OTG FS clock */
-    rcc_periph_clock_enable(RCC_OTGFS);
+    gpio_set(GPIOB, RED_LED);
+    LIBOBD_Delay(pDataLinkTx, 100);
 
-    /* Initialize TinyUSB */
-    tusb_init();
+    gpio_clear(GPIOB, GREEN_LED | RED_LED);
+    LIBOBD_Delay(pDataLinkTx, 100);
 
-    /* Enable USB interrupt after initialization */
-    nvic_enable_irq(NVIC_OTG_FS_IRQ);
+    gpio_set(GPIOB, GREEN_LED| RED_LED);
+    LIBOBD_Delay(pDataLinkTx, 100);
+
+    gpio_clear(GPIOB, GREEN_LED | RED_LED);
+    LIBOBD_Delay(pDataLinkTx, 100);
+
+    gpio_set(GPIOB, GREEN_LED| RED_LED);
+    LIBOBD_Delay(pDataLinkTx, 100);
+
+    gpio_clear(GPIOB, GREEN_LED | RED_LED);
+    LIBOBD_Delay(pDataLinkTx, 100);
+
+    gpio_set(GPIOB, GREEN_LED| RED_LED);
+    LIBOBD_Delay(pDataLinkTx, 100);
+    gpio_clear(GPIOB, GREEN_LED | RED_LED);
 }
-#endif /* DEBUG */
-/* ================================================ MODULE API ============================================= */
+/* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
+void setUp(void)
+{
+    dataLink_if_t *pDataLinkRx = &dataLink_rx;
+    dataLink_if_t *pDataLinkTx = &dataLink_tx;
 
+    // Added so no test starts untill serial is attached
+    LIBOBD_SendByte(pDataLinkRx, 0x42);
+
+    LIBOBD_FlushRx(pDataLinkTx);
+    LIBOBD_FlushRx(pDataLinkRx);
+}
+
+void tearDown(void)
+{
+    dataLink_if_t *pDataLinkRx = &dataLink_rx;
+    dataLink_if_t *pDataLinkTx = &dataLink_tx;
+
+    LIBOBD_FlushRx(pDataLinkTx);
+    LIBOBD_FlushRx(pDataLinkRx);
+    if (Unity.CurrentTestFailed)
+    {
+        gpio_set(GPIOB, RED_LED);
+        LIBOBD_Delay(pDataLinkTx, 2000);
+        gpio_clear(GPIOB, RED_LED | GREEN_LED);
+    }
+    else
+    {
+        gpio_set(GPIOB, GREEN_LED);
+        LIBOBD_Delay(pDataLinkTx, 2000);
+        gpio_clear(GPIOB, RED_LED | GREEN_LED);
+    }
+}
+
+/* ================================================ MODULE API ============================================= */
 int main()
 {
-    #if !defined(DEBUG)
-	usart_setup();
+    TaskHandle_t libobd2TestTaskHandle = NULL;
+    // TaskHandle_t l2KwpTestTaskHandle   = NULL;
+    // TaskHandle_t uartTestTaskHandle    = NULL;
+    uint32_t status = 0;
 
-	/* Disable stdout buffering for immediate printf output */
-	setbuf(stdout, NULL);
-    #endif /* DEBUG */
+    sysInit();
 
     UART_KWP_Init(&uartCtxTx);
     UART_KWP_Init(&uartCtxRx);
-    KWP_TMR_Init(&tmrCtx);
+    KWP_TMR_Init(&tmrCtxTx);
+    KWP_TMR_Init(&tmrCtxRx);
 
-    TaskHandle_t testerTaskHandle = NULL;
-    uint32_t status = 0;
+    gpio_setup();
 
+    /* Create LIBOBD2 suite first but at lower priority — it will only run
+     * once L2_KWP_TestTask finishes and deletes itself. */
     status = xTaskCreate(
-        TestTask,
-        "Receiver Task",
-        1024,
+        L2_ISO9141_TestTask,
+        "Libobd2_Test_Task",
+        2100,
         NULL,
-        tskIDLE_PRIORITY,
-        &testerTaskHandle);
+        tskIDLE_PRIORITY + 1,           /* lower: waits until L2_KWP_TestTask is gone */
+        &libobd2TestTaskHandle);
 
-    if (status)
+    if (status != pdPASS)
     {
-        vTaskStartScheduler();
+        while (1)
+            ;
     }
 
+    /* L2_KWP suite runs first because it has higher priority.
+     * Sub-tasks it spawns are at tskIDLE_PRIORITY+3, so they still preempt
+     * this task normally. LIBOBD2_TestTask never gets scheduled until this
+     * task calls vTaskDelete(NULL). */
+    // status = xTaskCreate(
+    //     L2_KWP_TestTask,
+    //     "L2_kwp_Test_Task",
+    //     1024,
+    //     NULL,
+    //     tskIDLE_PRIORITY + 1,       /* higher: runs before LIBOBD2_TestTask */
+    //     &l2KwpTestTaskHandle);
+    //
+    // if (status != pdPASS)
+    // {
+    //     while (1)
+    //         ;
+    // }
 
+    // status = xTaskCreate(
+    //     UART_TestTask,
+    //     "UART_TestTask",
+    //     512,
+    //     NULL,
+    //     tskIDLE_PRIORITY + 1,       /* higher: runs before LIBOBD2_TestTask */
+    //     &uartTestTaskHandle);
+    //
+    // if (status != pdPASS)
+    // {
+    //     while (1)
+    //         ;
+    // }
+
+    vTaskStartScheduler();
+
+
+    /* Should never be reached */
     while(true)
     {
         #if !defined(DEBUG)

@@ -2,7 +2,7 @@
 #define KWP_TIMER_H
 
 /* ================================================ INCLUDES =============================================== */
-#include "srv_status.h"
+#include "statusRetCodes.h"
 #include "timing_if.h"
 
 /* ================================================= MACROS ================================================ */
@@ -26,11 +26,15 @@ typedef struct
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-obd_status_t KWP_TMR_Init(void *pHandle);
+bool KWP_TMR_Init(void *pHandle);
 uint32_t KWP_TMR_GetTimeMs(void *pHandle);
-obd_status_t KWP_TMR_DelayMs(void *pHandle, uint32_t delay_ms);
-obd_status_t KWP_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t callback, void *pUserData);
-obd_status_t KWP_TMR_StopTimeout(void *pHandle);
+void KWP_TMR_DelayMs(void *pHandle, uint32_t delay_ms);
+bool KWP_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t callback, void *pUserData);
+bool KWP_TMR_StopTimeout(void *pHandle);
 bool KWP_TMR_IsTimeoutExpired(void *pHandle);
+
+/* Debug helpers – freeze/resume the logical clock at GDB breakpoints */
+void KWP_TMR_Pause(void);
+void KWP_TMR_Resume(void);
 
 #endif /* KWP_TIMER_H */

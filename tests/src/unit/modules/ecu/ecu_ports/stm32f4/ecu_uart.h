@@ -1,15 +1,14 @@
-#ifndef TASK_H
-#define TASK_H
+#ifndef ECU_UART_H
+#define ECU_UART_H
+
 /* ================================================ INCLUDES =============================================== */
+#include "datalink.h"
+
 /* ================================================= MACROS ================================================ */
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-void L2_ISO9141_TestTask(void *param);
-void DL_Utils_TestTask(void *param);
-void L2_KWP_TestTask(void *param);
-void LIBOBD2_TestTask(void *param);
-void UART_TestTask(void *param);
+bool ECUSIM_ReadByteBitBanged(dataLink_if_t *self, uint8_t *byte);
 
-#endif /* TASK_H */
+#endif /* ECU_UART_H */

@@ -1,11 +1,12 @@
 /* ================================================ INCLUDES =============================================== */
 #include "tasks.h"
+#include "libobd2_test.h"
 #include "libobd2_test_utils.h"
 #include "timer_test.h"
 #include "uart_kwp_transport_port.h"
+#include "uart_test.h"
 #include "unity.h"
 #include "unity_internals.h"
-#include "test_libobd2.h"
 #include "stdio.h"
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
@@ -19,9 +20,12 @@
 #include "libopencm3/stm32/rcc.h"
 #include "libopencm3/cm3/nvic.h"
 #include "tusb.h"
-#include "l2_kwp_test.h"
-#include "l2_kwp_utils_test.h"
+#include "l2_iso9141_test.h"
+#include "l2_iso9141.h"
+#include "l2_kwp2000_test.h"
+#include "datalink_test.h"
 #include "task.h"
+#include "uart_test.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -29,33 +33,45 @@
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */
-void TestTask(void *param)
+void DL_Utils_TestTask(void *param)
+{
+    (void)param;
+
+    RUN_TEST(test_ReadByteInTimeframe_000);
+    RUN_TEST(test_RecvByteBlocking_000);
+}
+
+void L2_ISO9141_TestTask(void *param)
 {
     (void)param;
     printf("============= UNIT BEGIN ==============\n");
-
     UNITY_BEGIN();
 
-    /* TODO: Add proper unit tests and turn examples module to proper examples not bad integration tests */
-    #if 0
-    RUN_TEST(test_LIBOBD2_0);
-    RUN_TEST(test_LIBOBD2_1);
-    RUN_TEST(test_TIMER_0);
-    RUN_TEST(test_TIMER_1);
-    #endif
+    RUN_TEST(test_L2_ISO9141_ComputeChecksum_000);
+    RUN_TEST(test_L2_ISO9141_SendMessage_000);
+    RUN_TEST(test_L2_ISO9141_RecvMessage_000);
+    RUN_TEST(test_L2_ISO9141_ReadHeader_000);
+    RUN_TEST(test_L2_ISO9141_PrepareMessage_000);
+    RUN_TEST(test_L2_ISO9141_5BaudInit_000);
+    RUN_TEST(test_l2_ISO9141_connect_000);
+    RUN_TEST(test_l2_ISO9141_send_request_000);
+    RUN_TEST(test_l2_ISO9141_recv_response_000);
 
-    /* ======================= Unit tests ======================= */
+    UNITY_END();
+    vTaskDelete(NULL);
+}
 
-    /* ---------------------  l2_kwp_utils ---------------------- */
-    RUN_TEST(test_ReadByteInTimeframe_000);
-    RUN_TEST(test_RecvByteBlocking_000);
-    /* ---------------------  l2_kwp_utils ---------------------- */
+void L2_KWP_TestTask(void *param)
+{
+    (void)param;
+    printf("============= UNIT BEGIN ==============\n");
+    UNITY_BEGIN();
 
-    /* ------------------------  l2_kwp ------------------------- */
+
     RUN_TEST(test_L2_KWP_ComputeChecksum_000);
-    // RUN_TEST(test_L2_KWP_SendMessage_000);
-    // RUN_TEST(test_L2_KWP_SendMessage_001);
-    // RUN_TEST(test_L2_KWP_SendMessage_002);
+    RUN_TEST(test_L2_KWP_SendMessage_000);
+    RUN_TEST(test_L2_KWP_SendMessage_001);
+    RUN_TEST(test_L2_KWP_SendMessage_002);
     RUN_TEST(test_L2_KWP_RecvMessage_000);
 #if defined(SPT_FAST_INIT)
     RUN_TEST(test_L2_KWP_SRV_StartCommunication_000);
@@ -66,24 +82,37 @@ void TestTask(void *param)
 #if defined(SPT_CHANGE_TIMING_PARAM)
     RUN_TEST(test_L2_KWP_SRV_AccessTimingParameter_000);
 #endif /* SPT_CHANGE_TIMING_PARAM */
-#if defined(SPT_5BAUD_INIT)
-    RUN_TEST(test_L2_KWP_5BaudInit_000);
-#endif /* SPT_5BAUD_INIT */
-    RUN_TEST(test_L2_KWP_Init_000);
     RUN_TEST(test_L2_KWP_ReadHeader_000);
     RUN_TEST(test_PrepareMessage_000);
-    /* ------------------------  l2_kwp ------------------------- */
-
-    /* ======================= Unit tests ======================= */
+    RUN_TEST(test_l2_kwp_connect_000);
+    RUN_TEST(test_l2_kwp_send_request_000);
+    RUN_TEST(test_l2_kwp_recv_response_000);
 
     UNITY_END();
+    vTaskDelete(NULL);
+}
 
-    while(true)
-    {
-        #if !defined(DEBUG)
-        tud_cdc_write_flush();
-        tud_task();
-        #endif /* DEBUG */
-    }
+void LIBOBD2_TestTask(void *param)
+{
+    (void)param;
 
+    UNITY_BEGIN();
+
+    // RUN_TEST(test_LibOBD2_Init_000);
+    RUN_TEST(test_LibOBD2_RequestService_000);
+
+    UNITY_END();
+    vTaskDelete(NULL);
+}
+
+void UART_TestTask(void *param)
+{
+    (void)param;
+
+    UNITY_BEGIN();
+
+    RUN_TEST(test_UART_000);
+
+    UNITY_END();
+    vTaskDelete(NULL);
 }

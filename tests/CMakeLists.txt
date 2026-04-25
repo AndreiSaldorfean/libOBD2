@@ -8,14 +8,18 @@ set(TINYUSB_ROOT ${CMAKE_SOURCE_DIR}/../examples/libs/tinyusb)
 
 file(GLOB SOURCES
     "${CMAKE_SOURCE_DIR}/Unity/src/unity.c"
-    "${CMAKE_SOURCE_DIR}/src/startup/isr_vector.c"
-    "${CMAKE_SOURCE_DIR}/src/startup/reset_handler.c"
-    "${CMAKE_SOURCE_DIR}/src/main.c"
-    "${CMAKE_SOURCE_DIR}/src/unit/*.c"
+    "${CMAKE_SOURCE_DIR}/src/*.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/modules/app/*.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/modules/datalink/common/*.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/modules/datalink/specific/l2_iso9141/*.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/modules/datalink/specific/l2_kwp2000/*.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/modules/ecu/*.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/modules/ecu/ecu_ports/stm32f4/*.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/ports/stm32f4/*.c"
     "${CMAKE_SOURCE_DIR}/src/os/*.c"
-    "${CMAKE_SOURCE_DIR}/src/usb_descriptors.c"
     "${CMAKE_SOURCE_DIR}/../examples/libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
     "${CMAKE_SOURCE_DIR}/../ports/stm32f4/*.c"
+    "${CMAKE_SOURCE_DIR}/../ports/stm32f4/startup/*.c"
     ${TINYUSB_ROOT}/src/tusb.c
     ${TINYUSB_ROOT}/src/common/tusb_fifo.c
     ${TINYUSB_ROOT}/src/device/usbd.c
@@ -37,14 +41,22 @@ target_include_directories(${PROJECT_NAME}
     ../include
     ../include/freertos/
     ../ports/stm32f4/
+    ../ports/stm32f4/startup/
+    ../ports/stm32f4/config/
     ../utils
     ../interface/
     ../include/app/
     ../include/data_link/
     ../include/data_link/l2_kwp/
     ../include/data_link/l2_iso9141/
-    ./src/int/
-    ./src/unit/
+    ./src/
+    ./src/unit/modules/app/
+    ./src/unit/modules/datalink/common
+    ./src/unit/modules/datalink/specific/l2_iso9141/
+    ./src/unit/modules/datalink/specific/l2_kwp2000/
+    ./src/unit/modules/ecu/
+    ./src/unit/modules/ecu/ecu_ports/stm32f4/
+    ./src/unit/ports/stm32f4/
     ./src/os/
     ./Unity/src/
     ../examples/libs/FreeRTOS-Kernel/include/
@@ -66,6 +78,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     UNITY_EXCLUDE_SETJMP_H
     SPT_FREERTOS
 )
+
+if(DEBUG STREQUAL "ON")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG)
+endif()
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/.. ${CMAKE_BINARY_DIR}/libOBD2)
 

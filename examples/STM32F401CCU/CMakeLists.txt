@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(libOBD2 LANGUAGES C)
+project(demo LANGUAGES C)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 
@@ -8,10 +8,10 @@ set(TINYUSB_ROOT ${CMAKE_SOURCE_DIR}/../libs/tinyusb)
 
 file(GLOB SOURCES
     "${CMAKE_SOURCE_DIR}/src/startup/*.c"
-    "${CMAKE_SOURCE_DIR}/src/startup/*.c"
     "${CMAKE_SOURCE_DIR}/src/*.c"
     "${CMAKE_SOURCE_DIR}/src/os/*.c"
-    "${CMAKE_SOURCE_DIR}../../ports/stm32f4/*.c"
+    "${CMAKE_SOURCE_DIR}/../../ports/stm32f4/*.c"
+    "${CMAKE_SOURCE_DIR}/../../ports/stm32f4/startup/*.c"
     "${CMAKE_SOURCE_DIR}/../../utils/*.c"
     "${CMAKE_SOURCE_DIR}/../libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c"
     "${CMAKE_SOURCE_DIR}/../libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
@@ -24,15 +24,23 @@ file(GLOB SOURCES
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
+target_compile_options(${PROJECT_NAME} PRIVATE
+    -Wno-error=overflow
+)
+
 target_include_directories(${PROJECT_NAME}
     PRIVATE
     ../../include/data_link/
     ../../include/data_link/l2_kwp/
-    ../../include/
+    ../../include/freertos/
+    ../../include/app
+    ../../include/data_link/l2_iso9141/
     ../../interface/
     ../../utils/
     ../../include/app/
     ../../ports/stm32f4/
+    ../../ports/stm32f4/startup/
+    ../../ports/stm32f4/config/
     ./inc/
     ./src/os/
     ../libs/libopencm3/include/
@@ -51,44 +59,28 @@ target_include_directories(${PROJECT_NAME}
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     CFG_TUSB_MCU=OPT_MCU_STM32F4
-    CFG_TUSB_OS=OPT_OS_FREERTOS
+    CFG_TUSB_OS=OPT_OS_NONE
     STM32F401xC
-)
-# include_directories(SYSTEM
-#     /home/rudy/tools/arm-gnu-toolchain/lib/gcc/arm-none-eabi/14.2.1/
-#     /home/rudy/tools/arm-gnu-toolchain/lib/gcc/
-#     /home/rudy/tools/arm-gnu-toolchain/arm-none-eabi/lib/)
-
-set( FREERTOS_PORT "GCC_ARM_CM4F" CACHE STRING "" FORCE)
-set( FREERTOS_HEAP "4" CACHE STRING "" FORCE)
-
-add_library(freertos_config INTERFACE)
-
-target_include_directories(freertos_config SYSTEM
-INTERFACE
-    ${CMAKE_SOURCE_DIR}/../../include/freertos
+    UNITY_EXCLUDE_SETJMP_H
+    SPT_FREERTOS
 )
 
-target_compile_definitions(freertos_config
-  INTERFACE
-    projCOVERAGE_TEST=0
+if(DEBUG STREQUAL "ON")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG)
+endif()
+
+add_subdirectory(${CMAKE_SOURCE_DIR}/../.. ${CMAKE_BINARY_DIR}/libOBD2)
+
+target_compile_definitions(libOBD2
+    PRIVATE
+    UNIT_TESTS
+    SPT_FREERTOS
 )
 
-add_subdirectory(
-    ${CMAKE_CURRENT_LIST_DIR}/../libs/FreeRTOS-Kernel
-    ${CMAKE_BINARY_DIR}/FreeRTOS-Kernel
-)
-
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(${PROJECT_NAME} PUBLIC
     ${CMAKE_SOURCE_DIR}/../libs/libopencm3/lib/libopencm3_stm32f4.a
-    freertos_config
-    freertos_kernel
-    ${CMAKE_SOURCE_DIR}/../../builds/library/libOBD2.a
-    )
-
-# add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-#     COMMAND utils/add_path_to_comp_com
-# )
+    libOBD2
+)
 
 add_custom_target(
     renode
@@ -112,13 +104,6 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
   COMMENT "Firmware size (text/data/bss/dec/hex):"
   VERBATIM
 )
-
-# add_custom_target(
-#     cc
-#     COMMAND ${CMAKE_COMMAND} -E echo "Running my script..."
-#     COMMAND /bin/zsh ${CMAKE_SOURCE_DIR}/utils/add_path_to_comp_com
-#     DEPENDS ${PROJECT_NAME}
-# )
 
 # Generate .bin file from .elf
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
