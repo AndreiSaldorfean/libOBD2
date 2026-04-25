@@ -146,7 +146,7 @@ static void test_L2_KWP_ReadHeader_000_Receiver(void *param)
 
     actual = L2_KWP_ReadHeader(pDataLinkRx, &header, &headerLen);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "L2_KWP_ReadHeader return");
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE(header_00.fmt.val, header.fmt.val, "fmt");
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE(header_00.fmt, header.fmt, "fmt");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(header_00.trgAddr, header.trgAddr,  "trgAddr");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(header_00.srcAddr, header.srcAddr,  "srcAddr");
     TEST_ASSERT_EQUAL_MESSAGE(3, headerLen, "headerLen");
@@ -721,7 +721,7 @@ void test_l2_kwp_send_request_000(void)
 
     // Put header in a known state so PrepareMessage produces a 3-byte header (MSG_00_SIZE bytes total)
     kwpCtx.header = (header_t){
-        .fmt     = {.val = 0xC0},
+        .fmt     = 0xC0,
         .trgAddr = 0x33,
         .srcAddr = 0xF1,
     };

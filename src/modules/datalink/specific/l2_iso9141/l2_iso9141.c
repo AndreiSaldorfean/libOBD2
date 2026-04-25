@@ -1,12 +1,10 @@
 /* ================================================ INCLUDES =============================================== */
-#include "l2_kwp2000.h"
+#include "l2_iso9141.h"
 #include "datalink.h"
 #include "statusRetCodes.h"
-#include "l2_iso9141.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
-#include "l2_kwp2000.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -43,7 +41,7 @@ OBD2_STATIC uint8_t L2_ISO9141_ComputeChecksum(header_t header, data_t data)
     uint8_t *hdr      = (uint8_t *)&header;
     uint8_t *req      = (uint8_t *)&data;
     uint8_t checksum  = 0;
-    uint8_t headerLen = (header.len == 0) ? 3 : 4;
+    uint8_t headerLen = 3; /* ISO9141 header is always 3 bytes */
 
     for (uint8_t idx = 0; idx < headerLen; idx++)
     {
@@ -142,7 +140,7 @@ OBD2_STATIC void L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg
 {
     size_t idx = 0;
 
-    aSentMsg[idx++] = sentMsg->header.fmt.val;
+    aSentMsg[idx++] = sentMsg->header.fmt;
     aSentMsg[idx++] = sentMsg->header.trgAddr;
     aSentMsg[idx++] = sentMsg->header.srcAddr;
     aSentMsg[idx++] = sentMsg->data.req.sid;
@@ -160,7 +158,7 @@ OBD2_STATIC void L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg
 
 OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* protocol)
 {
-    l2_kwp_ctx_t *ctx = (l2_kwp_ctx_t *)(self->pProtocolCtx);
+    l2_iso9141_ctx_t *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
     obd_status_t status;
     (void)status;
     uint8_t syncByte = 0;
@@ -214,7 +212,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* prot
     if (kb1 == 0x08 && kb2 == 0x08)
     {
         // Request
-        ctx->header.fmt.val = 0x68;
+        ctx->header.fmt = 0x68;
 
         // ECU
         ctx->header.trgAddr = 0x6A;
@@ -229,8 +227,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* prot
     {
         // Functional addr
         // Can use kwp2000 header and len
-        ctx->header.fmt.bit.a0 = 1;
-        ctx->header.fmt.bit.a1 = 1;
+        ctx->header.fmt |= 0xC0;
 
         // ECU
         ctx->header.trgAddr = 0x33;
@@ -254,15 +251,15 @@ exit:
 /* ================================================ MODULE API ============================================= */
 obd_status_t l2_iso9141_connect(dataLink_if_t *self, uint8_t* protocol)
 {
-    l2_kwp_ctx_t *ctx = (l2_kwp_ctx_t *)(self->pProtocolCtx);
-    memset(ctx, 0, sizeof(l2_kwp_ctx_t));
+    l2_iso9141_ctx_t  *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
+    memset(ctx, 0, sizeof(l2_iso9141_ctx_t));
 
     return L2_ISO9141_5BaudInit(self, protocol);
 }
 
 obd_status_t l2_iso9141_send_request(dataLink_if_t *self, const obd_request_t *req, size_t len)
 {
-    l2_kwp_ctx_t ctx = *(l2_kwp_ctx_t *)(self->pProtocolCtx);
+    l2_iso9141_ctx_t ctx = *(l2_iso9141_ctx_t *)(self->pProtocolCtx);
     uint8_t aMessage[11] = {0};
     obd_status_t status;
     size_t msgLen = 0;

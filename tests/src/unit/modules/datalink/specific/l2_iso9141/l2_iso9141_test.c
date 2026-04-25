@@ -28,14 +28,14 @@ static volatile BaseType_t g_receiver_done = pdFALSE;
 
 const header_t iso9141_header_00_ecu =
 {
-    .fmt = {.val = 0x48},
+    .fmt = 0x48,
     .trgAddr = 0x6B,
     .srcAddr = 0x12,
 };
 
 const header_t iso9141_header_00 =
 {
-    .fmt = {.val = 0x68},
+    .fmt = 0x68,
     .trgAddr = 0x6A,
     .srcAddr = 0xF1,
 };
@@ -254,7 +254,7 @@ static void test_L2_ISO9141_ReadHeader_000_Receiver(void *param)
 
     actual = L2_ISO9141_ReadHeader(pDataLinkRx, &header);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "L2_KWP_ReadHeader return");
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE(iso9141_header_00.fmt.val, header.fmt.val, "fmt");
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE(iso9141_header_00.fmt, header.fmt, "fmt");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(iso9141_header_00.trgAddr, header.trgAddr,  "trgAddr");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(iso9141_header_00.srcAddr, header.srcAddr,  "srcAddr");
 

@@ -83,7 +83,7 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
 
     *headerLen = 3;
 
-    if (header->fmt.bit.len == 0)
+    if ((header->fmt & 0x3F) == 0)
     {
         *headerLen = 4;
 
@@ -134,7 +134,7 @@ OBD2_STATIC obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recv
     OBD2_ASSERT_OK(status);
 
     // Use the length byte if it's not 0 else get the length from the format byte
-    len = (recvdMsg->header.len == 0) ? recvdMsg->header.fmt.bit.len
+    len = (recvdMsg->header.len == 0) ? (recvdMsg->header.fmt & 0x3F)
                                       : recvdMsg->header.len;
 
     // Read data
@@ -177,10 +177,9 @@ OBD2_STATIC void L2_KWP_IdleBasedOnConnStatus(dataLink_if_t *self)
 OBD2_STATIC void L2_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len)
 {
     size_t headerLen = (sentMsg->header.len == 0) ? 3 : 4;
-    // size_t dataLen = sentMsg->data.len;
     size_t idx = 0;
 
-    aSentMsg[idx++] = sentMsg->header.fmt.val;
+    aSentMsg[idx++] = sentMsg->header.fmt;
     aSentMsg[idx++] = sentMsg->header.trgAddr;
     aSentMsg[idx++] = sentMsg->header.srcAddr;
     if (headerLen == 4)
@@ -359,7 +358,7 @@ obd_status_t l2_kwp_send_request(dataLink_if_t *self, const obd_request_t *req, 
     // Construct the message
     message_t message = {0};
     message.header = ctx.header;
-    message.header.fmt.bit.len = len + 1;
+    message.header.fmt = len + 1;
     message.data = data;
     message.cs = L2_KWP_ComputeChecksum(message.header, data);
 

@@ -32,13 +32,13 @@ void ECUSIM_RecvMessage(dataLink_if_t *pDataLink, message_t *pMessage)
 {
     uint8_t *aMessage = (uint8_t*)pMessage;
     size_t len = 0;
-    format_t fmt = {0};
+    uint8_t fmt = 0;
     size_t idx = 0;
 
     // Format byte
     ReadByteInTimeframe(pDataLink, &aMessage[idx], P4_TIME_MIN, P4_TIME_MAX);
-    fmt = (format_t)aMessage[idx];
-    len = fmt.bit.len;
+    fmt = aMessage[idx];
+    len = fmt & 0x3F;
 
     if (len == 0)
     {

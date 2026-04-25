@@ -71,6 +71,31 @@ typedef struct
     };
 } obd_response_t;
 
+typedef struct
+{
+    union
+    {
+        obd_request_t req;
+        obd_response_t resp;
+    };
+    size_t len;
+}data_t;
+
+typedef struct header_t
+{
+    uint8_t fmt;
+    uint8_t trgAddr;
+    uint8_t srcAddr;
+    uint8_t len;
+} header_t;
+
+typedef struct
+{
+    header_t header;
+    data_t   data;
+    uint8_t  cs;
+} message_t;
+
 /* Forward declaration */
 typedef struct dataLink_if dataLink_if_t;
 typedef obd_status_t (*dl_connect_t)(dataLink_if_t*, uint8_t*);

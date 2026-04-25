@@ -13,14 +13,14 @@
 /* ============================================ GLOBAL VARIABLES =========================================== */
 const header_t header_00_ecu =
 {
-    .fmt = {.val = 0xC2},
+    .fmt = 0xC2,
     .trgAddr = 0x33,
     .srcAddr = 0xF1,
 };
 
 const header_t header_00 =
 {
-    .fmt = {.val = 0xC1},
+    .fmt = 0xC1,
     .trgAddr = 0x33,
     .srcAddr = 0xF1,
 };
@@ -153,7 +153,7 @@ l2_kwp_ctx_t kwpCtx =
     .conStatus = {0U},
     .header =
     {
-        .fmt = {0x10U},
+        .fmt = 0x10U,
         .trgAddr = 0x33,
         .srcAddr = 0xF1,
         .len = 1
