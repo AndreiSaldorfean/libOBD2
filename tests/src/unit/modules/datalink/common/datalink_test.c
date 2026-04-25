@@ -37,7 +37,7 @@ static void test_ReadByteInTimeframe_000_Sender(void* param)
 
     (void)param;
 
-    LIBOBD_Delay(pDataLinkTx, KWP_P2_STAR_TIME_MIN);
+    LIBOBD_Delay(pDataLinkTx, P2_STAR_TIME_MIN);
 
     LIBOBD_SendByte(pDataLinkTx, 0x66);
 
@@ -54,7 +54,7 @@ static void test_ReadByteInTimeframe_000_Receiver(void *param)
     uint8_t actual = 0;
     (void)param;
 
-    status = ReadByteInTimeframe(pDataLinkRx, &byte, KWP_P2_STAR_TIME_MIN, KWP_P2_STAR_TIME_MAX);
+    status = ReadByteInTimeframe(pDataLinkRx, &byte, P2_STAR_TIME_MIN, P2_STAR_TIME_MAX);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
 
     actual = byte;

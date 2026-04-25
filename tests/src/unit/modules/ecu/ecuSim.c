@@ -24,7 +24,7 @@ void ECUSIM_SendMessage(dataLink_if_t *pDataLink, uint8_t *pMessage, size_t size
     for (size_t i = 0; i < size; i++)
     {
         LIBOBD_SendByte(pDataLink, pMessage[i]);
-        LIBOBD_Delay(pDataLink, KWP_P1_TIME_MIN+5);
+        LIBOBD_Delay(pDataLink, P1_TIME_MIN+5);
     }
 }
 
@@ -36,20 +36,20 @@ void ECUSIM_RecvMessage(dataLink_if_t *pDataLink, message_t *pMessage)
     size_t idx = 0;
 
     // Format byte
-    ReadByteInTimeframe(pDataLink, &aMessage[idx], KWP_P4_TIME_MIN, KWP_P4_TIME_MAX);
+    ReadByteInTimeframe(pDataLink, &aMessage[idx], P4_TIME_MIN, P4_TIME_MAX);
     fmt = (format_t)aMessage[idx];
     len = fmt.bit.len;
 
     if (len == 0)
     {
-        ReadByteInTimeframe(pDataLink, &aMessage[idx++], KWP_P4_TIME_MIN, KWP_P4_TIME_MAX);
-        ReadByteInTimeframe(pDataLink, &aMessage[idx++], KWP_P4_TIME_MIN, KWP_P4_TIME_MAX);
-        ReadByteInTimeframe(pDataLink, &aMessage[idx++], KWP_P4_TIME_MIN, KWP_P4_TIME_MAX);
+        ReadByteInTimeframe(pDataLink, &aMessage[idx++], P4_TIME_MIN, P4_TIME_MAX);
+        ReadByteInTimeframe(pDataLink, &aMessage[idx++], P4_TIME_MIN, P4_TIME_MAX);
+        ReadByteInTimeframe(pDataLink, &aMessage[idx++], P4_TIME_MIN, P4_TIME_MAX);
         len = aMessage[3];
     }
 
     for (; idx < len; idx++)
     {
-        ReadByteInTimeframe(pDataLink, &aMessage[idx], KWP_P4_TIME_MIN, KWP_P4_TIME_MAX);
+        ReadByteInTimeframe(pDataLink, &aMessage[idx], P4_TIME_MIN, P4_TIME_MAX);
     }
 }

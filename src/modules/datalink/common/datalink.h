@@ -15,10 +15,8 @@
 #define LIBOBD_TimingInit(handle)            (handle->pTimingOps->timer_init(handle->pTimingHandle))
 #define LIBOBD_GetTimeMs(handle)             (handle->pTimingOps->get_time_ms(handle->pTimingHandle))
 #define LIBOBD_Delay(handle, delay)          (handle->pTimingOps->delay_ms(handle->pTimingHandle, delay))
-// TODO: Fix the name start timeout, a better name would be start_timer
 #define LIBOBD_StartTimeout(handle, timeout) (handle->pTimingOps->start_timeout(handle->pTimingHandle, timeout, NULL, NULL))
 #define LIBOBD_StopTimeout(handle)           (handle->pTimingOps->stop_timeout(handle->pTimingHandle))
-// TODO: Fix the name timeout expired is redundant or hard to understand, a better name would be is_timeout or checkTimeout
 #define LIBOBD_IsTimeoutExpired(handle)      (handle->pTimingOps->is_timeout_expired(handle->pTimingHandle))
 
 #define LIBOBD_TransportInit(handle)      (handle->pTransportOps->init(handle->pTransportHandle))
@@ -36,6 +34,18 @@
 #define FAST_INIT_WAKEUP_END    (0x2)
 #define SLOW_INIT_5BAUD_START   (0x3)
 #define SLOW_INIT_5BAUD_END     (0x4)
+
+// Timing
+#define P1_TIME_MIN      (0U)
+#define P1_TIME_MAX      (20U)
+#define P2_TIME_MIN      (25U)
+#define P2_TIME_MAX      (50U)
+#define P2_STAR_TIME_MIN (25U)
+#define P2_STAR_TIME_MAX (5000U)
+#define P3_TIME_MIN      (55U)
+#define P3_TIME_MAX      (5000U)
+#define P4_TIME_MIN      (5U)
+#define P4_TIME_MAX      (20U)
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
 {
@@ -86,14 +96,13 @@ struct dataLink_if
     dl_recv_response_t recv_response;
 };
 
-
 enum
 {
     ISO9141,
     KWP2000
 };
 /* ============================================ INLINE FUNCTIONS =========================================== */
-static inline void SendByteBitBang(dataLink_if_t *self, uint8_t byte, uint8_t baudRate)
+static inline void SendByteBitBanged(dataLink_if_t *self, uint8_t byte, uint8_t baudRate)
 {
     const uint16_t delay = (1000 / baudRate);
 
@@ -122,9 +131,9 @@ static inline void SendByteBitBang(dataLink_if_t *self, uint8_t byte, uint8_t ba
 
 static inline obd_status_t ReadByteInTimeframe(dataLink_if_t *self, uint8_t *byte, uint16_t timeMin, uint16_t timeMax)
 {
-    obd_status_t status = {0};
-    uint32_t timeStart = 0;
-    uint32_t timeEnd = 0;
+    obd_status_t status  = {0};
+    uint32_t timeStart   = 0;
+    uint32_t timeEnd     = 0;
     uint32_t timeElapsed = 0;
 
     timeStart = LIBOBD_GetTimeMs(self);

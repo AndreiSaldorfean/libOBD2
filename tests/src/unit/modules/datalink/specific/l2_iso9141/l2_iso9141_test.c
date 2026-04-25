@@ -140,8 +140,8 @@ static void test_L2_ISO9141_RecvMessage_000_Receiver(void *param)
     timeSample = LIBOBD_GetTimeMs(pDataLinkRx);
     LIBOBD_SetTimeSample(pDataLinkRx , timeSample);
 
-    LIBOBD_StartTimeout(pDataLinkRx, KWP_P2_TIME_MAX);
-    LIBOBD_Delay(pDataLinkRx, KWP_P2_TIME_MIN);
+    LIBOBD_StartTimeout(pDataLinkRx, P2_TIME_MAX);
+    LIBOBD_Delay(pDataLinkRx, P2_TIME_MIN);
 
     actual = L2_ISO9141_RecvMessage(pDataLinkRx, &response);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
@@ -249,8 +249,8 @@ static void test_L2_ISO9141_ReadHeader_000_Receiver(void *param)
     //   P2_MIN elapsed-time check inside L2_KWP_ReadHeader always passes.
     timeSample = LIBOBD_GetTimeMs(pDataLinkRx);
     LIBOBD_SetTimeSample(pDataLinkRx, timeSample);
-    LIBOBD_StartTimeout(pDataLinkRx, KWP_P2_TIME_MAX);
-    LIBOBD_Delay(pDataLinkRx, KWP_P2_TIME_MIN);
+    LIBOBD_StartTimeout(pDataLinkRx, P2_TIME_MAX);
+    LIBOBD_Delay(pDataLinkRx, P2_TIME_MIN);
 
     actual = L2_ISO9141_ReadHeader(pDataLinkRx, &header);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "L2_KWP_ReadHeader return");
@@ -332,8 +332,8 @@ static void test_l2_ISO9141_send_request_000_Sender(void *param)
 
     timeSample = LIBOBD_GetTimeMs(pDataLinkTx);
     LIBOBD_SetTimeSample(pDataLinkTx, timeSample);
-    LIBOBD_StartTimeout(pDataLinkTx, KWP_P3_TIME_MAX);
-    LIBOBD_Delay(pDataLinkTx, KWP_P3_TIME_MIN);
+    LIBOBD_StartTimeout(pDataLinkTx, P3_TIME_MAX);
+    LIBOBD_Delay(pDataLinkTx, P3_TIME_MIN);
 
     actual = l2_kwp_send_request(pDataLinkTx, &iso9141_request_00, 1);
     LIBOBD_StopTimeout(pDataLinkTx);
@@ -399,8 +399,8 @@ static void test_l2_ISO9141_recv_response_000_Receiver(void *param)
 
     timeSample = LIBOBD_GetTimeMs(pDataLinkRx);
     LIBOBD_SetTimeSample(pDataLinkRx, timeSample);
-    LIBOBD_StartTimeout(pDataLinkRx, KWP_P2_TIME_MAX);
-    LIBOBD_Delay(pDataLinkRx, KWP_P2_TIME_MIN);
+    LIBOBD_StartTimeout(pDataLinkRx, P2_TIME_MAX);
+    LIBOBD_Delay(pDataLinkRx, P2_TIME_MIN);
 
     actual = l2_iso9141_recv_response(pDataLinkRx, &resp, &len);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_recv_response return");
@@ -453,8 +453,8 @@ void test_L2_ISO9141_SendMessage_000(void)
 
     timeSample = LIBOBD_GetTimeMs(pDataLink);
     LIBOBD_SetTimeSample(pDataLink, timeSample);
-    LIBOBD_StartTimeout(pDataLink, KWP_P3_TIME_MAX);
-    LIBOBD_Delay(pDataLink, KWP_P3_TIME_MIN);
+    LIBOBD_StartTimeout(pDataLink, P3_TIME_MAX);
+    LIBOBD_Delay(pDataLink, P3_TIME_MIN);
 
     L2_ISO9141_PrepareMessage(&msg, buffer, NULL);
 
@@ -608,7 +608,7 @@ void test_L2_ISO9141_ReadHeader_000(void)
 // Description: Test correct serialization of message_t into KWP wire-format byte array
 // Type: Positive
 // Steps:
-//  - Call L2_KWP_PrepareMessage with msg_00
+//  - Call L2_PrepareMessage with msg_00
 //    {fmt=0xC1, trgAddr=0x33, srcAddr=0xF1, sid=0x81, param[0]=0x01, cs=0x45
 //  - Expected output bytes: {0xC1, 0x33, 0xF1, 0x81, 0x01, 0x45}, length == MSG_00_SIZE (6)
 // ==========================================================================================================

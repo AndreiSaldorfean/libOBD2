@@ -10,21 +10,6 @@
 #include "string.h"
 
 /* ================================================= MACROS ================================================ */
-// #define SPT_FAST_INIT
-// #define SPT_CHANGE_TIMING_PARAM
-
-// Timing
-#define KWP_P1_TIME_MIN      (0U)
-#define KWP_P1_TIME_MAX      (20U)
-#define KWP_P2_TIME_MIN      (25U)
-#define KWP_P2_TIME_MAX      (50U)
-#define KWP_P2_STAR_TIME_MIN (25U)
-#define KWP_P2_STAR_TIME_MAX (5000U)
-#define KWP_P3_TIME_MIN      (55U)
-#define KWP_P3_TIME_MAX      (5000U)
-#define KWP_P4_TIME_MIN      (5U)
-#define KWP_P4_TIME_MAX      (20U)
-
 /********************************************* SERVICES SECTION **********************************************/
 #define START_COMM_REQ \
     ((data_t){ \

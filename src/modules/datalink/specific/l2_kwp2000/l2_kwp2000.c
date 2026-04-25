@@ -27,7 +27,7 @@ OBD2_STATIC void L2_KWP_IdleBasedOnConnStatus(dataLink_if_t *self);
 OBD2_STATIC obd_status_t L2_KWP_SRV_AccessTimingParameter(dataLink_if_t *self);
 #endif /* SPT_CHANGE_TIMING_PARAM */
 OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, header_t *header, size_t *headerLen);
-OBD2_STATIC void L2_KWP_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len);
+OBD2_STATIC void L2_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 OBD2_STATIC uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data)
@@ -69,16 +69,16 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
     p2TimeElapsed -= LIBOBD_GetTimeSample(self);
 
     status.timeout = OBD_ERR_COMM_P2_TIMEOUT_MIN_TESTER_ECU;
-    OBD2_IF_COND_GOTO_EXIT(p2TimeElapsed < KWP_P2_TIME_MIN);
+    OBD2_IF_COND_GOTO_EXIT(p2TimeElapsed < P2_TIME_MIN);
 
     // Target byte
     status.response = OBD_ERR_COMM_TRGT_BYTE_NOT_RECVD;
-    status = ReadByteInTimeframe(self, buffer + 1, KWP_P1_TIME_MIN, KWP_P1_TIME_MAX);
+    status = ReadByteInTimeframe(self, buffer + 1, P1_TIME_MIN, P1_TIME_MAX);
     OBD2_ASSERT_OK(status);
 
     // Source byte
     status.response = OBD_ERR_COMM_SRC_BYTE_NOT_RECVD;
-    status = ReadByteInTimeframe(self, buffer + 2, KWP_P1_TIME_MIN, KWP_P1_TIME_MAX);
+    status = ReadByteInTimeframe(self, buffer + 2, P1_TIME_MIN, P1_TIME_MAX);
     OBD2_ASSERT_OK(status);
 
     *headerLen = 3;
@@ -89,7 +89,7 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
 
         // Length byte
         status.response = OBD_ERR_COMM_LEN_BYTE_NOT_RECVD;
-        status = ReadByteInTimeframe(self, buffer + 3, KWP_P1_TIME_MIN, KWP_P1_TIME_MAX);
+        status = ReadByteInTimeframe(self, buffer + 3, P1_TIME_MIN, P1_TIME_MAX);
         OBD2_ASSERT_OK(status);
     }
 
@@ -103,17 +103,17 @@ OBD2_STATIC obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, s
     uint32_t timingSample  = 0;
     obd_status_t status    = {0};
 
-    LIBOBD_Delay(self, KWP_P3_TIME_MIN);
+    LIBOBD_Delay(self, P3_TIME_MIN);
 
     for (size_t idx = 0; idx < len; idx++)
     {
         LIBOBD_SendByte(self, msg[idx]);
-        LIBOBD_Delay(self, KWP_P4_TIME_MIN);
+        LIBOBD_Delay(self, P4_TIME_MIN);
     }
 
     timingSample = LIBOBD_GetTimeMs(self);
     LIBOBD_SetTimeSample(self, timingSample);
-    LIBOBD_StartTimeout(self, KWP_P2_TIME_MAX);
+    LIBOBD_StartTimeout(self, P2_TIME_MAX);
 
     // Clear echo
     LIBOBD_FlushRx(self);
@@ -141,17 +141,17 @@ OBD2_STATIC obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recv
     status.response = OBD_ERR_COMM_DATA_BYTE_NOT_RECVD;
     for (int idx = 0; idx < len; idx++)
     {
-        status = ReadByteInTimeframe(self, pMsg + idx + headerLen + 1, KWP_P1_TIME_MIN, KWP_P1_TIME_MAX);
+        status = ReadByteInTimeframe(self, pMsg + idx + headerLen + 1, P1_TIME_MIN, P1_TIME_MAX);
         OBD2_ASSERT_OK(status);
     }
 
     // Read CS
     status.response = OBD_ERR_COMM_CS_BYTE_NOT_RECVD;
-    status = ReadByteInTimeframe(self, &recvdMsg->cs, KWP_P1_TIME_MIN, KWP_P1_TIME_MAX);
+    status = ReadByteInTimeframe(self, &recvdMsg->cs, P1_TIME_MIN, P1_TIME_MAX);
     OBD2_ASSERT_OK(status);
 
     // P2 Timeout from ECU to ECU
-    LIBOBD_StartTimeout(self, KWP_P2_TIME_MAX);
+    LIBOBD_StartTimeout(self, P2_TIME_MAX);
 
     memset(&status, 0, sizeof(obd_status_t));
 exit:
@@ -174,7 +174,7 @@ OBD2_STATIC void L2_KWP_IdleBasedOnConnStatus(dataLink_if_t *self)
     }
 }
 
-OBD2_STATIC void L2_KWP_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len)
+OBD2_STATIC void L2_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len)
 {
     size_t headerLen = (sentMsg->header.len == 0) ? 3 : 4;
     // size_t dataLen = sentMsg->data.len;
@@ -222,7 +222,7 @@ OBD2_STATIC obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t *self)
     // message.data = data;
     // message.cs = L2_KWP_ComputeChecksum(message.header, data);
     //
-    // L2_KWP_PrepareMessage(&message, aMessage, &msgLen);
+    // L2_PrepareMessage(&message, aMessage, &msgLen);
     //
     // status.response = OBD_ERR_COMM_SEND_MSG_FAILED;
     // status = L2_KWP_SendMessage(self, aMessage, msgLen);
@@ -244,7 +244,7 @@ OBD2_STATIC obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t *self)
     //         .cs = L2_KWP_ComputeChecksum(hdr, START_COMM_REQ),
     //     };
     //
-    //     L2_KWP_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len)
+    //     L2_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len)
     //     status = L2_KWP_SendMessage(self, &sentMsg, &recvdMsg);
     //     OBD2_ASSERT_OK(status);
     // }
@@ -363,7 +363,7 @@ obd_status_t l2_kwp_send_request(dataLink_if_t *self, const obd_request_t *req, 
     message.data = data;
     message.cs = L2_KWP_ComputeChecksum(message.header, data);
 
-    L2_KWP_PrepareMessage(&message, aMessage, &msgLen);
+    L2_PrepareMessage(&message, aMessage, &msgLen);
 
     status.response = OBD_ERR_COMM_SEND_MSG_FAILED;
     status = L2_KWP_SendMessage(self, aMessage, msgLen);
