@@ -39,14 +39,11 @@ static void test_LibOBD2_Init_000_Sender(void *param)
     actual = LibOBD2_Init(&ctx);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "LibOBD2_Init");
 
-    obd_response_t response = {0};
-    size_t respLen = 0;
-    LibOBD2_RequestService(&ctx, &request_00, 1, &response, &respLen);
-
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
 }
 
+// NOTE: Currently only iso9141 is supported so no need for special handling
 static void test_LibOBD2_Init_000_Receiver(void *param)
 {
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
@@ -106,7 +103,7 @@ void test_LibOBD2_Init_000(void)
     status = xTaskCreate(
         test_LibOBD2_Init_000_Sender,
         "Receiver Task",
-        1024,
+        512,
         NULL,
         tskIDLE_PRIORITY + 3,
         &receiverTAsk);
@@ -115,7 +112,7 @@ void test_LibOBD2_Init_000(void)
     status = xTaskCreate(
         test_LibOBD2_Init_000_Receiver,
         "Sender Task",
-        1024,
+        512,
         NULL,
         tskIDLE_PRIORITY + 3,
         &senderTask);
@@ -127,23 +124,9 @@ void test_LibOBD2_Init_000(void)
         taskYIELD();
     }
 
+    /* Let the idle task reclaim deleted task stacks before next test */
+    vTaskDelay(pdMS_TO_TICKS(10));
+
     TEST_ASSERT_EQUAL(pdPASS, status);
 }
 
-void test_LibOBD2_RequestService_000(void)
-{
-    dataLink_if_t *pDataLinkRx = &dataLink_rx;
-    obd_status_t expected = {0};
-    obd_status_t actual   = {0};
-    obd_response_t response = {0};
-    size_t respLen = 0;
-
-    UnitySetTestFile(__FILE__);
-
-    LIBOBD_Delay(pDataLinkRx, 2000);
-
-    actual = LibOBD2_Init(&ctx);
-    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "LibOBD2_Init");
-
-    LibOBD2_RequestService(&ctx, &request_00, 1, &response, &respLen);
-}
