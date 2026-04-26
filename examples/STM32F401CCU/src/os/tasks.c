@@ -3,6 +3,7 @@
 #include "FreeRTOSConfig.h"
 #include "cdc_device.h"
 #include "datalink.h"
+#include "ecu_libobd2.h"
 #include "iso15031_5.h"
 #include "l2_iso9141.h"
 #include "task.h"
@@ -26,8 +27,7 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-// TODO: Add proper demo app
-static void configDataLink(dataLink_if_t* dl)
+static void configDataLinkTester(dataLink_if_t* dl)
 {
     static timerCtx_t tmrCtx =
     {
@@ -92,7 +92,6 @@ static void configDataLink(dataLink_if_t* dl)
         },
     };
 
-
     dl->pProtocolCtx     = &ctx;
     dl->pTimingOps       = &timerOps;
     dl->pTimingHandle    = &tmrCtx;
@@ -115,7 +114,7 @@ void TesterTask(void *param)
 
     printf("================== TesterTask ==================\n");
 
-    configDataLink(&dataLink);
+    configDataLinkTester(&dataLink);
 
     obd_ctx_t ctx =
     {
@@ -125,23 +124,66 @@ void TesterTask(void *param)
 
     status = LibOBD2_Init(&ctx);
     printf("status= %x\n", status.response);
+    printf("timeout= %x\n", status.timeout);
 
-    obd_request_t request =
+    // obd_request_t request =
+    // {
+    //     .sid = SID_SHOW_CURRENT_DATA,
+    //     .param = {PID_01_COOLANT_TEMP},
+    // };
+    // obd_response_t response = {0};
+    // size_t respLen = 0;
+    //
+    // for (;;)
+    // {
+    //     status = LibOBD2_RequestService(&ctx, &request, 1, &response, &respLen);
+    //     printf("status= %x\n", status.response);
+    //
+    //     vTaskDelay(1000/portTICK_PERIOD_MS);
+    //
+    //     tud_cdc_write_flush();
+    //     tud_task();
+    // }
+}
+
+void EcuTask(void *param)
+{
+    obd_status_t status;
+    dataLink_if_t dataLink;
+
+    (void)param;
+    (void)status;
+
+    printf("================== TesterTask ==================\n");
+
+    configDataLinkTester(&dataLink);
+
+    obd_ctx_t ctx =
     {
-        .sid = SID_SHOW_CURRENT_DATA,
-        .param = {PID_01_COOLANT_TEMP},
+        .pDataLink = &dataLink,
+        .connectionStatus = 0
     };
-    obd_response_t response = {0};
-    size_t respLen = 0;
 
-    for (;;)
-    {
-        status = LibOBD2_RequestService(&ctx, &request, 1, &response, &respLen);
-        printf("status= %x\n", status.response);
+    status = ECU_LibOBD2_Init(&ctx);
+    printf("status= %x\n", status.response);
+    printf("timeout= %x\n", status.timeout);
 
-        vTaskDelay(1000/portTICK_PERIOD_MS);
+    // obd_request_t request =
+    // {
+    //     .sid = SID_SHOW_CURRENT_DATA,
+    //     .param = {PID_01_COOLANT_TEMP},
+    // };
+    // obd_response_t response = {0};
+    // size_t respLen = 0;
 
-        tud_cdc_write_flush();
-        tud_task();
-    }
+    // for (;;)
+    // {
+    //     status = LibOBD2_RequestService(&ctx, &request, 1, &response, &respLen);
+    //     printf("status= %x\n", status.response);
+    //
+    //     vTaskDelay(1000/portTICK_PERIOD_MS);
+    //
+    //     tud_cdc_write_flush();
+    //     tud_task();
+    // }
 }

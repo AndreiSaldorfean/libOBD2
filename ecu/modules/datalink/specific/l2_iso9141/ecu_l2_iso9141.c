@@ -5,8 +5,10 @@
 #include "libobd2.h"
 #include "statusRetCodes.h"
 #include "utils.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/unistd.h>
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -176,16 +178,13 @@ OBD2_STATIC obd_status_t ECU_L2_ISO9141_5BaudInit(dataLink_if_t *self)
 
     // Send sync byte
     LIBOBD_SendByte(self, 0x55);
-    LIBOBD_FlushRx(self);
 
     // Send KB1
     LIBOBD_Delay(self, ISO9141_W2_TIME_MIN);
     LIBOBD_SendByte(self, 0x08);
-    LIBOBD_FlushRx(self);
 
     // Send KB2
     LIBOBD_SendByte(self, 0x08);
-    LIBOBD_FlushRx(self);
 
     // Receive kb2 inverted
     status = ReadByteInTimeframe(self, &kb2Inverted, 0, ISO9141_W4_TIME_MAX);
@@ -205,11 +204,13 @@ exit:
 }
 
 /* ================================================ MODULE API ============================================= */
-obd_status_t ecu_l2_iso9141_connect(dataLink_if_t *self)
+obd_status_t ecu_l2_iso9141_connect(dataLink_if_t *self, uint8_t* protocol)
 {
     l2_iso9141_ctx_t  *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
     memset(ctx, 0, sizeof(l2_iso9141_ctx_t));
+    *protocol = ISO9141;
 
+    printf("here3\n");
     return ECU_L2_ISO9141_5BaudInit(self);
 }
 

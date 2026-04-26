@@ -15,9 +15,23 @@ int main(void)
 {
     sysInit();
 
-    TaskHandle_t testerTaskHandle = NULL;
+#if 0
+    TaskHandle_t ecuTaskHandle = NULL;
+    uint32_t status = xTaskCreate(
+        EcuTask,
+        "Ecu Task",
+        1024,
+        NULL,
+        tskIDLE_PRIORITY,
+        &ecuTaskHandle );
 
-    /* === Normal Transceiver (client) === */
+    if (status != pdPASS)
+    {
+        while (1)
+            ;
+    }
+#else
+    TaskHandle_t testerTaskHandle = NULL;
     uint32_t status = xTaskCreate(
         TesterTask,
         "Tester Task",
@@ -31,6 +45,7 @@ int main(void)
         while (1)
             ;
     }
+#endif
 
     vTaskStartScheduler();
 

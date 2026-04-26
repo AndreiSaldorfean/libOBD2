@@ -3,6 +3,7 @@
 #include "datalink.h"
 #include "l2_kwp2000.h"
 #include "libobd2.h"
+#include <stdio.h>
 #define STM32F4
 #include "libopencm3/stm32/f4/rcc.h"
 #include "libopencm3/stm32/usart.h"
@@ -56,22 +57,24 @@ static inline bool ECUSIM_ReadBit(dataLink_if_t * self)
 /* ================================================ MODULE API ============================================= */
 bool ECUSIM_ReadByteBitBanged(dataLink_if_t *self, uint8_t *byte, uint8_t baudRate)
 {
-    const uint16_t error = (1000 / baudRate) / 2; // read in the middle of the signal
-    const uint16_t delay = (1000 / baudRate) + error;
+    const uint16_t bit_period = 1000u / baudRate; // ms per bit (200 ms at 5 baud)
 
+    *byte = 0;
     ECUSIM_DisableUart(self);
 
-    while(ECUSIM_ReadBit(self) == 1)
-    LIBOBD_Delay(self, error);
+    while (ECUSIM_ReadBit(self) == 1);
 
-    for(int bitIdx = 0; bitIdx < 8; bitIdx++)
+    LIBOBD_Delay(self, bit_period + (bit_period / 2u));
+
+    for (int bitIdx = 0; bitIdx < 8; bitIdx++)
     {
-        *byte |= (ECUSIM_ReadBit(self) << bitIdx);
-        LIBOBD_Delay(self, delay);
+        *byte |= (uint8_t)(ECUSIM_ReadBit(self) << bitIdx);
+        LIBOBD_Delay(self, bit_period);
     }
 
-    if(ECUSIM_ReadBit(self) != 1)
+    if (ECUSIM_ReadBit(self) != 1)
         return false;
+    LIBOBD_Delay(self, bit_period);
 
     ECUSIM_EnableUart(self);
 

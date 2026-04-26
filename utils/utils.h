@@ -23,6 +23,11 @@
        if (NULL == (var)) { status.response = OBD_ERR_NULL_PTR; goto exit; } \
     }while(0)
 
+#define OBD2_ASSERT_NO_TIMEOUT(status) \
+    do { \
+       if (OBD_STATUS_OK != status.timeout) goto exit; \
+    }while(0)
+
 #define OBD2_ASSERT_OK(status) \
     do { \
        if (OBD_STATUS_OK != (status.response) || (OBD_STATUS_OK != status.timeout)) goto exit; \
