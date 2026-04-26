@@ -13,8 +13,6 @@ file(GLOB SOURCES
     "${CMAKE_SOURCE_DIR}/src/unit/modules/datalink/common/*.c"
     "${CMAKE_SOURCE_DIR}/src/unit/modules/datalink/specific/l2_iso9141/*.c"
     "${CMAKE_SOURCE_DIR}/src/unit/modules/datalink/specific/l2_kwp2000/*.c"
-    "${CMAKE_SOURCE_DIR}/src/unit/modules/ecu/*.c"
-    "${CMAKE_SOURCE_DIR}/src/unit/modules/ecu/ecu_ports/stm32f4/*.c"
     "${CMAKE_SOURCE_DIR}/src/unit/ports/stm32f4/*.c"
     "${CMAKE_SOURCE_DIR}/src/os/*.c"
     "${CMAKE_SOURCE_DIR}/../examples/libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
@@ -54,8 +52,6 @@ target_include_directories(${PROJECT_NAME}
     ./src/unit/modules/datalink/common
     ./src/unit/modules/datalink/specific/l2_iso9141/
     ./src/unit/modules/datalink/specific/l2_kwp2000/
-    ./src/unit/modules/ecu/
-    ./src/unit/modules/ecu/ecu_ports/stm32f4/
     ./src/unit/ports/stm32f4/
     ./src/os/
     ./Unity/src/
@@ -83,17 +79,23 @@ if(DEBUG STREQUAL "ON")
     target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG)
 endif()
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/.. ${CMAKE_BINARY_DIR}/libOBD2)
+add_subdirectory(${CMAKE_SOURCE_DIR}/../ecu ${CMAKE_BINARY_DIR}/ecu)
 
-target_compile_definitions(libOBD2
+get_filename_component(OPENCM3_LIB
+    "${CMAKE_CURRENT_LIST_DIR}/../examples/libs/libopencm3/lib/libopencm3_stm32f4.a"
+    ABSOLUTE
+)
+
+target_compile_definitions(OBD2
     PRIVATE
     UNIT_TESTS
     SPT_FREERTOS
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
-    ${CMAKE_SOURCE_DIR}/../examples/libs/libopencm3/lib/libopencm3_stm32f4.a
-    libOBD2
+    ${OPENCM3_LIB}
+    OBD2
+    OBD2_ECU
 )
 
 # Generate .bin file from .elf

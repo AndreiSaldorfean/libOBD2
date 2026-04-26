@@ -4,21 +4,20 @@ project(demo LANGUAGES C)
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 
 # TinyUSB sources
-set(TINYUSB_ROOT ${CMAKE_SOURCE_DIR}/../libs/tinyusb)
+get_filename_component(TINYUSB_ROOT "${CMAKE_CURRENT_LIST_DIR}/../libs/tinyusb" ABSOLUTE)
 
 file(GLOB SOURCES
-    "${CMAKE_SOURCE_DIR}/src/startup/*.c"
-    "${CMAKE_SOURCE_DIR}/src/*.c"
-    "${CMAKE_SOURCE_DIR}/src/os/*.c"
-    "${CMAKE_SOURCE_DIR}/../../ports/stm32f4/*.c"
-    "${CMAKE_SOURCE_DIR}/../../ports/stm32f4/startup/*.c"
-    "${CMAKE_SOURCE_DIR}/../../utils/*.c"
-    "${CMAKE_SOURCE_DIR}/../libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c"
-    "${CMAKE_SOURCE_DIR}/../libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
-    ${TINYUSB_ROOT}/src/*.c
-    ${TINYUSB_ROOT}/src/common/*.c
-    ${TINYUSB_ROOT}/src/device/*.c
-    ${TINYUSB_ROOT}/src/class/cdc/*.c
+    "${CMAKE_CURRENT_LIST_DIR}/src/startup/*.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/*.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/os/*.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../../ports/stm32f4/*.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../../ports/stm32f4/startup/*.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
+    ${TINYUSB_ROOT}/src/tusb.c
+    ${TINYUSB_ROOT}/src/common/tusb_fifo.c
+    ${TINYUSB_ROOT}/src/device/usbd.c
+    ${TINYUSB_ROOT}/src/device/usbd_control.c
+    ${TINYUSB_ROOT}/src/class/cdc/cdc_device.c
     ${TINYUSB_ROOT}/src/portable/synopsys/dwc2/dcd_dwc2.c
 )
 
@@ -69,17 +68,22 @@ if(DEBUG STREQUAL "ON")
     target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG)
 endif()
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/../.. ${CMAKE_BINARY_DIR}/libOBD2)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../../ecu ${CMAKE_BINARY_DIR}/ecu)
 
-target_compile_definitions(libOBD2
+target_compile_definitions(OBD2
     PRIVATE
-    UNIT_TESTS
     SPT_FREERTOS
 )
 
+get_filename_component(OPENCM3_LIB
+    "${CMAKE_CURRENT_LIST_DIR}/../libs/libopencm3/lib/libopencm3_stm32f4.a"
+    ABSOLUTE
+)
+
 target_link_libraries(${PROJECT_NAME} PUBLIC
-    ${CMAKE_SOURCE_DIR}/../libs/libopencm3/lib/libopencm3_stm32f4.a
-    libOBD2
+    ${OPENCM3_LIB}
+    OBD2
+    OBD2_ECU
 )
 
 add_custom_target(

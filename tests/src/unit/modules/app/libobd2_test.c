@@ -57,7 +57,7 @@ static void test_LibOBD2_Init_000_Receiver(void *param)
     UnitySetTestFile(__FILE__);
 
     // Read wake-up byte at 5 baudRate
-    TEST_ASSERT_TRUE_MESSAGE(ECUSIM_ReadByteBitBanged(pDataLinkRx, &syncByte), "ECUSIM_ReadByteBitBanged");
+    TEST_ASSERT_TRUE_MESSAGE(ECUSIM_ReadByteBitBanged(pDataLinkRx, &syncByte, 5), "ECUSIM_ReadByteBitBanged");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x33, syncByte, "sync byte");
     LIBOBD_Delay(pDataLinkRx, ISO9141_W1_TIME_MIN);
 

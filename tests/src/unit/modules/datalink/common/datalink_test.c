@@ -1,5 +1,4 @@
 /* ================================================ INCLUDES =============================================== */
-#include "ecuSim.h"
 #include "datalink.h"
 #include "l2_kwp2000.h"
 #include "libobd2_test_utils.h"

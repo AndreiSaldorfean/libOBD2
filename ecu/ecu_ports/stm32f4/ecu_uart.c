@@ -49,22 +49,25 @@ static inline bool ECUSIM_ReadBit(dataLink_if_t * self)
     bool val = 0;
 
     val = gpio_get(ctx->gpio, ctx->usartRxPin) != 0;
-    YIELD;
 
     return val;
 }
 
 /* ================================================ MODULE API ============================================= */
-bool ECUSIM_ReadByteBitBanged(dataLink_if_t *self, uint8_t *byte)
+bool ECUSIM_ReadByteBitBanged(dataLink_if_t *self, uint8_t *byte, uint8_t baudRate)
 {
+    const uint16_t error = (1000 / baudRate) / 2; // read in the middle of the signal
+    const uint16_t delay = (1000 / baudRate) + error;
+
     ECUSIM_DisableUart(self);
 
-    if(ECUSIM_ReadBit(self) != 0)
-        return false;
+    while(ECUSIM_ReadBit(self) == 1)
+    LIBOBD_Delay(self, error);
 
     for(int bitIdx = 0; bitIdx < 8; bitIdx++)
     {
         *byte |= (ECUSIM_ReadBit(self) << bitIdx);
+        LIBOBD_Delay(self, delay);
     }
 
     if(ECUSIM_ReadBit(self) != 1)

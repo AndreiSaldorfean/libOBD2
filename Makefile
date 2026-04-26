@@ -7,6 +7,13 @@ b:
 clean:
 	rm -rf builds/library
 
+ecu: ecu_clean
+	cmake -S ./ecu -B builds/ecu -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=../cmake/STM32F4.cmake -DMEMORY="flash"
+ecu_b:
+	cmake --build builds/ecu -j12
+ecu_clean:
+	rm -rf builds/ecu
+
 ################################ RAM BUILD TARGETS ################################
 stm_r: stm_r_clean
 	cmake -S . -B builds/library -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/STM32F4.cmake -DMEMORY="ram"

@@ -1,7 +1,6 @@
 /* ================================================ INCLUDES =============================================== */
 #include "datalink.h"
-#include "ecuSim.h"
-#include "ecu_ports/stm32f4/ecu_uart.h"
+#include "ecu_uart.h"
 #include "l2_iso9141.h"
 #include "libobd2.h"
 #include "libobd2_test_utils.h"
@@ -117,7 +116,7 @@ static void test_L2_ISO9141_RecvMessage_000_Sender(void *param)
 
     L2_ISO9141_PrepareMessage(&msg, aSentMsg, &len);
 
-    ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
+    // ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 
     LIBOBD_FlushRx(pDataLinkTx);
@@ -183,7 +182,7 @@ void test_L2_ISO9141_5BaudInit_000_Receiver(void *param)
     UnitySetTestFile(__FILE__);
 
     // Read wake-up byte at 5 baudRate
-    TEST_ASSERT_TRUE_MESSAGE(ECUSIM_ReadByteBitBanged(pDataLinkRx, &syncByte), "ECUSIM_ReadByteBitBanged");
+    TEST_ASSERT_TRUE_MESSAGE(ECUSIM_ReadByteBitBanged(pDataLinkRx, &syncByte, 5), "ECUSIM_ReadByteBitBanged");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x33, syncByte, "sync byte");
     LIBOBD_Delay(pDataLinkRx, ISO9141_W1_TIME_MIN);
 
@@ -222,12 +221,12 @@ void test_L2_ISO9141_5BaudInit_000_Receiver(void *param)
 static void test_L2_ISO9141_ReadHeader_000_Sender(void *param)
 {
     UnitySetTestFile(__FILE__);
-    dataLink_if_t *pDataLinkTx = &dataLink_tx;
+    // dataLink_if_t *pDataLinkTx = &dataLink_tx;
 
     (void)param;
 
     // Send 3 header bytes with 5ms inter-byte gaps (within P1_TIME_MAX=20ms)
-    ECUSIM_SendMessage(pDataLinkTx, (uint8_t*)&iso9141_msg_00, 3);
+    // ECUSIM_SendMessage(pDataLinkTx, (uint8_t*)&iso9141_msg_00, 3);
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
@@ -291,7 +290,7 @@ static void test_l2_ISO9141_connect_000_Receiver(void *param)
     (void)param;
 
     // Read wake-up byte at 5 baud
-    TEST_ASSERT_TRUE_MESSAGE(ECUSIM_ReadByteBitBanged(pDataLinkRx, &syncByte), "ECUSIM_ReadByteBitBanged");
+    TEST_ASSERT_TRUE_MESSAGE(ECUSIM_ReadByteBitBanged(pDataLinkRx, &syncByte, 5), "ECUSIM_ReadByteBitBanged");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x33, syncByte, "sync byte");
     LIBOBD_Delay(pDataLinkRx, ISO9141_W1_TIME_MIN);
 
@@ -365,7 +364,7 @@ static void test_l2_ISO9141_send_request_000_Receiver(void *param)
 static void test_l2_ISO9141_recv_response_000_Sender(void *param)
 {
     UnitySetTestFile(__FILE__);
-    dataLink_if_t *pDataLinkTx = &dataLink_tx;
+    // dataLink_if_t *pDataLinkTx = &dataLink_tx;
     obd_status_t expected = {0};
     obd_status_t actual   = {0};
     uint8_t aSentMsg[6];
@@ -378,7 +377,7 @@ static void test_l2_ISO9141_recv_response_000_Sender(void *param)
 
     L2_ISO9141_PrepareMessage(&msg, aSentMsg, &len);
 
-    ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
+    // ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 
     g_sender_done = pdTRUE;

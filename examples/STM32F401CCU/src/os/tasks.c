@@ -2,17 +2,18 @@
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
 #include "cdc_device.h"
-#include "data_link_if.h"
+#include "datalink.h"
 #include "iso15031_5.h"
+#include "l2_iso9141.h"
 #include "task.h"
 #include "tasks.h"
 #include "init.h"
-#include "srv_status.h"
+#include "statusRetCodes.h"
 #include "uart_kwp_transport_port.h"
 #include "libopencm3/stm32/f4/timer.h"
 #include "kwp_timer.h"
 #include "libobd2.h"
-#include "l2_kwp.h"
+#include "l2_kwp2000.h"
 #include "usbd.h"
 #include "utils.h"
 
@@ -80,20 +81,19 @@ static void configDataLink(dataLink_if_t* dl)
     };
 
 
-    static l2_kwp_ctx_t kwpCtx =
+    static l2_iso9141_ctx_t ctx =
     {
-        .conStatus = {0u},
-        .header    =
+        .header =
         {
-            .fmt     = {0x10U},
-            .trgAddr = 0x33,
-            .srcAddr = 0xF1,
+            .fmt     = 0x68,
+            .trgAddr = 0x6A,
+            .srcAddr = 0x12,
             .len     = 1
         },
     };
 
 
-    dl->pProtocolCtx     = &kwpCtx;
+    dl->pProtocolCtx     = &ctx;
     dl->pTimingOps       = &timerOps;
     dl->pTimingHandle    = &tmrCtx;
     dl->pTransportHandle = &uartCtx;
@@ -124,7 +124,7 @@ void TesterTask(void *param)
     };
 
     status = LibOBD2_Init(&ctx);
-    printf("status= %x\n", status);
+    printf("status= %x\n", status.response);
 
     obd_request_t request =
     {
@@ -137,7 +137,7 @@ void TesterTask(void *param)
     for (;;)
     {
         status = LibOBD2_RequestService(&ctx, &request, 1, &response, &respLen);
-        printf("status= %x\n", status);
+        printf("status= %x\n", status.response);
 
         vTaskDelay(1000/portTICK_PERIOD_MS);
 

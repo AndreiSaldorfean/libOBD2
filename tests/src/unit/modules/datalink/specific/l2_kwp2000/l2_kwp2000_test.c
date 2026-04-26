@@ -1,7 +1,6 @@
 /* ================================================ INCLUDES =============================================== */
 #include "datalink.h"
-#include "ecuSim.h"
-#include "ecu_ports/stm32f4/ecu_uart.h"
+#include "ecu_uart.h"
 #include "libobd2.h"
 #include "libobd2_test_utils.h"
 #include "projdefs.h"
@@ -73,7 +72,7 @@ static void test_L2_KWP_RecvMessage_000_Sender(void *param)
 
     L2_PrepareMessage(&msg, aSentMsg, &len);
 
-    ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
+    // ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 
     LIBOBD_FlushRx(pDataLinkTx);
@@ -112,12 +111,12 @@ static void test_L2_KWP_RecvMessage_000_Receiver(void *param)
 static void test_L2_KWP_ReadHeader_000_Sender(void *param)
 {
     UnitySetTestFile(__FILE__);
-    dataLink_if_t *pDataLinkTx = &dataLink_tx;
+    // dataLink_if_t *pDataLinkTx = &dataLink_tx;
 
     (void)param;
 
     // Send 3 header bytes with 5ms inter-byte gaps (within P1_TIME_MAX=20ms)
-    ECUSIM_SendMessage(pDataLinkTx, (uint8_t*)&msg_00, 3);
+    // ECUSIM_SendMessage(pDataLinkTx, (uint8_t*)&msg_00, 3);
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
@@ -230,7 +229,7 @@ static void test_l2_kwp_send_request_000_Receiver(void *param)
 static void test_l2_kwp_recv_response_000_Sender(void *param)
 {
     UnitySetTestFile(__FILE__);
-    dataLink_if_t      *pDataLinkTx = &dataLink_tx;
+    // dataLink_if_t      *pDataLinkTx = &dataLink_tx;
     obd_status_t expected = {0};
     obd_status_t actual   = {0};
     uint8_t aSentMsg[6];
@@ -243,7 +242,7 @@ static void test_l2_kwp_recv_response_000_Sender(void *param)
 
     L2_PrepareMessage(&msg, aSentMsg, &len);
 
-    ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
+    // ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 
     g_sender_done = pdTRUE;

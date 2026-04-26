@@ -9,6 +9,6 @@
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-bool ECUSIM_ReadByteBitBanged(dataLink_if_t *self, uint8_t *byte);
+bool ECUSIM_ReadByteBitBanged(dataLink_if_t *self, uint8_t *byte, uint8_t baudRate);
 
 #endif /* ECU_UART_H */
