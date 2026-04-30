@@ -26,9 +26,9 @@ exit:
 
 obd_status_t ECU_LibOBD2_RequestService(
     obd_ctx_t *ctx,
-    const obd_request_t* request,
+    const obd_data_t* request,
     size_t requestLen,
-    obd_response_t* response,
+    obd_data_t* response,
     size_t* responseLen)
 {
     obd_status_t status = {0};

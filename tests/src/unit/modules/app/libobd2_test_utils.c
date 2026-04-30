@@ -24,15 +24,10 @@ const header_t header_00 =
     .trgAddr = 0x33,
     .srcAddr = 0xF1,
 };
-const obd_request_t request_00 =
+const obd_data_t data_00 =
 {
     .sid = 0x81,
     .param = {0x01}
-};
-const data_t data_00 =
-{
-    .req = request_00,
-    .len = 0x1,
 };
 const message_t msg_00_ecu =
 {

@@ -3,6 +3,7 @@
 #include "ecu_uart.h"
 #include "l2_iso9141.h"
 #include "libobd2.h"
+#include "libobd2_service_requests.h"
 #include "libobd2_test_utils.h"
 #include "projdefs.h"
 #include <stddef.h>
@@ -39,52 +40,64 @@ const header_t iso9141_header_00 =
     .srcAddr = 0xF1,
 };
 
-const obd_request_t iso9141_request_01 =
+const obd_data_t iso9141_obd_data_00 =
 {
     .sid = 0x09,
     .param = {0x02}
 };
 
-const obd_request_t iso9141_request_02 =
+const obd_data_t iso9141_obd_data_01  =
 {
     .sid = 0x09,
     .param = {0x03}
 };
 
-const obd_request_t iso9141_request_00 =
+const obd_data_t iso9141_obd_data_02 =
 {
     .sid = 0x81,
     .param = {0x01}
 };
 
-const data_t iso9141_data_00 =
+const libobd2_data_t iso9141_data_00  =
 {
-    .req = iso9141_request_00,
-    .len = 0x1,
+    .data = iso9141_obd_data_00,
+    .dataLen = 0x1,
+};
+
+const libobd2_data_t iso9141_data_01  =
+{
+    .data = iso9141_obd_data_01,
+    .dataLen = 0x1,
+};
+
+const libobd2_data_t iso9141_data_02  =
+{
+    .data = iso9141_obd_data_02,
+    .dataLen = 0x1,
 };
 
 const message_t iso9141_msg_00_ecu =
 {
     .cs = 0X45,
-    .data = iso9141_data_00,
+    .data = iso9141_obd_data_00,
     .header = iso9141_header_00_ecu
 };
 
 const message_t iso9141_msg_00 =
 {
         .cs = 0X45,
-        .data = iso9141_data_00,
+        .data = iso9141_obd_data_00,
         .header = iso9141_header_00
 };
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-extern uint8_t L2_ISO9141_ComputeChecksum(header_t header, data_t data);
+extern uint8_t L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data);
 extern obd_status_t L2_ISO9141_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len);
 extern obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg);
 extern obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* protocol);
 extern obd_status_t L2_ISO9141_ReadHeader(dataLink_if_t *self, header_t *header);
-extern void L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len);
+extern void L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen,size_t *len);
 static void test_L2_ISO9141_RecvMessage_000_Sender(void *param);
 static void test_L2_ISO9141_RecvMessage_000_Receiver(void *param);
 static void test_L2_ISO9141_5BaudInit_000_Sender(void *param);
@@ -108,13 +121,14 @@ static void test_L2_ISO9141_RecvMessage_000_Sender(void *param)
     uint8_t aSentMsg[6];
     size_t len;
     message_t msg = iso9141_msg_00_ecu;
+    size_t dataLen = 2;
 
     (void)param;
     (void)iso9141_msg_00;
     (void)dataLink_00;
     (void)response;
 
-    L2_ISO9141_PrepareMessage(&msg, aSentMsg, &len);
+    L2_ISO9141_PrepareMessage(&msg, aSentMsg, dataLen, &len);
 
     // ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
@@ -334,7 +348,7 @@ static void test_l2_ISO9141_send_request_000_Sender(void *param)
     LIBOBD_StartTimeout(pDataLinkTx, P3_TIME_MAX);
     LIBOBD_Delay(pDataLinkTx, P3_TIME_MIN);
 
-    actual = l2_kwp_send_request(pDataLinkTx, &iso9141_request_00, 1);
+    actual = l2_kwp_send_request(pDataLinkTx, &iso9141_obd_data_00, 1);
     LIBOBD_StopTimeout(pDataLinkTx);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_send_request");
 
@@ -370,12 +384,13 @@ static void test_l2_ISO9141_recv_response_000_Sender(void *param)
     uint8_t aSentMsg[6];
     size_t len;
     message_t msg = iso9141_msg_00_ecu;
+    size_t dataLen = 0x1;
 
     (void)param;
     (void)msg_00;
     (void)dataLink_00;
 
-    L2_ISO9141_PrepareMessage(&msg, aSentMsg, &len);
+    L2_ISO9141_PrepareMessage(&msg, aSentMsg, dataLen, &len);
 
     // ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
@@ -388,7 +403,7 @@ static void test_l2_ISO9141_recv_response_000_Receiver(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
-    obd_response_t resp        = {0};
+    obd_data_t resp        = {0};
     size_t         len         = 0;
     obd_status_t expected = {0};
     obd_status_t actual   = {0};
@@ -403,7 +418,7 @@ static void test_l2_ISO9141_recv_response_000_Receiver(void *param)
 
     actual = l2_iso9141_recv_response(pDataLinkRx, &resp, &len);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_recv_response return");
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x81, resp.positive.sid, "resp sid");
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x81, resp.sid, "resp sid");
 
     g_receiver_done = pdTRUE;
     vTaskDelete(NULL);
@@ -424,7 +439,7 @@ void test_L2_ISO9141_ComputeChecksum_000(void)
     uint8_t actual   = 0;
 
     // msg: 0x68 0x6A 0xF1 0x81 0x01 CS:0x45
-    actual = L2_ISO9141_ComputeChecksum(iso9141_header_00, iso9141_data_00);
+    actual = L2_ISO9141_ComputeChecksum(iso9141_header_00, iso9141_obd_data_00);
 
     TEST_ASSERT_EQUAL_HEX8(expected, actual);
 }
@@ -455,7 +470,7 @@ void test_L2_ISO9141_SendMessage_000(void)
     LIBOBD_StartTimeout(pDataLink, P3_TIME_MAX);
     LIBOBD_Delay(pDataLink, P3_TIME_MIN);
 
-    L2_ISO9141_PrepareMessage(&msg, buffer, NULL);
+    L2_ISO9141_PrepareMessage(&msg, buffer, 0x2, NULL);
 
     actual = L2_ISO9141_SendMessage(pDataLink, buffer, MSG_00_SIZE);
 
@@ -607,7 +622,7 @@ void test_L2_ISO9141_ReadHeader_000(void)
 // Description: Test correct serialization of message_t into KWP wire-format byte array
 // Type: Positive
 // Steps:
-//  - Call L2_PrepareMessage with msg_00
+//  - Call L2_KWP2000_PrepareMessage with msg_00
 //    {fmt=0xC1, trgAddr=0x33, srcAddr=0xF1, sid=0x81, param[0]=0x01, cs=0x45
 //  - Expected output bytes: {0xC1, 0x33, 0xF1, 0x81, 0x01, 0x45}, length == MSG_00_SIZE (6)
 // ==========================================================================================================
@@ -616,8 +631,9 @@ void test_L2_ISO9141_PrepareMessage_000(void)
     const uint8_t expected[MSG_00_SIZE]       = {0x68, 0x6A, 0xF1, 0x81, 0x01, 0x45};
     uint8_t       actual[MSG_00_SIZE + 4]     = {0};
     size_t        actualLen                   = 0;
+    size_t dataLen = 2;
 
-    L2_ISO9141_PrepareMessage((message_t *)&iso9141_msg_00, actual, &actualLen);
+    L2_ISO9141_PrepareMessage((message_t *)&iso9141_msg_00, actual, dataLen, &actualLen);
 
     TEST_ASSERT_EQUAL_MESSAGE(MSG_00_SIZE, actualLen, "message length");
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, actual, MSG_00_SIZE);

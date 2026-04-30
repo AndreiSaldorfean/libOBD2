@@ -13,6 +13,7 @@
 #define OBD_NOT_SUPPORTED            (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (uint16_t)0x3U))
 #define OBD_ERR_TIMEOUT_MAX          (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (uint16_t)0x4U))
 #define OBD_ERR_TIMEOUT_MIN          (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (uint16_t)0x5U))
+#define OBD_ERR_INVALID_PARAM        (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (uint16_t)0x6U))
 
 // Init status codes
 #define SRV_STATUS_INIT                   (0x02)
@@ -41,6 +42,7 @@
 #define OBD_ERR_COMM_CS_BYTE_NOT_RECVD         (OBD_MAKE_ERROR(SRV_STATUS_COMM, (uint16_t)0xAU))
 #define OBD_ERR_COMM_SEND_MSG_FAILED           (OBD_MAKE_ERROR(SRV_STATUS_COMM, (uint16_t)0xBU))
 #define OBD_ERR_COMM_RECV_MSG_FAILED           (OBD_MAKE_ERROR(SRV_STATUS_COMM, (uint16_t)0xCU))
+#define OBD_ERR_COMM_ECU_RESPONSE_7F           (OBD_MAKE_ERROR(SRV_STATUS_COMM, (uint16_t)0xCU))
 
 // Transport status codes
 #define SRV_STATUS_TRANSPORT               (0x04)

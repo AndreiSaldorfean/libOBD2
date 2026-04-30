@@ -6,6 +6,7 @@
 #include "timing_if.h"
 #include "transport_if.h"
 #include "utils.h"
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include "l2_kwp2000.h"
@@ -73,12 +74,12 @@ obd_status_t DL_Connect(dataLink_if_t *pDataLink)
     return status;
 }
 
-obd_status_t DL_SendRequest(dataLink_if_t *pDataLink, const obd_request_t *req, size_t len)
+obd_status_t DL_SendRequest(dataLink_if_t *pDataLink, const obd_data_t *req, size_t dataLen)
 {
-    return pDataLink->send_request(pDataLink, req, len);
+    return pDataLink->send_request(pDataLink, req, dataLen);
 }
 
-obd_status_t DL_RecvResponse(dataLink_if_t  *pDataLink, obd_response_t *resp, size_t* len)
+obd_status_t DL_RecvResponse(dataLink_if_t  *pDataLink, obd_data_t *resp, size_t* dataLen)
 {
-    return pDataLink->recv_response(pDataLink, resp, len);
+    return pDataLink->recv_response(pDataLink, resp, dataLen);
 }

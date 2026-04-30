@@ -14,10 +14,10 @@
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 extern const header_t iso9141_header_00_ecu;
 extern const header_t iso9141_header_00;
-extern const obd_request_t iso9141_request_01;
-extern const obd_request_t iso9141_request_02;
-extern const obd_request_t iso9141_request_00;
-extern const data_t iso9141_data_00;
+extern const obd_data_t iso9141_request_01;
+extern const obd_data_t iso9141_request_02;
+extern const obd_data_t iso9141_request_00;
+extern const obd_data_t iso9141_data_00;
 extern const message_t iso9141_msg_00;
 extern const message_t iso9141_msg_00_ecu;
 

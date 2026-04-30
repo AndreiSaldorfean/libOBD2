@@ -50,36 +50,8 @@
 typedef struct
 {
     uint8_t sid;
-    uint8_t param[255];
-} obd_request_t;
-
-typedef struct
-{
-    union{
-        struct
-        {
-            uint8_t sid;
-            uint8_t data[255];
-        }positive;
-
-        struct
-        {
-            uint8_t negResp;
-            uint8_t sid;
-            uint8_t data[254];
-        }negative;
-    };
-} obd_response_t;
-
-typedef struct
-{
-    union
-    {
-        obd_request_t req;
-        obd_response_t resp;
-    };
-    size_t len;
-}data_t;
+    uint8_t param[6];
+}obd_data_t;
 
 typedef struct header_t
 {
@@ -92,15 +64,15 @@ typedef struct header_t
 typedef struct
 {
     header_t header;
-    data_t   data;
-    uint8_t  cs;
+    obd_data_t data;
+    uint8_t cs;
 } message_t;
 
 /* Forward declaration */
 typedef struct dataLink_if dataLink_if_t;
 typedef obd_status_t (*dl_connect_t)(dataLink_if_t*, uint8_t*);
-typedef obd_status_t (*dl_send_request_t)(dataLink_if_t *pDataLink, const obd_request_t *req, size_t len);
-typedef obd_status_t (*dl_recv_response_t)(dataLink_if_t *pDataLink, obd_response_t *resp, size_t *len);
+typedef obd_status_t (*dl_send_request_t)(dataLink_if_t *pDataLink, const obd_data_t *req, size_t dataLen);
+typedef obd_status_t (*dl_recv_response_t)(dataLink_if_t *pDataLink, obd_data_t *resp, size_t* dataLen);
 
 struct dataLink_if
 {
@@ -200,7 +172,7 @@ exit:
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 obd_status_t DL_Connect(dataLink_if_t *pDataLink);
-obd_status_t DL_SendRequest(dataLink_if_t *handle, const obd_request_t *req, size_t len);
-obd_status_t DL_RecvResponse(dataLink_if_t  *handle, obd_response_t *resp, size_t* len);
+obd_status_t DL_SendRequest(dataLink_if_t *pDataLink, const obd_data_t *req, size_t dataLen);
+obd_status_t DL_RecvResponse(dataLink_if_t  *handle, obd_data_t *resp, size_t* len);
 
 #endif /* DATA_LINK_H */

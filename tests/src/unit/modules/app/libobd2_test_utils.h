@@ -44,8 +44,8 @@ static inline void TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(obd_status_t expected, o
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 extern const header_t header_00_ecu;
 extern const header_t header_00;
-extern const obd_request_t request_00;
-extern const data_t data_00;
+extern const obd_data_t request_00;
+extern const obd_data_t data_00;
 extern const message_t msg_00;
 extern const message_t msg_00_ecu;
 extern timerCtx_t tmrCtxTx;

@@ -26,7 +26,7 @@ static volatile BaseType_t g_receiver_done = pdFALSE;
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-extern uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data);
+extern uint8_t L2_KWP_ComputeChecksum(header_t header, obd_data_t data);
 extern obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len);
 extern obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recvdMsg);
 #if defined(SPT_FAST_INIT)
@@ -42,7 +42,7 @@ extern obd_status_t L2_KWP_SRV_AccessTimingParameter(dataLink_if_t *self);
 extern obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self);
 #endif /* SPT_5BAUD_INIT */
 extern obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, header_t *header, size_t *headerLen);
-extern void L2_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len);
+extern void L2_KWP2000_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
 static void test_L2_KWP_RecvMessage_000_Sender(void *param);
 static void test_L2_KWP_RecvMessage_000_Receiver(void *param);
 static void test_L2_KWP_ReadHeader_000_Sender(void *param);
@@ -64,13 +64,14 @@ static void test_L2_KWP_RecvMessage_000_Sender(void *param)
     uint8_t aSentMsg[6];
     size_t len;
     message_t msg = msg_00_ecu;
+    size_t dataLen = 2;
 
     (void)param;
     (void)msg_00;
     (void)dataLink_00;
     (void)response;
 
-    L2_PrepareMessage(&msg, aSentMsg, &len);
+    L2_KWP2000_PrepareMessage(&msg, aSentMsg, dataLen, &len);
 
     // ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
@@ -235,12 +236,13 @@ static void test_l2_kwp_recv_response_000_Sender(void *param)
     uint8_t aSentMsg[6];
     size_t len;
     message_t msg = msg_00_ecu;
+    size_t dataLen = 2;
 
     (void)param;
     (void)msg_00;
     (void)dataLink_00;
 
-    L2_PrepareMessage(&msg, aSentMsg, &len);
+    L2_KWP2000_PrepareMessage(&msg, aSentMsg, dataLen, &len);
 
     // ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
@@ -253,7 +255,7 @@ static void test_l2_kwp_recv_response_000_Receiver(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
-    obd_response_t resp        = {0};
+    obd_data_t resp        = {0};
     size_t         len         = 0;
     obd_status_t expected = {0};
     obd_status_t actual   = {0};
@@ -268,7 +270,7 @@ static void test_l2_kwp_recv_response_000_Receiver(void *param)
 
     actual = l2_kwp_recv_response(pDataLinkRx, &resp, &len);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_recv_response return");
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x81, resp.positive.sid, "resp sid");
+    TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x81, resp.sid, "resp sid");
 
     g_receiver_done = pdTRUE;
     vTaskDelete(NULL);
@@ -311,6 +313,7 @@ void test_L2_KWP_SendMessage_000(void)
     uint32_t timeSample = 0;
     uint8_t buffer[6];
     message_t msg = msg_00;
+    size_t dataLen = 2;
 
     (void)msg_00;
     (void)dataLink_00;
@@ -320,7 +323,7 @@ void test_L2_KWP_SendMessage_000(void)
     LIBOBD_StartTimeout(pDataLink, P3_TIME_MAX);
     LIBOBD_Delay(pDataLink, P3_TIME_MIN);
 
-    L2_PrepareMessage(&msg, buffer, NULL);
+    L2_KWP2000_PrepareMessage(&msg, buffer, dataLen, NULL);
 
     actual = L2_KWP_SendMessage(pDataLink, buffer, MSG_00_SIZE);
 
@@ -635,7 +638,7 @@ void test_L2_KWP_ReadHeader_000(void)
 // Description: Test correct serialization of message_t into KWP wire-format byte array
 // Type: Positive
 // Steps:
-//  - Call L2_PrepareMessage with msg_00
+//  - Call L2_KWP2000_PrepareMessage with msg_00
 //    {fmt=0xC1, trgAddr=0x33, srcAddr=0xF1, sid=0x81, param[0]=0x01, cs=0x67}
 //  - Expected output bytes: {0xC1, 0x33, 0xF1, 0x81, 0x01, 0x67}, length == MSG_00_SIZE (6)
 // ==========================================================================================================
@@ -644,8 +647,9 @@ void test_PrepareMessage_000(void)
     const uint8_t expected[MSG_00_SIZE]       = {0xC1, 0x33, 0xF1, 0x81, 0x01, 0x67};
     uint8_t       actual[MSG_00_SIZE + 4]     = {0};
     size_t        actualLen                   = 0;
+    size_t dataLen = 2;
 
-    L2_PrepareMessage((message_t *)&msg_00, actual, &actualLen);
+    L2_KWP2000_PrepareMessage((message_t *)&msg_00, actual, dataLen, &actualLen);
 
     TEST_ASSERT_EQUAL_MESSAGE(MSG_00_SIZE, actualLen, "message length");
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, actual, MSG_00_SIZE);

@@ -19,11 +19,10 @@ static volatile BaseType_t g_receiver_done = pdFALSE;
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 extern obd_status_t LibOBD2_Init(obd_ctx_t *ctx);
-extern obd_status_t LibOBD2_RequestService(
+obd_status_t LibOBD2_RequestService(
     obd_ctx_t *ctx,
-    const obd_request_t* request,
-    size_t requestLen,
-    obd_response_t* response,
+    libobd2_sid_t obdSid,
+    uint8_t *response,
     size_t* responseLen);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */

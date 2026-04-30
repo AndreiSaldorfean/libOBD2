@@ -27,7 +27,7 @@
 
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
-extern uint8_t L2_KWP_ComputeChecksum(header_t header, data_t data);
+extern uint8_t L2_KWP_ComputeChecksum(header_t header, obd_data_t data);
 
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
@@ -142,12 +142,12 @@ void test_LIBOBD2_1(void)
     size_t len;
     obd_status_t status;
 
-    obd_request_t request = {
+    obd_data_t request = {
         .sid = SID_SHOW_CURRENT_DATA,
         .param = {PID_01_COOLANT_TEMP}
     };
 
-    obd_response_t response = {0};
+    obd_data_t response = {0};
 
     status = LibOBD2_RequestService(&ctx, &request, 2, &response, &len);
     TEST_ASSERT_EQUAL_UINT32(OBD_ERR_NULL_PTR, status);

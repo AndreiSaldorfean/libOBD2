@@ -71,12 +71,12 @@ obd_status_t ECU_DL_Connect(dataLink_if_t *pDataLink)
     return status;
 }
 
-obd_status_t ECU_DL_SendRequest(dataLink_if_t *pDataLink, const obd_request_t *req, size_t len)
+obd_status_t ECU_DL_SendRequest(dataLink_if_t *pDataLink, const obd_data_t *req, size_t len)
 {
     return pDataLink->send_request(pDataLink, req, len);
 }
 
-obd_status_t ECU_DL_RecvResponse(dataLink_if_t  *pDataLink, obd_response_t *resp, size_t* len)
+obd_status_t ECU_DL_RecvResponse(dataLink_if_t  *pDataLink, obd_data_t *resp, size_t* len)
 {
     return pDataLink->recv_response(pDataLink, resp, len);
 }

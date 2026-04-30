@@ -126,12 +126,12 @@ void TesterTask(void *param)
     printf("status= %x\n", status.response);
     printf("timeout= %x\n", status.timeout);
 
-    // obd_request_t request =
+    // obd_data_t request =
     // {
     //     .sid = SID_SHOW_CURRENT_DATA,
     //     .param = {PID_01_COOLANT_TEMP},
     // };
-    // obd_response_t response = {0};
+    // obd_data_t response = {0};
     // size_t respLen = 0;
     //
     // for (;;)
@@ -168,12 +168,12 @@ void EcuTask(void *param)
     printf("status= %x\n", status.response);
     printf("timeout= %x\n", status.timeout);
 
-    // obd_request_t request =
+    // obd_data_t request =
     // {
     //     .sid = SID_SHOW_CURRENT_DATA,
     //     .param = {PID_01_COOLANT_TEMP},
     // };
-    // obd_response_t response = {0};
+    // obd_data_t response = {0};
     // size_t respLen = 0;
 
     // for (;;)
