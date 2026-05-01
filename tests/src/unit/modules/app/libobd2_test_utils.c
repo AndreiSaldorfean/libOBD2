@@ -95,7 +95,7 @@ obd_timing_ops_t timerOpsRx =
         .stop_timeout       = KWP_TMR_StopTimeout,
 };
 
-uartKwp_ctx_t uartCtxTx =
+uart_ctx_t uartCtxTx =
 {
         .usartClk    = RCC_USART1,
         .usartNum    = USART1,
@@ -114,7 +114,7 @@ uartKwp_ctx_t uartCtxTx =
         .gpio         = GPIOA,
 };
 
-uartKwp_ctx_t uartCtxRx =
+uart_ctx_t uartCtxRx =
 {
         .usartClk    = RCC_USART2,
         .usartNum    = USART2,
@@ -135,12 +135,12 @@ uartKwp_ctx_t uartCtxRx =
 
 obd_transport_ops_t transportOps =
 {
-    .init        = UART_KWP_Init,
-    .send_byte   = UART_KWP_WriteByte,
-    .recv_byte   = UART_KWP_RecvByte,
-    .send_pulse  = UART_KWP_SendPulse,
-    .switch_mode = UART_KWP_SwitchMode,
-    .flush_rx    = UART_KWP_FlushRx,
+    .init        = UART_Init,
+    .send_byte   = UART_WriteByte,
+    .recv_byte   = UART_RecvByte,
+    .send_pulse  = UART_SendPulse,
+    .switch_mode = UART_SwitchMode,
+    .flush_rx    = UART_FlushRx,
 };
 
 l2_kwp_ctx_t kwpCtx =

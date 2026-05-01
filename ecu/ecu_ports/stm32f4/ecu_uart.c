@@ -21,7 +21,7 @@ static inline bool ECUSIM_ReadBit(dataLink_if_t * self);
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 static inline void ECUSIM_DisableUart(dataLink_if_t *self)
 {
-    uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)(self->pTransportHandle);
+    uart_ctx_t *ctx = (uart_ctx_t*)(self->pTransportHandle);
 
     // Disable USART first
     usart_disable(ctx->usartNum);
@@ -31,7 +31,7 @@ static inline void ECUSIM_DisableUart(dataLink_if_t *self)
 
 static inline void ECUSIM_EnableUart(dataLink_if_t *self)
 {
-    uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)(self->pTransportHandle);
+    uart_ctx_t *ctx = (uart_ctx_t*)(self->pTransportHandle);
 
     // Switch TX pin back to USART alternate function
     gpio_mode_setup(ctx->gpio, GPIO_MODE_AF, GPIO_PUPD_NONE, ctx->usartRxPin);
@@ -46,10 +46,11 @@ static inline void ECUSIM_EnableUart(dataLink_if_t *self)
 
 static inline bool ECUSIM_ReadBit(dataLink_if_t * self)
 {
-    uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)(self->pTransportHandle);
+    uart_ctx_t *ctx = (uart_ctx_t*)(self->pTransportHandle);
     bool val = 0;
 
     val = gpio_get(ctx->gpio, ctx->usartRxPin) != 0;
+    YIELD;
 
     return val;
 }
@@ -73,7 +74,10 @@ bool ECUSIM_ReadByteBitBanged(dataLink_if_t *self, uint8_t *byte, uint8_t baudRa
     }
 
     if (ECUSIM_ReadBit(self) != 1)
+    {
+        ECUSIM_EnableUart(self);
         return false;
+    }
     LIBOBD_Delay(self, bit_period);
 
     ECUSIM_EnableUart(self);

@@ -146,7 +146,7 @@ OBD2_STATIC void L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg
     aSentMsg[idx++] = sentMsg->header.srcAddr;
     aSentMsg[idx++] = sentMsg->data.sid;
 
-    for (uint8_t i = 0; i < dataLen; i++)
+    for (uint8_t i = 0; i < dataLen - 1; i++)
     {
         aSentMsg[idx++] = sentMsg->data.param[i];
     }

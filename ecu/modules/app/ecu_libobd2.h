@@ -16,9 +16,8 @@
 obd_status_t ECU_LibOBD2_Init(obd_ctx_t *ctx);
 obd_status_t ECU_LibOBD2_RequestService(
     obd_ctx_t *ctx,
-    const obd_data_t* request,
-    size_t requestLen,
-    obd_data_t* response,
+    libobd2_sid_t obdSid,
+    uint8_t *response,
     size_t* responseLen);
 
 #endif /* ECU_LIBOBD2_H */

@@ -73,11 +73,11 @@ static void configDataLinkTester(dataLink_if_t* dl)
 
     static obd_transport_ops_t transportOps =
     {
-        .init        = UART_KWP_Init,
-        .send_byte   = UART_KWP_WriteByte,
-        .recv_byte   = UART_KWP_RecvByte,
-        .send_pulse  = UART_KWP_SendPulse,
-        .switch_mode = UART_KWP_SwitchMode,
+        .init        = UART_Init,
+        .send_byte   = UART_WriteByte,
+        .recv_byte   = UART_RecvByte,
+        .send_pulse  = UART_SendPulse,
+        .switch_mode = UART_SwitchMode,
     };
 
 

@@ -16,9 +16,9 @@
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */
-bool UART_KWP_Init(void* handle)
+bool UART_Init(void* handle)
 {
-    uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
+    uart_ctx_t *ctx = (uart_ctx_t*)handle;
 
     rcc_periph_clock_enable(ctx->gpioRcc);
     rcc_periph_clock_enable(ctx->usartClk);
@@ -48,20 +48,23 @@ bool UART_KWP_Init(void* handle)
     return 1;
 }
 
-void UART_KWP_WriteByte(void* handle, uint8_t data)
+void UART_WriteByte(void* handle, uint8_t data)
 {
-    uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
+    uart_ctx_t *ctx = (uart_ctx_t*)handle;
 
     YIELD;
     usart_send_blocking(ctx->usartNum, data);
 
     /* Wait for transmission to fully complete (shift register empty) */
-    while (!(USART_SR(ctx->usartNum) & USART_SR_TC));
+    while (!(USART_SR(ctx->usartNum) & USART_SR_TC))
+    {
+        YIELD;
+    }
 }
 
-bool UART_KWP_RecvByte(void* handle, uint8_t *recv_buffer)
+bool UART_RecvByte(void* handle, uint8_t *recv_buffer)
 {
-    uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
+    uart_ctx_t *ctx = (uart_ctx_t*)handle;
 
     if((USART_SR(ctx->usartNum) & USART_SR_RXNE))
     {
@@ -74,9 +77,9 @@ bool UART_KWP_RecvByte(void* handle, uint8_t *recv_buffer)
     return 0;
 }
 
-void UART_KWP_FlushRx(void* handle)
+void UART_FlushRx(void* handle)
 {
-    uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
+    uart_ctx_t *ctx = (uart_ctx_t*)handle;
 
     /* Wait for previous send to finish */
     for (int i = 0; i < 1000; i++)
@@ -91,11 +94,10 @@ void UART_KWP_FlushRx(void* handle)
     }
 }
 
-void UART_KWP_SendPulse(void* handle, bool pulse)
+void UART_SendPulse(void* handle, bool pulse)
 {
-    uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
+    uart_ctx_t *ctx = (uart_ctx_t*)handle;
 
-    UART_KWP_FlushRx(handle);
 
     if (pulse)
     {
@@ -109,9 +111,9 @@ void UART_KWP_SendPulse(void* handle, bool pulse)
     YIELD;
 }
 
-void UART_KWP_SwitchMode(void* handle, uint8_t mode)
+void UART_SwitchMode(void* handle, uint8_t mode)
 {
-    uartKwp_ctx_t *ctx = (uartKwp_ctx_t*)handle;
+    uart_ctx_t *ctx = (uart_ctx_t*)handle;
 
     switch (mode)
     {

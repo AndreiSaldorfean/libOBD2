@@ -109,8 +109,8 @@ int main()
 
     sysInit();
 
-    UART_KWP_Init(&uartCtxTx);
-    UART_KWP_Init(&uartCtxRx);
+    UART_Init(&uartCtxTx);
+    UART_Init(&uartCtxRx);
     KWP_TMR_Init(&tmrCtxTx);
     KWP_TMR_Init(&tmrCtxRx);
 

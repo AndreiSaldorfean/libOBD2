@@ -170,29 +170,40 @@ OBD2_STATIC obd_status_t ECU_L2_ISO9141_5BaudInit(dataLink_if_t *self)
     uint8_t kb2Inverted = 0;
 
     status.response = 0x255;
+    printf("[ECU_5B] begin\n");
     // Read wake-up byte at 5 baudRate
     if(!ECUSIM_ReadByteBitBanged(self, &syncByte, 5))
+    {
+        printf("[ECU_5B] fail: bit-banged read returned false\n");
         goto exit;
+    }
+
+    printf("[ECU_5B] syncByte=0x%02X\n", syncByte);
 
     OBD2_ASSERT_EQUAL_OR_EXIT(0x33, syncByte);
     LIBOBD_Delay(self, ISO9141_W1_TIME_MIN);
+    printf("[ECU_5B] send 0x55\n");
 
     // Send sync byte
     LIBOBD_SendByte(self, 0x55);
 
     // Send KB1
     LIBOBD_Delay(self, ISO9141_W2_TIME_MIN);
+    printf("[ECU_5B] send KB1=0x08\n");
     LIBOBD_SendByte(self, 0x08);
 
     // Send KB2
+    printf("[ECU_5B] send KB2=0x08\n");
     LIBOBD_SendByte(self, 0x08);
 
     // Receive kb2 inverted
     status = ReadByteInTimeframe(self, &kb2Inverted, 0, ISO9141_W4_TIME_MAX);
+    printf("[ECU_5B] kb2Inverted=0x%02X timeout=0x%04X resp=0x%04X\n", kb2Inverted, status.timeout, status.response);
     OBD2_ASSERT_EQUAL_OR_EXIT((uint8_t)~0x08, kb2Inverted);
 
     // Send inverted address
     LIBOBD_Delay(self, ISO9141_W4_TIME_MIN);
+    printf("[ECU_5B] send invAddr=0x%02X\n", (uint8_t)~0x33);
     LIBOBD_SendByte(self, ~0x33);
 
     ctx.header.fmt = 0x42;
@@ -200,7 +211,12 @@ OBD2_STATIC obd_status_t ECU_L2_ISO9141_5BaudInit(dataLink_if_t *self)
     ctx.header.srcAddr = 0x12;
 
     memset(&status, 0, sizeof(obd_status_t));
+    printf("[ECU_5B] success\n");
 exit:
+    if ((status.timeout != 0U) || (status.response != 0U))
+    {
+        printf("[ECU_5B] exit fail timeout=0x%04X resp=0x%04X\n", status.timeout, status.response);
+    }
     return status;
 }
 

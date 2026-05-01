@@ -73,11 +73,11 @@ void test_LIBOBD2_0(void)
 
     obd_transport_ops_t transportOps =
     {
-        .init      = UART_KWP_Init,
-        .send_byte = UART_KWP_WriteByte,
-        .recv_byte = UART_KWP_RecvByte,
-        .send_pulse = UART_KWP_SendPulse,
-        .switch_mode = UART_KWP_SwitchMode,
+        .init      = UART_Init,
+        .send_byte = UART_WriteByte,
+        .recv_byte = UART_RecvByte,
+        .send_pulse = UART_SendPulse,
+        .switch_mode = UART_SwitchMode,
     };
 
 
@@ -121,9 +121,9 @@ void test_LIBOBD2_1(void)
 {
     obd_transport_ops_t transportOps =
     {
-        .init      = UART_KWP_Init,
-        .send_byte = UART_KWP_WriteByte,
-        .recv_byte = UART_KWP_RecvByte
+        .init      = UART_Init,
+        .send_byte = UART_WriteByte,
+        .recv_byte = UART_RecvByte
     };
     dataLink_if_t dataLink =
     {
@@ -224,14 +224,14 @@ void test_Tester_ECU(void)
     };
     uint8_t buffer = 0;
 
-    UART_KWP_Init((void*)&uartCtxTester);
-    UART_KWP_Init((void*)&uartCtxEcu);
+    UART_Init((void*)&uartCtxTester);
+    UART_Init((void*)&uartCtxEcu);
 
     KWP_TMR_Init((void*)&tmrCtxTester);
     KWP_TMR_Init((void*)&tmrCtxEcu);
 
-    UART_KWP_WriteByte((void*)&uartCtxTester, 0x66);
-    while(OBD_STATUS_OK != UART_KWP_RecvByte((void*)&uartCtxEcu, &buffer));
+    UART_WriteByte((void*)&uartCtxTester, 0x66);
+    while(OBD_STATUS_OK != UART_RecvByte((void*)&uartCtxEcu, &buffer));
 
     TEST_ASSERT_EQUAL_UINT8(0x66, buffer);
 }
