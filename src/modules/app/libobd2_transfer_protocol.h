@@ -1,0 +1,22 @@
+#ifndef LIBOBD2_TRANSFER_PROTOCOL_H
+#define LIBOBD2_TRANSFER_PROTOCOL_H
+
+/* ================================================ INCLUDES =============================================== */
+#include <stdint.h>
+
+/* ================================================= MACROS ================================================ */
+#define TP_SEND          (0x1U)
+#define TP_RECV          (0x2U)
+#define TP_MSG_CNT       (0x3U)
+#define TP_MSGS          (0x4U)
+#define TP_READ_UNTIL_TO (0x5U)
+#define TP_END           (0x0U)
+
+#define TP_GET_VIN   { TP_SEND, TP_MSG_CNT, TP_SEND, TP_MSGS, TP_END }
+#define TP_GET_CALID { TP_SEND, TP_MSG_CNT, TP_SEND, TP_MSGS, TP_END }
+/* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
+/* ============================================ INLINE FUNCTIONS =========================================== */
+/* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
+/* =============================================== MODULE API ============================================== */
+
+#endif /* LIBOBD2_TRANSFER_PROTOCOL_H */

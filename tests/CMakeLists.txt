@@ -2,9 +2,12 @@ cmake_minimum_required(VERSION 3.14)
 project(test LANGUAGES C)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
+option(SPT_FREERTOS "Support for FreeRTOS" ON)
 
 # TinyUSB sources
 set(TINYUSB_ROOT ${CMAKE_SOURCE_DIR}/../examples/libs/tinyusb)
+string(TOUPPER "${PLATFORM}" PLATFORM_UPPER)
+string(SUBSTRING "${PLATFORM}" 5 2 CLASS)
 
 file(GLOB SOURCES
     "${CMAKE_SOURCE_DIR}/Unity/src/unity.c"
@@ -13,13 +16,11 @@ file(GLOB SOURCES
     "${CMAKE_SOURCE_DIR}/src/unit/modules/datalink/common/*.c"
     "${CMAKE_SOURCE_DIR}/src/unit/modules/datalink/specific/l2_iso9141/*.c"
     "${CMAKE_SOURCE_DIR}/src/unit/modules/datalink/specific/l2_kwp2000/*.c"
-    "${CMAKE_SOURCE_DIR}/src/unit/modules/ecu/*.c"
-    "${CMAKE_SOURCE_DIR}/src/unit/modules/ecu/ecu_ports/stm32f4/*.c"
-    "${CMAKE_SOURCE_DIR}/src/unit/ports/stm32f4/*.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/ports/${PLATFORM}/*.c"
     "${CMAKE_SOURCE_DIR}/src/os/*.c"
-    "${CMAKE_SOURCE_DIR}/../examples/libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
-    "${CMAKE_SOURCE_DIR}/../ports/stm32f4/*.c"
-    "${CMAKE_SOURCE_DIR}/../ports/stm32f4/startup/*.c"
+    "${CMAKE_SOURCE_DIR}/../examples/libs/cmsis_device_${CLASS}/Source/Templates/system_${PLATFORM}xx.c"
+    "${CMAKE_SOURCE_DIR}/../ports/${PLATFORM}/*.c"
+    "${CMAKE_SOURCE_DIR}/../ports/${PLATFORM}/startup/*.c"
     ${TINYUSB_ROOT}/src/tusb.c
     ${TINYUSB_ROOT}/src/common/tusb_fifo.c
     ${TINYUSB_ROOT}/src/device/usbd.c
@@ -40,9 +41,9 @@ target_include_directories(${PROJECT_NAME}
     ../examples/libs/libopencm3/include/
     ../include
     ../include/freertos/
-    ../ports/stm32f4/
-    ../ports/stm32f4/startup/
-    ../ports/stm32f4/config/
+    "../ports/${PLATFORM}/"
+    "../ports/${PLATFORM}/startup/"
+    "../ports/${PLATFORM}/config/"
     ../utils
     ../interface/
     ../include/app/
@@ -54,14 +55,12 @@ target_include_directories(${PROJECT_NAME}
     ./src/unit/modules/datalink/common
     ./src/unit/modules/datalink/specific/l2_iso9141/
     ./src/unit/modules/datalink/specific/l2_kwp2000/
-    ./src/unit/modules/ecu/
-    ./src/unit/modules/ecu/ecu_ports/stm32f4/
-    ./src/unit/ports/stm32f4/
+    "./src/unit/ports/${PLATFORM}/"
     ./src/os/
     ./Unity/src/
     ../examples/libs/FreeRTOS-Kernel/include/
     ../examples/libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/
-    ../examples/libs/cmsis_device_f4/Include
+    "../examples/libs/cmsis_device_${CLASS}/Include"
     ../examples/libs/CMSIS_5/CMSIS/Core/Include
     ${TINYUSB_ROOT}/src
     ${TINYUSB_ROOT}/src/common
@@ -71,29 +70,50 @@ target_include_directories(${PROJECT_NAME}
     ${TINYUSB_ROOT}/hw
 )
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-    CFG_TUSB_MCU=OPT_MCU_STM32F4
-    CFG_TUSB_OS=OPT_OS_NONE
-    STM32F401xC
-    UNITY_EXCLUDE_SETJMP_H
-    SPT_FREERTOS
-)
-
-if(DEBUG STREQUAL "ON")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG)
+if(PLATFORM STREQUAL "stm32f4")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        CFG_TUSB_MCU=OPT_MCU_STM32F4
+        CFG_TUSB_OS=OPT_OS_NONE
+        STM32F401xC
+        UNITY_EXCLUDE_SETJMP_H
+    )
+elseif(PLATFORM STREQUAL "stm32g4")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        STM32G4
+        STM32G474xx
+        UNITY_EXCLUDE_SETJMP_H
+    )
 endif()
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/.. ${CMAKE_BINARY_DIR}/libOBD2)
+if(SPT_FREERTOS STREQUAL "ON")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SPT_FREERTOS)
+endif()
 
-target_compile_definitions(libOBD2
+if(LOGGING STREQUAL "ON")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE LOGGING)
+endif()
+
+add_subdirectory(${CMAKE_SOURCE_DIR}/../ecu ${CMAKE_BINARY_DIR}/ecu)
+
+get_filename_component(OPENCM3_LIB
+    "${CMAKE_CURRENT_LIST_DIR}/../examples/libs/libopencm3/lib/libopencm3_stm32${CLASS}.a"
+    ABSOLUTE
+)
+
+target_compile_definitions(OBD2
     PRIVATE
     UNIT_TESTS
-    SPT_FREERTOS
+)
+
+target_compile_definitions(OBD2_ECU
+    PRIVATE
+    UNIT_TESTS
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
-    ${CMAKE_SOURCE_DIR}/../examples/libs/libopencm3/lib/libopencm3_stm32f4.a
-    libOBD2
+    ${OPENCM3_LIB}
+    OBD2
+    OBD2_ECU
 )
 
 # Generate .bin file from .elf

@@ -6,13 +6,14 @@
 #include "statusRetCodes.h"
 #include <stdbool.h>
 #include <stddef.h>
+#include "libobd2_services.h"
 
 /* ================================================= MACROS ================================================ */
 #if defined(SPT_FREERTOS)
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
 #include "task.h"
-#define YIELD taskYIELD()
+#define YIELD
 #else
 #define YIELD
 #endif
@@ -20,7 +21,6 @@
 typedef struct
 {
     dataLink_if_t *pDataLink;
-    // void* pDataLinkHandle;
     bool connectionStatus;
 } obd_ctx_t;
 
@@ -30,9 +30,8 @@ typedef struct
 obd_status_t LibOBD2_Init(obd_ctx_t *ctx);
 obd_status_t LibOBD2_RequestService(
     obd_ctx_t *ctx,
-    const obd_request_t* request,
-    size_t requestLen,
-    obd_response_t* response,
+    libobd2_sid_t obdSid,
+    uint8_t *response,
     size_t* responseLen);
 
 #endif /* LIBOBD2_H */

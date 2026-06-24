@@ -1,6 +1,7 @@
 /* ================================================ INCLUDES =============================================== */
 #include "libobd2_test_utils.h"
-#include "uart_kwp_transport_port.h"
+#include "l2_iso9141.h"
+#include "libobd2_uart_port.h"
 #define STM32F4
 #include "libopencm3/stm32/f4/rcc.h"
 #include "libopencm3/stm32/f4/gpio.h"
@@ -13,26 +14,21 @@
 /* ============================================ GLOBAL VARIABLES =========================================== */
 const header_t header_00_ecu =
 {
-    .fmt = {.val = 0xC2},
+    .fmt = 0xC2,
     .trgAddr = 0x33,
     .srcAddr = 0xF1,
 };
 
 const header_t header_00 =
 {
-    .fmt = {.val = 0xC1},
+    .fmt = 0xC1,
     .trgAddr = 0x33,
     .srcAddr = 0xF1,
 };
-const obd_request_t request_00 =
+const obd_data_t data_00 =
 {
     .sid = 0x81,
     .param = {0x01}
-};
-const data_t data_00 =
-{
-    .req = request_00,
-    .len = 0x1,
 };
 const message_t msg_00_ecu =
 {
@@ -72,9 +68,12 @@ timerCtx_t tmrCtxRx =
     .timeout_callback    = NULL,
     .timeout_user_data   = NULL,
     .timeout_start_ms    = 0,
-    .timerClk            = RCC_TIM1,
-    .rstTimer            = RST_TIM1,
-    .timer               = TIM1,
+    /* TIM1 is 16-bit (wraps every ~65 ms) and cannot track P2/P3 timeouts.
+     * Share TIM2's 32-bit free-running counter; LIBOBD2_TMR_Init skips HW
+     * re-init when TIM2 is already running so the counter is not reset. */
+    .timerClk            = RCC_TIM2,
+    .rstTimer            = RST_TIM2,
+    .timer               = TIM2,
     .timerPrescaler      = TIM2_PRESCALER,
     .event               = TIM_EGR_UG,
     .flag                = TIM_SR_UIF
@@ -82,25 +81,25 @@ timerCtx_t tmrCtxRx =
 
 obd_timing_ops_t timerOpsTx =
 {
-        .timer_init         = KWP_TMR_Init,
-        .delay_ms           = KWP_TMR_DelayMs,
-        .get_time_ms        = KWP_TMR_GetTimeMs,
-        .is_timeout_expired = KWP_TMR_IsTimeoutExpired,
-        .start_timeout      = KWP_TMR_StartTimeout,
-        .stop_timeout       = KWP_TMR_StopTimeout,
+        .timer_init         = LIBOBD2_TMR_Init,
+        .delay_ms           = LIBOBD2_TMR_DelayMs,
+        .get_time_ms        = LIBOBD2_TMR_GetTimeMs,
+        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
+        .start_timeout      = LIBOBD2_TMR_StartTimeout,
+        .stop_timeout       = LIBOBD2_TMR_StopTimeout,
 };
 
 obd_timing_ops_t timerOpsRx =
 {
-        .timer_init         = KWP_TMR_Init,
-        .delay_ms           = KWP_TMR_DelayMs,
-        .get_time_ms        = KWP_TMR_GetTimeMs,
-        .is_timeout_expired = KWP_TMR_IsTimeoutExpired,
-        .start_timeout      = KWP_TMR_StartTimeout,
-        .stop_timeout       = KWP_TMR_StopTimeout,
+        .timer_init         = LIBOBD2_TMR_Init,
+        .delay_ms           = LIBOBD2_TMR_DelayMs,
+        .get_time_ms        = LIBOBD2_TMR_GetTimeMs,
+        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
+        .start_timeout      = LIBOBD2_TMR_StartTimeout,
+        .stop_timeout       = LIBOBD2_TMR_StopTimeout,
 };
 
-uartKwp_ctx_t uartCtxTx =
+uart_ctx_t uartCtxTx =
 {
         .usartClk    = RCC_USART1,
         .usartNum    = USART1,
@@ -119,7 +118,7 @@ uartKwp_ctx_t uartCtxTx =
         .gpio         = GPIOA,
 };
 
-uartKwp_ctx_t uartCtxRx =
+uart_ctx_t uartCtxRx =
 {
         .usartClk    = RCC_USART2,
         .usartNum    = USART2,
@@ -138,63 +137,78 @@ uartKwp_ctx_t uartCtxRx =
         .gpio         = GPIOA,
 };
 
-obd_transport_ops_t transportOps =
+obd_uart_ops_t transportOps =
 {
-    .init        = UART_KWP_Init,
-    .send_byte   = UART_KWP_WriteByte,
-    .recv_byte   = UART_KWP_RecvByte,
-    .send_pulse  = UART_KWP_SendPulse,
-    .switch_mode = UART_KWP_SwitchMode,
-    .flush_rx    = UART_KWP_FlushRx,
+    .init        = LIBOBD2_UART_Init,
+    .send_byte   = LIBOBD2_UART_WriteByte,
+    .recv_byte   = LIBOBD2_UART_RecvByte,
+    .send_pulse  = LIBOBD2_UART_SendPulse,
+    .switch_mode = LIBOBD2_UART_SwitchMode,
+    .flush_rx    = LIBOBD2_UART_FlushRx,
 };
 
-l2_kwp_ctx_t kwpCtx =
+l2_iso9141_ctx_t iso9141CtxTx =
 {
-    .conStatus = {0U},
     .header =
     {
-        .fmt = {0x10U},
-        .trgAddr = 0x33,
+        .fmt     = 0x68,
+        .trgAddr = 0x6A,
         .srcAddr = 0xF1,
-        .len = 1
+    },
+};
+
+l2_iso9141_ctx_t iso9141CtxRx =
+{
+    .header =
+    {
+        .fmt     = 0x48,
+        .trgAddr = 0x6B,
+        .srcAddr = 0x12,
     },
 };
 
 dataLink_if_t dataLink_00 =
 {
-    .pProtocolCtx     = &kwpCtx,
+    .pProtocolCtx     = &iso9141CtxTx,
     .pTimingOps       = &timerOpsTx,
     .pTimingHandle    = &tmrCtxTx,
     .pTransportHandle = &uartCtxTx,
-    .pTransportOps    = &transportOps,
-    .connect          = l2_kwp_connect,
-    .send_request     = l2_kwp_send_request,
-    .recv_response    = l2_kwp_recv_response,
+    .pUartOps    = &transportOps,
+    .connect          = l2_iso9141_connect,
+    .send_request     = l2_iso9141_send_request,
+    .recv_response    = l2_iso9141_recv_response,
 };
 
 dataLink_if_t dataLink_tx =
 {
-    .pProtocolCtx     = &kwpCtx,
+    .pProtocolCtx     = &iso9141CtxTx,
     .pTimingOps       = &timerOpsTx,
     .pTimingHandle    = &tmrCtxTx,
     .pTransportHandle = &uartCtxTx,
-    .pTransportOps    = &transportOps,
-    .connect          = l2_kwp_connect,
-    .send_request     = l2_kwp_send_request,
-    .recv_response    = l2_kwp_recv_response,
+    .pUartOps    = &transportOps,
+    .connect          = l2_iso9141_connect,
+    .send_request     = l2_iso9141_send_request,
+    .recv_response    = l2_iso9141_recv_response,
 };
 dataLink_if_t dataLink_rx =
 {
-    .pProtocolCtx     = &kwpCtx,
+    .pProtocolCtx     = &iso9141CtxRx,
     .pTimingOps       = &timerOpsRx,
     .pTimingHandle    = &tmrCtxRx,
     .pTransportHandle = &uartCtxRx,
-    .pTransportOps    = &transportOps,
-    .connect          = l2_kwp_connect,
-    .send_request     = l2_kwp_send_request,
-    .recv_response    = l2_kwp_recv_response,
+    .pUartOps    = &transportOps,
+    .connect          = l2_iso9141_connect,
+    .send_request     = l2_iso9141_send_request,
+    .recv_response    = l2_iso9141_recv_response,
 };
-obd_ctx_t ctx =
+obd_ctx_t ctxRx =
+{
+        .pDataLink = &dataLink_rx,
+        // .pDataLinkHandle = &kwpCtx,
+        .connectionStatus = 0
+};
+
+obd_ctx_t ctxTx =
 {
         .pDataLink = &dataLink_00,
         // .pDataLinkHandle = &kwpCtx,

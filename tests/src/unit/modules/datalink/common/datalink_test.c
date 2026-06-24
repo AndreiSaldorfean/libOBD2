@@ -1,10 +1,10 @@
 /* ================================================ INCLUDES =============================================== */
-#include "ecuSim.h"
 #include "datalink.h"
 #include "l2_kwp2000.h"
 #include "libobd2_test_utils.h"
 #include "projdefs.h"
 #include "unity.h"
+#include <math.h>
 #include <stdint.h>
 #define STM32F4
 #include <stddef.h>
@@ -25,8 +25,8 @@ static volatile BaseType_t g_receiver_done = pdFALSE;
 extern  void SendByteBitBang(dataLink_if_t *self, uint8_t byte, uint8_t baudRate);
 #endif
 
-extern obd_status_t ReadByteInTimeframe(dataLink_if_t *self, uint8_t *byte, uint16_t timeMin, uint16_t timeMax);
-extern obd_status_t RecvByteBlocking(dataLink_if_t *self, uint8_t *byte);
+extern obd_status_t ReadByteInTimeframe(dataLink_if_t *self,uint32_t *timeElapsed, uint8_t *byte, uint16_t timeMin, uint16_t timeMax);
+extern bool RecvByteBlocking(dataLink_if_t *self, uint8_t *byte);
 
 static void test_ReadByteInTimeframe_000_Sender(void *param);
 static void test_ReadByteInTimeframe_000_Receiver(void *param);
@@ -37,8 +37,21 @@ static void test_ReadByteInTimeframe_000_Sender(void* param)
 
     (void)param;
 
-    LIBOBD_Delay(pDataLinkTx, KWP_P2_STAR_TIME_MIN);
+    LIBOBD_Delay(pDataLinkTx, P2_STAR_TIME_MIN);
+    LIBOBD_SendByte(pDataLinkTx, 0x66);
 
+    LIBOBD_Delay(pDataLinkTx, P2_TIME_MIN);
+    LIBOBD_SendByte(pDataLinkTx, 0x66);
+
+    LIBOBD_Delay(pDataLinkTx, P1_TIME_MIN);
+    LIBOBD_SendByte(pDataLinkTx, 0x66);
+
+    LIBOBD_Delay(pDataLinkTx, P3_TIME_MIN);
+    LIBOBD_SendByte(pDataLinkTx, 0x66);
+
+    LIBOBD_SendByte(pDataLinkTx, 0x66);
+
+    LIBOBD_Delay(pDataLinkTx, P1_TIME_MAX);
     LIBOBD_SendByte(pDataLinkTx, 0x66);
 
     g_sender_done = pdTRUE;
@@ -47,15 +60,33 @@ static void test_ReadByteInTimeframe_000_Sender(void* param)
 
 static void test_ReadByteInTimeframe_000_Receiver(void *param)
 {
-    dataLink_if_t *pDataLinkRx = &dataLink_rx;
+    dataLink_if_t *handle = &dataLink_rx;
+    obd_status_t expStatus = {0};
     obd_status_t status = {0};
     uint8_t byte = 0U;
     uint8_t expected = 0x66U;
     uint8_t actual = 0;
     (void)param;
 
-    status = ReadByteInTimeframe(pDataLinkRx, &byte, KWP_P2_STAR_TIME_MIN, KWP_P2_STAR_TIME_MAX);
-    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
+    status = ReadByteInTimeframe(handle, NULL, &byte, P2_STAR_TIME_MIN, P2_STAR_TIME_MAX);
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expStatus , status, "P2 STAR ReadByteInTimeframe");
+
+    status = ReadByteInTimeframe(handle, NULL, &byte, P2_TIME_MIN, P2_TIME_MAX);
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expStatus , status, "P2 ReadByteInTimeframe");
+
+    status = ReadByteInTimeframe(handle, NULL, &byte, P1_TIME_MIN, P1_TIME_MAX);
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expStatus , status, "P1 ReadByteInTimeframe");
+
+    status = ReadByteInTimeframe(handle, NULL, &byte, P3_TIME_MIN, P3_TIME_MAX);
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expStatus , status, "P3 ReadByteInTimeframe");
+
+    expStatus.timeout = OBD_ERR_TIMEOUT_MIN;
+    status = ReadByteInTimeframe(handle, NULL, &byte, P3_TIME_MIN, P3_TIME_MAX);
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expStatus , status, "P3 ReadByteInTimeframe");
+
+    expStatus.timeout = OBD_ERR_TIMEOUT_MAX;
+    status = ReadByteInTimeframe(handle, NULL, &byte, P1_TIME_MIN, P1_TIME_MAX);
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expStatus , status, "P3 ReadByteInTimeframe");
 
     actual = byte;
     TEST_ASSERT_EQUAL_HEX8(expected, actual);

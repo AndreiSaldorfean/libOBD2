@@ -1,0 +1,16 @@
+{
+    "PLATFORM": "stm32f4",
+    "MEMORY": "flash",
+    "LOGGING": "OFF",
+    "TYPE": "Release",
+    "library": {
+        "SPT_FREERTOS": "OFF",
+        "SPT_TRACING": "OFF"
+    },
+    "tests": {
+        "SPT_FREERTOS": "ON"
+    },
+    "example": {
+        "SPT_FREERTOS": "ON"
+    }
+}

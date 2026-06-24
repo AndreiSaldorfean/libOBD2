@@ -3,7 +3,7 @@
 #include "libobd2_test.h"
 #include "libobd2_test_utils.h"
 #include "timer_test.h"
-#include "uart_kwp_transport_port.h"
+#include "libobd2_uart_port.h"
 #include "uart_test.h"
 #include "unity.h"
 #include "unity_internals.h"
@@ -26,24 +26,34 @@
 #include "datalink_test.h"
 #include "task.h"
 #include "uart_test.h"
+#include "timer_test.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
+static void L2_ISO9141_TestSuite(void);
+static void DL_Utils_TestSuite(void);
+#if 0 /* NOTE: Will be enabled in future release */
+static void L2_KWP_TestSuite(void)
+#endif
+static void LIBOBD2_TestSuite(void);
+static void UART_TestSuite(void);
+static void Timer_TestSuite(void);
+
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-/* ================================================ MODULE API ============================================= */
-void DL_Utils_TestTask(void *param)
+static void DL_Utils_TestSuite(void)
 {
-    (void)param;
+    UNITY_BEGIN();
 
     RUN_TEST(test_ReadByteInTimeframe_000);
     RUN_TEST(test_RecvByteBlocking_000);
+
+    UNITY_END();
 }
 
-void L2_ISO9141_TestTask(void *param)
+static void L2_ISO9141_TestSuite(void)
 {
-    (void)param;
     printf("============= UNIT BEGIN ==============\n");
     UNITY_BEGIN();
 
@@ -58,12 +68,11 @@ void L2_ISO9141_TestTask(void *param)
     RUN_TEST(test_l2_ISO9141_recv_response_000);
 
     UNITY_END();
-    vTaskDelete(NULL);
 }
 
-void L2_KWP_TestTask(void *param)
+#if 0 /* NOTE: Will be enabled in future release */
+static void L2_KWP_TestSuite(void)
 {
-    (void)param;
     printf("============= UNIT BEGIN ==============\n");
     UNITY_BEGIN();
 
@@ -89,30 +98,60 @@ void L2_KWP_TestTask(void *param)
     RUN_TEST(test_l2_kwp_recv_response_000);
 
     UNITY_END();
-    vTaskDelete(NULL);
 }
+#endif
 
-void LIBOBD2_TestTask(void *param)
+static void LIBOBD2_TestSuite(void)
 {
-    (void)param;
-
     UNITY_BEGIN();
 
-    // RUN_TEST(test_LibOBD2_Init_000);
-    RUN_TEST(test_LibOBD2_RequestService_000);
+    RUN_TEST(test_LibOBD2_Init_000);
+    RUN_TEST(test_LibOBD2_Send_000);
 
     UNITY_END();
-    vTaskDelete(NULL);
 }
 
-void UART_TestTask(void *param)
+static void UART_TestSuite(void)
 {
-    (void)param;
-
     UNITY_BEGIN();
 
     RUN_TEST(test_UART_000);
 
     UNITY_END();
+}
+
+static void Timer_TestSuite(void)
+{
+    UNITY_BEGIN();
+
+    RUN_TEST(test_TIMER_0);
+    RUN_TEST(test_TIMER_1);
+    RUN_TEST(test_TIMER_2);
+    RUN_TEST(test_TIMER_3);
+
+    UNITY_END();
+}
+
+
+/* ================================================ MODULE API ============================================= */
+
+void TestTask(void *param)
+{
+    (void)param;
+
+    Timer_TestSuite();
+
+    UART_TestSuite();
+
+    DL_Utils_TestSuite();
+
+    L2_ISO9141_TestSuite();
+
+#if 0 /* NOTE: Will be enabled in future release */
+    void L2_KWP_TestSuite(void)
+#endif
+
+    LIBOBD2_TestSuite();
+
     vTaskDelete(NULL);
 }

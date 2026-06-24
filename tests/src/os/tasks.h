@@ -6,10 +6,6 @@
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-void L2_ISO9141_TestTask(void *param);
-void DL_Utils_TestTask(void *param);
-void L2_KWP_TestTask(void *param);
-void LIBOBD2_TestTask(void *param);
-void UART_TestTask(void *param);
+void TestTask(void *param);
 
 #endif /* TASK_H */
