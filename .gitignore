@@ -1,0 +1,7 @@
+.git
+.cache
+build/
+builds/
+.clangd
+.gdb_history
+./examples/STM32F401CCU/build

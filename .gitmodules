@@ -1,0 +1,25 @@
+[submodule "examples/libs/libopencm3"]
+	path = examples/libs/libopencm3
+	url = https://github.com/libopencm3/libopencm3.git
+
+[submodule "examples/libs/FreeRTOS-Kernel"]
+	path = examples/libs/FreeRTOS-Kernel
+	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+
+[submodule "tests/Unity"]
+	path = tests/Unity
+	url = https://github.com/ThrowTheSwitch/Unity.git
+
+[submodule "examples/libs/CMSIS_5"]
+    path = "examples/libs/CMSIS_5"
+    url = "https://github.com/ARM-software/CMSIS_5.git"
+
+[submodule "examples/libs/cmsis_device_f4"]
+    path = "examples/libs/cmsis_device_f4"
+    url = "https://github.com/STMicroelectronics/cmsis_device_f4.git"
+
+[submodule "examples/libs/tinyusb"]
+    path = "examples/libs/tinyusb"
+    url = "https://github.com/hathach/tinyusb.git"
+
+
