@@ -13,7 +13,7 @@
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
 #include "task.h"
-#define YIELD taskYIELD()
+#define YIELD
 #else
 #define YIELD
 #endif

@@ -12,7 +12,8 @@
 #define TP_READ_UNTIL_TO (0x5U)
 #define TP_END           (0x0U)
 
-#define TP_GET_VIN { TP_SEND, TP_SEND, TP_MSG_CNT, TP_SEND, TP_RECV, TP_END }
+#define TP_GET_VIN   { TP_SEND, TP_MSG_CNT, TP_SEND, TP_MSGS, TP_END }
+#define TP_GET_CALID { TP_SEND, TP_MSG_CNT, TP_SEND, TP_MSGS, TP_END }
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
