@@ -4,32 +4,33 @@
 /* ================================================ INCLUDES =============================================== */
 #include "datalink.h"
 #include <stdint.h>
+#include "ecu_libobd2_service_requests.h"
+#include "ecu_libobd2_transfer_protocol.h"
 #include "libobd2_service_requests.h"
-#include "libobd2_transfer_protocol.h"
 
 /* ================================================= MACROS ================================================ */
-#define OBD_SMALL_SID ((libobd2_sid_t)(0xA5U))
-#define OBD_BIG_SID   ((libobd2_sid_t)(0xC3))
+#define OBD_SHORT_SID ((libobd2_sid_t)(0xA5U))
+#define OBD_LONG_SID ((libobd2_sid_t)(0xC3))
 
-#define OBD_SUPPORTED_SERVICES \
-    [OBD_GET_VIN] = { .sidSize = OBD_BIG_SID, .sreq = SREQ_GET_VIN, .transferProtocol = TP_GET_VIN }, \
-    [OBD_GET_COOLANT_TEMP] = { .sidSize = OBD_SMALL_SID, .sreq = SREQ_GET_COOLANT_TEMP }
+#define ECU_SRV_RESP \
+    [SID_SHOW_CURRENT_DATA] = \
+    { \
+        [PID_01_COOLANT_TEMP] = { .serviceRequests = SREQ_SEND_COOLANT_TEMP, .sreqLen = 1 }\
+    }, \
+    [SID_REQUEST_VEHICLE_INFO] = \
+    { \
+        [PID_09_VIN_MESSAGE_COUNT] = { .serviceRequests = SREQ_SEND_CALID_MESSAGE_COUNT, .sreqLen = 1 }, \
+        [PID_09_VIN] = { .serviceRequests = SREQ_SEND_VIN, .sreqLen = 8 }, \
+        [PID_09_CALID_MESSAGE_COUNT] = { .serviceRequests = SREQ_SEND_CALID_MESSAGE_COUNT, .sreqLen = 1 }, \
+        [PID_09_CALID] = { .serviceRequests = SREQ_SEND_CALID, .sreqLen = 8 } \
+    }
 
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
 {
-    uint8_t sidSize;
-    libobd2_sreq_t sreq;
-    uint8_t transferProtocol[32]; // protocol
-}libobd2_service_t;
-
-typedef enum
-{
-    OBD_GET_VIN,
-    OBD_GET_COOLANT_TEMP,
-    OBD2_MAX_NUM_SERVICES
-}libobd2_sid_t;
-
+    libobd2_sreq_t serviceRequests;
+    size_t sreqLen;
+}ecu_libobd2_service_t;
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */

@@ -14,10 +14,6 @@
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 obd_status_t ECU_LibOBD2_Init(obd_ctx_t *ctx);
-obd_status_t ECU_LibOBD2_RequestService(
-    obd_ctx_t *ctx,
-    libobd2_sid_t obdSid,
-    uint8_t *response,
-    size_t* responseLen);
+obd_status_t ECU_Listen(obd_ctx_t* ctx);
 
 #endif /* ECU_LIBOBD2_H */
