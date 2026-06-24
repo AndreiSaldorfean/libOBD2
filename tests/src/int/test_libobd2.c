@@ -1,21 +1,24 @@
 /* ================================================ INCLUDES =============================================== */
 #include "test_libobd2.h"
 #include "data_link_if.h"
-#include "kwp_timer.h"
+#include "libobd2_timer_port.h"
 #include "libobd2.h"
 #include "timing_if.h"
 #define STM32F4
+#include "libopencm3/stm32/f4/rcc.h"
+#include "libopencm3/stm32/usart.h"
+#include "libopencm3/stm32/gpio.h"
 #include "libopencm3/stm32/f4/memorymap.h"
 #include "libopencm3/stm32/f4/rcc.h"
 #include "libopencm3/stm32/f4/usart.h"
 #include "libopencm3/stm32/f4/gpio.h"
 #include "srv_status.h"
-#include "transport_if.h"
+#include "uart_if.h"
 #include "iso15031_5.h"
 #include "tusb.h"
 #include "unity.h"
 #include <stdio.h>
-#include "uart_kwp_transport_port.h"
+#include "libobd2_uart_port.h"
 #include "l2_kwp.h"
 #include "libopencm3/stm32/f4/timer.h"
 #include "FreeRTOS.h"
@@ -46,12 +49,12 @@ void test_LIBOBD2_0(void)
 
     obd_timing_ops_t timerOps =
     {
-            .timer_init = KWP_TMR_Init,
-            .delay_ms = KWP_TMR_DelayMs,
-            .get_time_ms = KWP_TMR_GetTimeMs,
-            .is_timeout_expired = KWP_TMR_IsTimeoutExpired,
-            .start_timeout = KWP_TMR_StartTimeout,
-            .stop_timeout = KWP_TMR_StopTimeout,
+            .timer_init = LIBOBD2_TMR_Init,
+            .delay_ms = LIBOBD2_TMR_DelayMs,
+            .get_time_ms = LIBOBD2_TMR_GetTimeMs,
+            .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
+            .start_timeout = LIBOBD2_TMR_StartTimeout,
+            .stop_timeout = LIBOBD2_TMR_StopTimeout,
     };
 
     uartKwp_ctx_t uartCtx =
@@ -71,13 +74,13 @@ void test_LIBOBD2_0(void)
             .gpio        = GPIOA,
     };
 
-    obd_transport_ops_t transportOps =
+    obd_uart_ops_t transportOps =
     {
-        .init      = UART_Init,
-        .send_byte = UART_WriteByte,
-        .recv_byte = UART_RecvByte,
-        .send_pulse = UART_SendPulse,
-        .switch_mode = UART_SwitchMode,
+        .init      = LIBOBD2_UART_Init,
+        .send_byte = LIBOBD2_UART_WriteByte,
+        .recv_byte = LIBOBD2_UART_RecvByte,
+        .send_pulse = LIBOBD2_UART_SendPulse,
+        .switch_mode = LIBOBD2_UART_SwitchMode,
     };
 
 
@@ -100,7 +103,7 @@ void test_LIBOBD2_0(void)
         .pTimingOps = &timerOps,
         .pTimingHandle = &tmrCtx,
         .pTransportHandle = &uartCtx,
-        .pTransportOps = &transportOps,
+        .pUartOps = &transportOps,
         .connect = l2_kwp_connect,
         .send_request = l2_kwp_send_request,
         .recv_response = l2_kwp_recv_response,
@@ -119,16 +122,16 @@ void test_LIBOBD2_0(void)
 
 void test_LIBOBD2_1(void)
 {
-    obd_transport_ops_t transportOps =
+    obd_uart_ops_t transportOps =
     {
-        .init      = UART_Init,
-        .send_byte = UART_WriteByte,
-        .recv_byte = UART_RecvByte
+        .init      = LIBOBD2_UART_Init,
+        .send_byte = LIBOBD2_UART_WriteByte,
+        .recv_byte = LIBOBD2_UART_RecvByte
     };
     dataLink_if_t dataLink =
     {
         .pTransportHandle = NULL,
-        .pTransportOps = &transportOps,
+        .pUartOps = &transportOps,
         .connect = NULL,
         .send_request = NULL,
         .recv_response = NULL,
@@ -159,7 +162,7 @@ void test_Tester_ECU(void)
     uint32_t status = 0;
     (void)status;
 
-    uartKwp_ctx_t uartCtxTester =
+    uart_ctx_t uartCtxTester =
     {
             .usartClk    = RCC_USART1,
             .usartNum    = USART1,
@@ -191,7 +194,7 @@ void test_Tester_ECU(void)
         .flag              = TIM_SR_UIF
     };
 
-    uartKwp_ctx_t uartCtxEcu =
+    uart_ctx_t uartCtxEcu =
     {
             .usartClk    = RCC_USART2,
             .usartNum    = USART2,
@@ -224,14 +227,14 @@ void test_Tester_ECU(void)
     };
     uint8_t buffer = 0;
 
-    UART_Init((void*)&uartCtxTester);
-    UART_Init((void*)&uartCtxEcu);
+    LIBOBD2_UART_Init((void*)&uartCtxTester);
+    LIBOBD2_UART_Init((void*)&uartCtxEcu);
 
-    KWP_TMR_Init((void*)&tmrCtxTester);
-    KWP_TMR_Init((void*)&tmrCtxEcu);
+    LIBOBD2_TMR_Init((void*)&tmrCtxTester);
+    LIBOBD2_TMR_Init((void*)&tmrCtxEcu);
 
-    UART_WriteByte((void*)&uartCtxTester, 0x66);
-    while(OBD_STATUS_OK != UART_RecvByte((void*)&uartCtxEcu, &buffer));
+    LIBOBD2_UART_WriteByte((void*)&uartCtxTester, 0x66);
+    while(OBD_STATUS_OK != LIBOBD2_UART_RecvByte((void*)&uartCtxEcu, &buffer));
 
     TEST_ASSERT_EQUAL_UINT8(0x66, buffer);
 }

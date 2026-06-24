@@ -10,6 +10,7 @@
 #include "statusRetCodes.h"
 #include "unity.h"
 #include <stddef.h>
+#include "ecu_libobd2.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -26,6 +27,43 @@ obd_status_t LibOBD2_RequestService(
     size_t* responseLen);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
+static void test_LibOBD2_Send_000_Sender(void *param)
+{
+    obd_status_t expected = {0};
+    obd_status_t actual   = {0};
+    uint8_t resp[32];
+    size_t len;
+
+    (void)param;
+
+    UnitySetTestFile(__FILE__);
+
+    actual = LibOBD2_Init(&ctxTx);
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "LibOBD2_Init");
+
+    actual = LibOBD2_RequestService(&ctxTx, 0, resp, &len);
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "LibOBD2_RequestService");
+
+    // actual = LibOBD2_RequestService(&ctxTx, 1, resp, &len);
+    // TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "LibOBD2_RequestService");
+
+    g_sender_done = pdTRUE;
+    vTaskDelete(NULL);
+}
+
+// NOTE: Currently only iso9141 is supported so no need for special handling
+static void test_LibOBD2_Send_000_Receiver(void *param)
+{
+    (void)param;
+
+    UnitySetTestFile(__FILE__);
+
+    ECU_LibOBD2_Init(&ctxRx);
+
+    g_receiver_done = pdTRUE;
+    vTaskDelete(NULL);
+}
+
 static void test_LibOBD2_Init_000_Sender(void *param)
 {
     obd_status_t expected = {0};
@@ -35,7 +73,7 @@ static void test_LibOBD2_Init_000_Sender(void *param)
 
     UnitySetTestFile(__FILE__);
 
-    actual = LibOBD2_Init(&ctx);
+    actual = LibOBD2_Init(&ctxTx);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "LibOBD2_Init");
 
     g_sender_done = pdTRUE;
@@ -45,44 +83,11 @@ static void test_LibOBD2_Init_000_Sender(void *param)
 // NOTE: Currently only iso9141 is supported so no need for special handling
 static void test_LibOBD2_Init_000_Receiver(void *param)
 {
-    dataLink_if_t *pDataLinkRx = &dataLink_rx;
-    obd_status_t  expected = {0};
-    obd_status_t actual = {0};
-    uint8_t syncByte    = 0;
-    uint8_t kb2Inverted = 0;
-
     (void)param;
 
     UnitySetTestFile(__FILE__);
 
-    // Read wake-up byte at 5 baudRate
-    TEST_ASSERT_TRUE_MESSAGE(ECUSIM_ReadByteBitBanged(pDataLinkRx, &syncByte, 5), "ECUSIM_ReadByteBitBanged");
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x33, syncByte, "sync byte");
-    LIBOBD_Delay(pDataLinkRx, ISO9141_W1_TIME_MIN);
-
-    // Send sync byte
-    LIBOBD_SendByte(pDataLinkRx, 0x55);
-    LIBOBD_FlushRx(pDataLinkRx);
-
-    // Send KB1
-    YIELD;
-    LIBOBD_Delay(pDataLinkRx, ISO9141_W2_TIME_MIN);
-    LIBOBD_SendByte(pDataLinkRx, 0x08);
-    LIBOBD_FlushRx(pDataLinkRx);
-
-    // Send KB2
-    LIBOBD_SendByte(pDataLinkRx, 0x08);
-    LIBOBD_FlushRx(pDataLinkRx);
-
-    // Receive kb2 inverted
-    actual = ReadByteInTimeframe(pDataLinkRx, &kb2Inverted, 0, ISO9141_W4_TIME_MAX+100);
-    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "ReadByteInTimeframe: kb2 inverted");
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE(~0x08, kb2Inverted, "Inverted keybyte");
-
-    // Send inverted address
-    YIELD;
-    LIBOBD_Delay(pDataLinkRx, ISO9141_W4_TIME_MIN);
-    LIBOBD_SendByte(pDataLinkRx, ~0x33);
+    ECU_LibOBD2_Init(&ctxRx);
 
     g_receiver_done = pdTRUE;
     vTaskDelete(NULL);
@@ -102,7 +107,7 @@ void test_LibOBD2_Init_000(void)
     status = xTaskCreate(
         test_LibOBD2_Init_000_Sender,
         "Receiver Task",
-        512,
+        1024,
         NULL,
         tskIDLE_PRIORITY + 3,
         &receiverTAsk);
@@ -111,7 +116,7 @@ void test_LibOBD2_Init_000(void)
     status = xTaskCreate(
         test_LibOBD2_Init_000_Receiver,
         "Sender Task",
-        512,
+        1024,
         NULL,
         tskIDLE_PRIORITY + 3,
         &senderTask);
@@ -129,3 +134,42 @@ void test_LibOBD2_Init_000(void)
     TEST_ASSERT_EQUAL(pdPASS, status);
 }
 
+void test_LibOBD2_Send_000(void)
+{
+    TaskHandle_t senderTask = NULL;
+    TaskHandle_t receiverTAsk = NULL;
+    uint32_t status = 0;
+
+    g_sender_done = pdFALSE;
+    g_receiver_done = pdFALSE;
+
+    vTaskSuspendAll();
+    status = xTaskCreate(
+        test_LibOBD2_Send_000_Sender,
+        "Receiver Task",
+        1024,
+        NULL,
+        tskIDLE_PRIORITY + 3,
+        &receiverTAsk);
+    TEST_ASSERT_EQUAL(pdPASS, status);
+
+    status = xTaskCreate(
+        test_LibOBD2_Send_000_Receiver,
+        "Sender Task",
+        1024,
+        NULL,
+        tskIDLE_PRIORITY + 3,
+        &senderTask);
+    TEST_ASSERT_EQUAL(pdPASS, status);
+    xTaskResumeAll();
+
+    while ((g_sender_done == pdFALSE) || (g_receiver_done == pdFALSE))
+    {
+        taskYIELD();
+    }
+
+    /* Let the idle task reclaim deleted task stacks before next test */
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    TEST_ASSERT_EQUAL(pdPASS, status);
+}

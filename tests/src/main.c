@@ -2,7 +2,7 @@
 #include "init.h"
 #include "libobd2_test_utils.h"
 #include "timer_test.h"
-#include "uart_kwp_transport_port.h"
+#include "libobd2_uart_port.h"
 #include "unity.h"
 #include "unity_internals.h"
 #include "libobd2_test.h"
@@ -33,6 +33,7 @@
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 static void gpio_setup(void)
 {
+    #if 0 /* NOTE: This test blinky had some issues so i commented it temporarily */
     dataLink_if_t *pDataLinkTx = &dataLink_tx;
 
     rcc_periph_clock_enable(RCC_GPIOB);
@@ -67,6 +68,7 @@ static void gpio_setup(void)
     gpio_set(GPIOB, GREEN_LED| RED_LED);
     LIBOBD_Delay(pDataLinkTx, 100);
     gpio_clear(GPIOB, GREEN_LED | RED_LED);
+    #endif
 }
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 void setUp(void)
@@ -109,10 +111,10 @@ int main()
 
     sysInit();
 
-    UART_Init(&uartCtxTx);
-    UART_Init(&uartCtxRx);
-    KWP_TMR_Init(&tmrCtxTx);
-    KWP_TMR_Init(&tmrCtxRx);
+    LIBOBD2_UART_Init(&uartCtxTx);
+    LIBOBD2_UART_Init(&uartCtxRx);
+    LIBOBD2_TMR_Init(&tmrCtxTx);
+    LIBOBD2_TMR_Init(&tmrCtxRx);
 
     gpio_setup();
 
@@ -129,10 +131,10 @@ int main()
     /* Should never be reached */
     while(true)
     {
-        #if !defined(DEBUG)
+        #if defined(LOGGING)
         tud_cdc_write_flush();
         tud_task();
-        #endif /* DEBUG */
+        #endif /* LOGGING */
     }
 
     return 0;

@@ -3,7 +3,7 @@
 #include "libobd2_test.h"
 #include "libobd2_test_utils.h"
 #include "timer_test.h"
-#include "uart_kwp_transport_port.h"
+#include "libobd2_uart_port.h"
 #include "uart_test.h"
 #include "unity.h"
 #include "unity_internals.h"
@@ -26,6 +26,7 @@
 #include "datalink_test.h"
 #include "task.h"
 #include "uart_test.h"
+#include "timer_test.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -38,6 +39,7 @@ static void L2_KWP_TestSuite(void)
 #endif
 static void LIBOBD2_TestSuite(void);
 static void UART_TestSuite(void);
+static void Timer_TestSuite(void);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 static void DL_Utils_TestSuite(void)
@@ -104,6 +106,7 @@ static void LIBOBD2_TestSuite(void)
     UNITY_BEGIN();
 
     RUN_TEST(test_LibOBD2_Init_000);
+    RUN_TEST(test_LibOBD2_Send_000);
 
     UNITY_END();
 }
@@ -117,11 +120,26 @@ static void UART_TestSuite(void)
     UNITY_END();
 }
 
+static void Timer_TestSuite(void)
+{
+    UNITY_BEGIN();
+
+    RUN_TEST(test_TIMER_0);
+    RUN_TEST(test_TIMER_1);
+    RUN_TEST(test_TIMER_2);
+    RUN_TEST(test_TIMER_3);
+
+    UNITY_END();
+}
+
+
 /* ================================================ MODULE API ============================================= */
 
 void TestTask(void *param)
 {
     (void)param;
+
+    Timer_TestSuite();
 
     UART_TestSuite();
 

@@ -1,81 +1,184 @@
 /* ================================================ INCLUDES =============================================== */
 #include "timer_test.h"
 #include "libobd2.h"
-#include "transport_if.h"
+#include "libobd2_test_utils.h"
+#include "uart_if.h"
 #include "iso15031_5.h"
 #include "tusb.h"
 #include "unity.h"
 #include <stdio.h>
 #include <time.h>
-#include "kwp_timer.h"
+#include "libobd2_timer_port.h"
 #include "utils.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
+static volatile BaseType_t g_sender_done = pdFALSE;
+static volatile BaseType_t g_receiver_done = pdFALSE;
+static uint32_t timeStart = 0;
+static uint32_t timeEnd = 0;
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
+static void test_TIMER_2_Sender(void* param)
+{
+    timerCtx_t *tmr = &tmrCtxTx;
+    uint32_t timeElapsed1 = 0;
+    uint32_t timeElapsed2 = 0;
+    (void)param;
+
+    UnitySetTestFile(__FILE__);
+
+    timeElapsed1 = LIBOBD2_TMR_GetTimeMs(tmr);
+    LIBOBD2_TMR_DelayMs(tmr, 10);
+    timeElapsed2 = LIBOBD2_TMR_GetTimeMs(tmr);
+    YIELD;
+    TEST_ASSERT_EQUAL_MESSAGE(10, timeElapsed2 - timeElapsed1, "tx 10ms delay");
+
+    g_sender_done = pdTRUE;
+    vTaskDelete(NULL);
+}
+
+static void test_TIMER_2_Receiver(void *param)
+{
+    timerCtx_t *tmr = &tmrCtxRx;
+    (void)param;
+
+    UnitySetTestFile(__FILE__);
+
+    timeStart = LIBOBD2_TMR_GetTimeMs(tmr);
+    YIELD;
+    timeEnd = LIBOBD2_TMR_GetTimeMs(tmr);
+    TEST_ASSERT_EQUAL_MESSAGE(10, timeEnd - timeStart, "rx 10ms delay");
+
+    g_receiver_done = pdTRUE;
+    vTaskDelete(NULL);
+}
 /* ================================================ MODULE API ============================================= */
 void test_TIMER_0(void)
 {
     bool timeoutExpired = true;
+    uint32_t timeElapsed1 = 0;
+    uint32_t timeElapsed2 = 0;
     (void)timeoutExpired;
-    timerCtx_t tmrCtx =
-    {
-        .timeout_active = false,
-        .timeout_expired = false,
-        .timeout_duration_ms = 0,
-    };
 
-    KWP_TMR_Init(&tmrCtx);
+    UnitySetTestFile(__FILE__);
 
-    KWP_TMR_DelayMs(&tmrCtx, 1000);
+    timeElapsed1 = LIBOBD2_TMR_GetTimeMs(&tmrCtxTx);
 
-    KWP_TMR_StartTimeout(&tmrCtx, 1000, NULL, NULL);
+    LIBOBD2_TMR_DelayMs(&tmrCtxTx, 10);
 
-    for(int i=0;i<10000;i++)
-    {
-        __asm__("nop");
-    }
+    timeElapsed2 = LIBOBD2_TMR_GetTimeMs(&tmrCtxTx);
 
-    timeoutExpired = KWP_TMR_IsTimeoutExpired(&tmrCtx);
+    TEST_ASSERT_EQUAL_MESSAGE(10, timeElapsed2 - timeElapsed1, "10ms delay");
 
-    KWP_TMR_StopTimeout(&tmrCtx);
+    LIBOBD2_TMR_StartTimeout(&tmrCtxTx, 9, NULL, NULL);
 
-    KWP_TMR_StartTimeout(&tmrCtx, 10, NULL, NULL);
+    LIBOBD2_TMR_DelayMs(&tmrCtxTx, 10);
 
-    for(int i=0;i<1000000;i++)
-    {
-        __asm__("nop");
-    }
+    timeoutExpired = LIBOBD2_TMR_IsTimeoutExpired(&tmrCtxTx);
+    TEST_ASSERT_TRUE_MESSAGE(timeoutExpired, "tmr expired");
 
-    timeoutExpired = KWP_TMR_IsTimeoutExpired(&tmrCtx);
+    LIBOBD2_TMR_StartTimeout(&tmrCtxTx, 9, NULL, NULL);
 
-    KWP_TMR_StopTimeout(&tmrCtx);
+    LIBOBD2_TMR_StopTimeout(&tmrCtxTx);
+
+    LIBOBD2_TMR_DelayMs(&tmrCtxTx, 10);
+
+    timeoutExpired = LIBOBD2_TMR_IsTimeoutExpired(&tmrCtxTx);
+    TEST_ASSERT_FALSE_MESSAGE(timeoutExpired, "tmr not expired");
 }
 
 void test_TIMER_1(void)
 {
-    timerCtx_t tmrCtx =
+    bool timeoutExpired = true;
+    uint32_t timeElapsed1 = 0;
+    uint32_t timeElapsed2 = 0;
+    (void)timeoutExpired;
+
+    UnitySetTestFile(__FILE__);
+
+    timeElapsed1 = LIBOBD2_TMR_GetTimeMs(&tmrCtxRx);
+
+    LIBOBD2_TMR_DelayMs(&tmrCtxRx, 10);
+
+    timeElapsed2 = LIBOBD2_TMR_GetTimeMs(&tmrCtxRx);
+
+    TEST_ASSERT_EQUAL_MESSAGE(10, timeElapsed2 - timeElapsed1, "10ms delay");
+
+    LIBOBD2_TMR_StartTimeout(&tmrCtxRx, 9, NULL, NULL);
+
+    LIBOBD2_TMR_DelayMs(&tmrCtxRx, 10);
+
+    timeoutExpired = LIBOBD2_TMR_IsTimeoutExpired(&tmrCtxRx);
+    TEST_ASSERT_TRUE_MESSAGE(timeoutExpired, "tmr expired");
+
+    LIBOBD2_TMR_StartTimeout(&tmrCtxRx, 9, NULL, NULL);
+
+    LIBOBD2_TMR_StopTimeout(&tmrCtxRx);
+
+    LIBOBD2_TMR_DelayMs(&tmrCtxRx, 10);
+
+    timeoutExpired = LIBOBD2_TMR_IsTimeoutExpired(&tmrCtxRx);
+    TEST_ASSERT_FALSE_MESSAGE(timeoutExpired, "tmr not expired");
+}
+
+void test_TIMER_2(void)
+{
+    TaskHandle_t senderTask   = NULL;
+    TaskHandle_t receiverTask = NULL;
+    uint32_t     status       = 0;
+
+    g_sender_done   = pdFALSE;
+    g_receiver_done = pdFALSE;
+
+    vTaskSuspendAll();
+    status = xTaskCreate(
+        test_TIMER_2_Receiver,
+        "Receiver Task",
+        512,
+        NULL,
+        tskIDLE_PRIORITY + 3,
+        &receiverTask);
+    TEST_ASSERT_EQUAL(pdPASS, status);
+
+    status = xTaskCreate(
+        test_TIMER_2_Sender,
+        "Sender Task",
+        256,
+        NULL,
+        tskIDLE_PRIORITY + 3,
+        &senderTask);
+    TEST_ASSERT_EQUAL(pdPASS, status);
+    xTaskResumeAll();
+
+    while ((g_sender_done == pdFALSE) || (g_receiver_done == pdFALSE))
     {
-        .timeout_active = false,
-        .timeout_expired = false,
-        .timeout_callback = NULL,
-        .timeout_user_data = NULL,
-        .timeout_duration_ms = 0,
-    };
-    uint32_t time1 = 0;
-    uint32_t time2 = 0;
-    uint32_t elapsed = 0;
+        taskYIELD();
+    }
 
-    KWP_TMR_Init(&tmrCtx);
+    /* Let the idle task reclaim deleted task stacks before next test */
+    vTaskDelay(pdMS_TO_TICKS(10));
 
-    time1 = KWP_TMR_GetTimeMs(&tmrCtx);
+    TEST_ASSERT_EQUAL(pdPASS, status);
+}
 
-    KWP_TMR_DelayMs(&tmrCtx, 10);
+void test_TIMER_3(void)
+{
+    bool timeoutExpired = true;
+    uint32_t timeElapsed1 = 0;
+    uint32_t timeElapsed2 = 0;
+    (void)timeoutExpired;
 
-    time2 = KWP_TMR_GetTimeMs(&tmrCtx);
+    UnitySetTestFile(__FILE__);
 
-    elapsed = time2 - time1;
-    TEST_ASSERT_EQUAL(elapsed, 10);
+    timeElapsed1 = LIBOBD2_TMR_GetTimeMs(&tmrCtxRx);
+
+    LIBOBD2_TMR_StartTimeout(&tmrCtxRx, 9, NULL, NULL);
+
+    while(!LIBOBD2_TMR_IsTimeoutExpired(&tmrCtxRx));
+
+    timeElapsed2 = LIBOBD2_TMR_GetTimeMs(&tmrCtxRx);
+
+    TEST_ASSERT_EQUAL_MESSAGE(9, timeElapsed2 - timeElapsed1, "9ms delay");
 }

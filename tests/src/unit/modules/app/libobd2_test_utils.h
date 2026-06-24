@@ -2,11 +2,12 @@
 #define LIBOBD2_TEST_UTILS_H
 /* ================================================ INCLUDES =============================================== */
 #include "datalink.h"
+#include "l2_iso9141.h"
 #include "l2_kwp2000.h"
-#include "kwp_timer.h"
+#include "libobd2_timer_port.h"
 #include "libobd2.h"
 #include "statusRetCodes.h"
-#include "uart_kwp_transport_port.h"
+#include "libobd2_uart_port.h"
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
 #include "task.h"
@@ -56,12 +57,14 @@ extern uart_ctx_t uartCtxTx;
 // extern timerCtx_t tmrCtxTx;
 extern uart_ctx_t uartCtxRx;
 // extern timerCtx_t tmrCtxRx;
-extern obd_transport_ops_t transportOps;
-extern l2_kwp_ctx_t kwpCtx;
+extern obd_uart_ops_t transportOps;
+extern l2_iso9141_ctx_t iso9141CtxTx;
+extern l2_iso9141_ctx_t iso9141CtxRx;
 extern dataLink_if_t dataLink_00;
 extern dataLink_if_t dataLink_tx;
 extern dataLink_if_t dataLink_rx;
-extern obd_ctx_t ctx;
+extern obd_ctx_t ctxTx;
+extern obd_ctx_t ctxRx;
 /* =============================================== MODULE API ============================================== */
 
 #endif /* LIBOBD2_TEST_UTILS_H */

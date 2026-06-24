@@ -8,5 +8,7 @@
 /* =============================================== MODULE API ============================================== */
 void test_TIMER_0(void);
 void test_TIMER_1(void);
+void test_TIMER_2(void);
+void test_TIMER_3(void);
 
 #endif /* TIMER_TEST_H */

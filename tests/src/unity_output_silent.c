@@ -1,4 +1,4 @@
-#if defined(DEBUG)
+#if !defined(LOGGING)
 #include <stddef.h>
 
 void UnityOutputCharSilent(int a)

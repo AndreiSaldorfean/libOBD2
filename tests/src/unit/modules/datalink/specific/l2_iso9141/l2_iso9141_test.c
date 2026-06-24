@@ -14,17 +14,18 @@
 #include "libopencm3/stm32/common/timer_common_all.h"
 #include "libopencm3/stm32/f4/gpio.h"
 #include "libopencm3/stm32/f4/usart.h"
-#include "transport_if.h"
+#include "uart_if.h"
 #include "iso15031_5.h"
 #include "tusb.h"
-#include "uart_kwp_transport_port.h"
+#include "libobd2_uart_port.h"
 #include "unity.h"
 #include <stdio.h>
 #include <time.h>
-#include "kwp_timer.h"
+#include "libobd2_timer_port.h"
 #include "utils.h"
 #include "l2_kwp2000.h"
 #include "ecu_datalink.h"
+#include "ecu_l2_iso9141.h"
 
 /* ================================================= MACROS ================================================ */
 #define MSG_00_SIZE        (0x6U)
@@ -32,13 +33,6 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 static volatile BaseType_t g_sender_done = pdFALSE;
 static volatile BaseType_t g_receiver_done = pdFALSE;
-
-// static const header_t iso9141_header_00_ecu =
-// {
-//     .fmt = 0x48,
-//     .trgAddr = 0x6B,
-//     .srcAddr = 0x12,
-// };
 
 static const header_t iso9141_header_00 =
 {
@@ -53,46 +47,15 @@ static const obd_data_t iso9141_obd_data_00 =
     .param = {0x02}
 };
 
-// static const obd_data_t iso9141_obd_data_01  =
-// {
-//     .sid = 0x09,
-//     .param = {0x03}
-// };
-//
 static const obd_data_t iso9141_obd_data_02 =
 {
     .sid = 0x81,
     .param = {0x01}
 };
 
-// static const libobd2_data_t iso9141_data_00  =
-// {
-//     .data = iso9141_obd_data_00,
-//     .dataLen = 0x1,
-// };
-
-// static const libobd2_data_t iso9141_data_01  =
-// {
-//     .data = iso9141_obd_data_01,
-//     .dataLen = 0x1,
-// };
-
-// static const libobd2_data_t iso9141_data_02  =
-// {
-//     .data = iso9141_obd_data_02,
-//     .dataLen = 0x1,
-// };
-
-// static const message_t iso9141_msg_00_ecu =
-// {
-//     .cs = 0X45,
-//     .data = iso9141_obd_data_00,
-//     .header = iso9141_header_00_ecu
-// };
-
 static const message_t iso9141_msg_00 =
 {
-        .cs = 0X45,
+        .cs = 0xCE,
         .data = iso9141_obd_data_00,
         .header = iso9141_header_00
 };
@@ -106,52 +69,75 @@ static const message_t iso9141_msg_02 =
 
 static obd_timing_ops_t iso9141_timerOpsTx =
 {
-        .timer_init         = KWP_TMR_Init,
-        .delay_ms           = KWP_TMR_DelayMs,
-        .get_time_ms        = KWP_TMR_GetTimeMs,
-        .is_timeout_expired = KWP_TMR_IsTimeoutExpired,
-        .start_timeout      = KWP_TMR_StartTimeout,
-        .stop_timeout       = KWP_TMR_StopTimeout,
+        .timer_init         = LIBOBD2_TMR_Init,
+        .delay_ms           = LIBOBD2_TMR_DelayMs,
+        .get_time_ms        = LIBOBD2_TMR_GetTimeMs,
+        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
+        .start_timeout      = LIBOBD2_TMR_StartTimeout,
+        .stop_timeout       = LIBOBD2_TMR_StopTimeout,
 };
 
 static obd_timing_ops_t iso9141_timerOpsRx =
 {
-        .timer_init         = KWP_TMR_Init,
-        .delay_ms           = KWP_TMR_DelayMs,
-        .get_time_ms        = KWP_TMR_GetTimeMs,
-        .is_timeout_expired = KWP_TMR_IsTimeoutExpired,
-        .start_timeout      = KWP_TMR_StartTimeout,
-        .stop_timeout       = KWP_TMR_StopTimeout,
+        .timer_init         = LIBOBD2_TMR_Init,
+        .delay_ms           = LIBOBD2_TMR_DelayMs,
+        .get_time_ms        = LIBOBD2_TMR_GetTimeMs,
+        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
+        .start_timeout      = LIBOBD2_TMR_StartTimeout,
+        .stop_timeout       = LIBOBD2_TMR_StopTimeout,
 };
 
-static obd_transport_ops_t iso9141_transportOps =
+static obd_uart_ops_t iso9141_transportOps =
 {
-    .init        = UART_Init,
-    .send_byte   = UART_WriteByte,
-    .recv_byte   = UART_RecvByte,
-    .send_pulse  = UART_SendPulse,
-    .switch_mode = UART_SwitchMode,
-    .flush_rx    = UART_FlushRx,
+    .init        = LIBOBD2_UART_Init,
+    .send_byte   = LIBOBD2_UART_WriteByte,
+    .recv_byte   = LIBOBD2_UART_RecvByte,
+    .send_pulse  = LIBOBD2_UART_SendPulse,
+    .switch_mode = LIBOBD2_UART_SwitchMode,
+    .flush_rx    = LIBOBD2_UART_FlushRx,
 };
 
-static l2_iso9141_ctx_t iso9141Ctx =
+static l2_iso9141_ctx_t testeriso9141Ctx =
 {
     .header =
     {
-        .fmt = 0x10U,
-        .trgAddr = 0x33,
-        .srcAddr = 0xF1,
+        .fmt     = 0x48U,
+        .trgAddr = 0x6B,
+        .srcAddr = 0x12,
         .len = 1
     },
 };
 
-static dataLink_if_t iso9141_dataLink_tx =
+static l2_iso9141_ctx_t ecuiso9141Ctx =
 {
-    .pProtocolCtx     = &iso9141Ctx,
+    .header =
+    {
+        .fmt     = 0x48U,
+        .trgAddr = 0x6B,
+        .srcAddr = 0x12,
+        .len = 1
+    },
+};
+
+static dataLink_if_t ecu_iso9141_dataLink_tx =
+{
+    .pProtocolCtx     = &ecuiso9141Ctx,
     .pTimingOps       = &iso9141_timerOpsTx,
     .pTimingHandle    = &tmrCtxTx,
     .pTransportHandle = &uartCtxTx,
-    .pTransportOps    = &iso9141_transportOps,
+    .pUartOps    = &iso9141_transportOps,
+    .connect          = ecu_l2_iso9141_connect,
+    .send_request     = ecu_l2_iso9141_send_request,
+    .recv_response    = ecu_l2_iso9141_recv_response,
+};
+
+static dataLink_if_t iso9141_dataLink_tx =
+{
+    .pProtocolCtx     = &testeriso9141Ctx,
+    .pTimingOps       = &iso9141_timerOpsTx,
+    .pTimingHandle    = &tmrCtxTx,
+    .pTransportHandle = &uartCtxTx,
+    .pUartOps    = &iso9141_transportOps,
     .connect          = l2_iso9141_connect,
     .send_request     = l2_iso9141_send_request,
     .recv_response    = l2_iso9141_recv_response,
@@ -159,11 +145,11 @@ static dataLink_if_t iso9141_dataLink_tx =
 
 static dataLink_if_t iso9141_dataLink_rx =
 {
-    .pProtocolCtx     = &iso9141Ctx,
+    .pProtocolCtx     = &testeriso9141Ctx,
     .pTimingOps       = &iso9141_timerOpsRx,
     .pTimingHandle    = &tmrCtxRx,
     .pTransportHandle = &uartCtxRx,
-    .pTransportOps    = &iso9141_transportOps,
+    .pUartOps    = &iso9141_transportOps,
     .connect          = l2_iso9141_connect,
     .send_request     = l2_iso9141_send_request,
     .recv_response    = l2_iso9141_recv_response,
@@ -177,6 +163,7 @@ extern obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvd
 extern obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* protocol);
 extern obd_status_t L2_ISO9141_ReadHeader(dataLink_if_t *self, header_t *header);
 extern void L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen,size_t *len);
+extern obd_status_t ECU_L2_ISO9141_5BaudInit(dataLink_if_t *self);
 static void test_L2_ISO9141_RecvMessage_000_Sender(void *param);
 static void test_L2_ISO9141_RecvMessage_000_Receiver(void *param);
 static void test_L2_ISO9141_5BaudInit_000_Sender(void *param);
@@ -212,7 +199,7 @@ static void test_L2_ISO9141_RecvMessage_000_Sender(void *param)
     for (size_t i = 0; i < len; i++)
     {
         LIBOBD_SendByte(pDataLinkTx, aSentMsg[i]);
-        LIBOBD_Delay(pDataLinkTx, P4_TIME_MIN);
+        LIBOBD_Delay(pDataLinkTx, P1_TIME_MIN);
     }
 
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
@@ -272,48 +259,11 @@ static void test_L2_ISO9141_5BaudInit_000_Sender(void *param)
 void test_L2_ISO9141_5BaudInit_000_Receiver(void *param)
 {
     dataLink_if_t *pDataLinkRx = &iso9141_dataLink_rx;
-    obd_status_t  expected = {0};
-    obd_status_t actual = {0};
-    uint8_t syncByte    = 0;
-    uint8_t kb2Inverted = 0;
-
     (void)param;
 
     UnitySetTestFile(__FILE__);
 
-    // Read wake-up byte at 5 baudRate
-    TEST_ASSERT_TRUE_MESSAGE(ECUSIM_ReadByteBitBanged(pDataLinkRx, &syncByte, 5), "ECUSIM_ReadByteBitBanged");
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x33, syncByte, "sync byte");
-    LIBOBD_Delay(pDataLinkRx, ISO9141_W1_TIME_MIN);
-
-    // Send sync byte
-    LIBOBD_SendByte(pDataLinkRx, 0x55);
-    LIBOBD_FlushRx(pDataLinkRx);
-
-    // Send KB1
-    YIELD;
-    LIBOBD_Delay(pDataLinkRx, ISO9141_W2_TIME_MIN);
-    LIBOBD_SendByte(pDataLinkRx, 0x08);
-    LIBOBD_FlushRx(pDataLinkRx);
-
-    // Send KB2
-    LIBOBD_SendByte(pDataLinkRx, 0x08);
-    /* Wait just long enough for the KB2 echo (~1 byte at 10400 baud ≈ 1ms)
-     * to arrive and then flush it. Must be well under W4_TIME_MIN (25ms)
-     * so we don't accidentally flush the ~kb2 response sent by the tester. */
-    LIBOBD_Delay(pDataLinkRx, 3);
-    LIBOBD_FlushRx(pDataLinkRx);
-
-    // Receive kb2 inverted
-    actual = ReadByteInTimeframe(pDataLinkRx, &kb2Inverted, 0, ISO9141_W4_TIME_MAX+100);
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE(~0x08, kb2Inverted, "Inverted keybyte");
-    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "ReadByteInTimeframe: kb2 inverted");
-
-    // Send inverted address
-    YIELD;
-    LIBOBD_Delay(pDataLinkRx, ISO9141_W4_TIME_MIN);
-    LIBOBD_SendByte(pDataLinkRx, ~0x33);
-
+    ECU_L2_ISO9141_5BaudInit(pDataLinkRx);
     g_receiver_done = pdTRUE;
     vTaskDelete(NULL);
 }
@@ -327,9 +277,9 @@ static void test_L2_ISO9141_ReadHeader_000_Sender(void *param)
 
     // Send 3 header bytes with 5ms inter-byte gaps (within P1_TIME_MAX=20ms)
     LIBOBD_SendByte(pDataLinkTx, iso9141_header_00.fmt);
-    LIBOBD_Delay(pDataLinkTx, P4_TIME_MIN);
+    LIBOBD_Delay(pDataLinkTx, P1_TIME_MIN);
     LIBOBD_SendByte(pDataLinkTx, iso9141_header_00.trgAddr);
-    LIBOBD_Delay(pDataLinkTx, P4_TIME_MIN);
+    LIBOBD_Delay(pDataLinkTx, P1_TIME_MIN);
     LIBOBD_SendByte(pDataLinkTx, iso9141_header_00.srcAddr);
 
     g_sender_done = pdTRUE;
@@ -340,10 +290,10 @@ static void test_L2_ISO9141_ReadHeader_000_Receiver(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkRx = &iso9141_dataLink_rx;
-    header_t       header      = {0};
+    header_t header = {0};
     obd_status_t expected = {0};
-    obd_status_t actual   = {0};
-    uint32_t       timeSample  = 0;
+    obd_status_t actual = {0};
+    uint32_t timeSample = 0;
 
     (void)param;
 
@@ -353,7 +303,7 @@ static void test_L2_ISO9141_ReadHeader_000_Receiver(void *param)
     timeSample = LIBOBD_GetTimeMs(pDataLinkRx);
     LIBOBD_SetTimeSample(pDataLinkRx, timeSample);
     /* Leave a full P2 max window after the forced P2 min delay below. */
-    LIBOBD_StartTimeout(pDataLinkRx, P2_TIME_MAX + P2_TIME_MIN);
+    LIBOBD_StartTimeout(pDataLinkRx, P2_TIME_MAX);
     LIBOBD_Delay(pDataLinkRx, P2_TIME_MIN);
 
     actual = L2_ISO9141_ReadHeader(pDataLinkRx, &header);
@@ -387,38 +337,9 @@ static void test_l2_ISO9141_connect_000_Receiver(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkRx = &iso9141_dataLink_rx;
-    obd_status_t expected = {0};
-    obd_status_t actual   = {0};
-    uint8_t        syncByte    = 0;
-    uint8_t        kb2Inverted = 0;
-
     (void)param;
 
-    // Read wake-up byte at 5 baud
-    TEST_ASSERT_TRUE_MESSAGE(ECUSIM_ReadByteBitBanged(pDataLinkRx, &syncByte, 5), "ECUSIM_ReadByteBitBanged");
-    TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x33, syncByte, "sync byte");
-    LIBOBD_Delay(pDataLinkRx, ISO9141_W1_TIME_MIN);
-
-    // Send sync byte
-    LIBOBD_SendByte(pDataLinkRx, 0x55);
-
-    // Send KB1
-    YIELD;
-    LIBOBD_Delay(pDataLinkRx, ISO9141_W2_TIME_MIN);
-    LIBOBD_SendByte(pDataLinkRx, 0x08);
-
-    // Send KB2
-    LIBOBD_SendByte(pDataLinkRx, 0x08);
-    YIELD;
-
-    // Receive kb2 inverted
-    actual = ReadByteInTimeframe(pDataLinkRx, &kb2Inverted, 0, ISO9141_W4_TIME_MAX);
-    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "ReadByteInTimeframe: kb2 inverted");
-
-    // Send inverted address
-    YIELD;
-    LIBOBD_Delay(pDataLinkRx, ISO9141_W4_TIME_MIN);
-    LIBOBD_SendByte(pDataLinkRx, ~0x33);
+    ECU_L2_ISO9141_5BaudInit(pDataLinkRx);
 
     g_receiver_done = pdTRUE;
     vTaskDelete(NULL);
@@ -439,7 +360,7 @@ static void test_l2_ISO9141_send_request_000_Sender(void *param)
     LIBOBD_StartTimeout(pDataLinkTx, P3_TIME_MAX);
     LIBOBD_Delay(pDataLinkTx, P3_TIME_MIN);
 
-    actual = l2_kwp_send_request(pDataLinkTx, &iso9141_obd_data_00, 1);
+    actual = l2_iso9141_send_request(pDataLinkTx, &iso9141_obd_data_00, 1);
     LIBOBD_StopTimeout(pDataLinkTx);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_send_request");
 
@@ -451,7 +372,7 @@ static void test_l2_ISO9141_send_request_000_Receiver(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkRx = &iso9141_dataLink_rx;
-    uint8_t        byte        = 0;
+    uint8_t byte = 0;
 
     (void)param;
 
@@ -469,19 +390,14 @@ static void test_l2_ISO9141_send_request_000_Receiver(void *param)
 static void test_l2_ISO9141_recv_response_000_Sender(void *param)
 {
     UnitySetTestFile(__FILE__);
-    dataLink_if_t *pDataLinkTx = &iso9141_dataLink_tx;
+    dataLink_if_t *pDataLinkTx = &ecu_iso9141_dataLink_tx;
     obd_status_t expected = {0};
     obd_status_t actual   = {0};
-    uint8_t aSentMsg[6];
-    size_t len;
-    message_t msg = iso9141_msg_02;
     size_t dataLen = 0x2;
 
     (void)param;
 
-    L2_ISO9141_PrepareMessage(&msg, aSentMsg, dataLen, &len);
-
-    ECU_DL_SendRequest(pDataLinkTx, &msg.data, dataLen);
+    ECU_DL_SendRequest(pDataLinkTx, &iso9141_obd_data_02, dataLen);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 
     g_sender_done = pdTRUE;
@@ -493,17 +409,16 @@ static void test_l2_ISO9141_recv_response_000_Receiver(void *param)
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkRx = &iso9141_dataLink_rx;
     obd_data_t resp        = {0};
-    size_t         len         = 0;
+    size_t len         = 0;
     obd_status_t expected = {0};
     obd_status_t actual   = {0};
-    uint32_t       timeSample  = 0;
+    uint32_t timeSample  = 0;
 
     (void)param;
 
     timeSample = LIBOBD_GetTimeMs(pDataLinkRx);
     LIBOBD_SetTimeSample(pDataLinkRx, timeSample);
     LIBOBD_StartTimeout(pDataLinkRx, P2_TIME_MAX);
-    LIBOBD_Delay(pDataLinkRx, P2_TIME_MIN);
 
     actual = l2_iso9141_recv_response(pDataLinkRx, &resp, &len);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_recv_response return");
@@ -677,21 +592,21 @@ void test_L2_ISO9141_ReadHeader_000(void)
 
     vTaskSuspendAll();
     status = xTaskCreate(
-        test_L2_ISO9141_ReadHeader_000_Sender,
-        "Sender Task",
-        256,
-        NULL,
-        tskIDLE_PRIORITY + 3,
-        &senderTask);
-    TEST_ASSERT_EQUAL(pdPASS, status);
-
-    status = xTaskCreate(
         test_L2_ISO9141_ReadHeader_000_Receiver,
         "Receiver Task",
         256,
         NULL,
         tskIDLE_PRIORITY + 3,
         &receiverTask);
+    TEST_ASSERT_EQUAL(pdPASS, status);
+
+    status = xTaskCreate(
+        test_L2_ISO9141_ReadHeader_000_Sender,
+        "Sender Task",
+        256,
+        NULL,
+        tskIDLE_PRIORITY + 3,
+        &senderTask);
     TEST_ASSERT_EQUAL(pdPASS, status);
     xTaskResumeAll();
 
@@ -845,21 +760,21 @@ void test_l2_ISO9141_recv_response_000(void)
 
     vTaskSuspendAll();
     status = xTaskCreate(
-        test_l2_ISO9141_recv_response_000_Sender,
-        "Sender Task",
-        256,
-        NULL,
-        tskIDLE_PRIORITY + 3,
-        &senderTask);
-    TEST_ASSERT_EQUAL(pdPASS, status);
-
-    status = xTaskCreate(
         test_l2_ISO9141_recv_response_000_Receiver,
         "Receiver Task",
         512,
         NULL,
         tskIDLE_PRIORITY + 3,
         &receiverTask);
+    TEST_ASSERT_EQUAL(pdPASS, status);
+
+    status = xTaskCreate(
+        test_l2_ISO9141_recv_response_000_Sender,
+        "Sender Task",
+        256,
+        NULL,
+        tskIDLE_PRIORITY + 3,
+        &senderTask);
     TEST_ASSERT_EQUAL(pdPASS, status);
     xTaskResumeAll();
 

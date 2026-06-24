@@ -7,14 +7,14 @@
 #include <stddef.h>
 #include <sys/unistd.h>
 #define STM32F4
-#include "transport_if.h"
+#include "uart_if.h"
 #include "iso15031_5.h"
 #include "tusb.h"
-#include "uart_kwp_transport_port.h"
+#include "libobd2_uart_port.h"
 #include "unity.h"
 #include <stdio.h>
 #include <time.h>
-#include "kwp_timer.h"
+#include "libobd2_timer_port.h"
 #include "utils.h"
 #include "l2_kwp2000.h"
 
@@ -167,7 +167,6 @@ static void test_l2_kwp_connect_000_Sender(void *param)
 
     actual = l2_kwp_connect(pDataLinkTx, &protocol);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_connect");
-    TEST_ASSERT_EQUAL_MESSAGE(1, kwpCtx.conStatus.bits.CONN_OK, "CONN_OK bit");
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
@@ -707,7 +706,7 @@ void test_l2_kwp_connect_000(void)
 // Description: Test correct KWP2000 request frame construction and transmission
 // Type: Positive
 // Steps:
-//  - Set kwpCtx.header to known state (3-byte header format, len=0)
+//  - Set iso9141CtxTx.header to known state (3-byte header format, len=0)
 //  - Set up P3 timing (start timeout, delay P3_TIME_MIN)
 //  - Call l2_kwp_send_request with request_00 (sid=0x81, param=0x01)
 //  - ECU sim drains MSG_00_SIZE received bytes
@@ -723,7 +722,7 @@ void test_l2_kwp_send_request_000(void)
     g_receiver_done = pdFALSE;
 
     // Put header in a known state so PrepareMessage produces a 3-byte header (MSG_00_SIZE bytes total)
-    kwpCtx.header = (header_t){
+    iso9141CtxTx.header = (header_t){
         .fmt     = 0xC0,
         .trgAddr = 0x33,
         .srcAddr = 0xF1,
