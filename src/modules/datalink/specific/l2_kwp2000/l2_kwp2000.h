@@ -13,7 +13,7 @@
 /********************************************* SERVICES SECTION **********************************************/
 #define START_COMM_REQ \
     ((obd_data_t){ \
-        .req = \
+        .serviceRequests = \
         { \
             .sid   = 0x81, \
             .param = {0x0}, \
@@ -48,7 +48,7 @@ typedef struct
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 obd_status_t l2_kwp_connect(dataLink_if_t *self, uint8_t* protocol);
-obd_status_t l2_kwp_send_request(dataLink_if_t *self, const obd_data_t *req, size_t dataLen);
+obd_status_t l2_kwp_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
 obd_status_t l2_kwp_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
 
 #endif /* L2_KWP2000_H */

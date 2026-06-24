@@ -30,7 +30,7 @@ OBD2_STATIC void L2_KWP2000_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg
 OBD2_STATIC uint8_t L2_KWP_ComputeChecksum(header_t header, obd_data_t data, size_t dataLen)
 {
     uint8_t *hdr = (uint8_t *)&header;
-    uint8_t *req = (uint8_t *)&data;
+    uint8_t *serviceRequests = (uint8_t *)&data;
     uint8_t checksum = 0;
     uint8_t headerLen = (header.len == 0) ? 3 : 4;
 
@@ -41,7 +41,7 @@ OBD2_STATIC uint8_t L2_KWP_ComputeChecksum(header_t header, obd_data_t data, siz
 
     for (uint8_t idx = 0; idx < dataLen; idx++)
     {
-        checksum += req[idx];
+        checksum += serviceRequests[idx];
     }
 
     return checksum % 256;
@@ -70,12 +70,12 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
 
     // Target byte
     status.response = OBD_ERR_COMM_TRGT_BYTE_NOT_RECVD;
-    status = ReadByteInTimeframe(self, buffer + 1, P1_TIME_MIN, P1_TIME_MAX);
+    status = ReadByteInTimeframe(self, NULL, buffer + 1, P1_TIME_MIN, P1_TIME_MAX);
     OBD2_ASSERT_OK(status);
 
     // Source byte
     status.response = OBD_ERR_COMM_SRC_BYTE_NOT_RECVD;
-    status = ReadByteInTimeframe(self, buffer + 2, P1_TIME_MIN, P1_TIME_MAX);
+    status = ReadByteInTimeframe(self, NULL, buffer + 2, P1_TIME_MIN, P1_TIME_MAX);
     OBD2_ASSERT_OK(status);
 
     *headerLen = 3;
@@ -86,7 +86,7 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
 
         // Length byte
         status.response = OBD_ERR_COMM_LEN_BYTE_NOT_RECVD;
-        status = ReadByteInTimeframe(self, buffer + 3, P1_TIME_MIN, P1_TIME_MAX);
+        status = ReadByteInTimeframe(self, NULL, buffer + 3, P1_TIME_MIN, P1_TIME_MAX);
         OBD2_ASSERT_OK(status);
     }
 
@@ -138,14 +138,14 @@ OBD2_STATIC obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recv
     status.response = OBD_ERR_COMM_DATA_BYTE_NOT_RECVD;
     for (int idx = 0; idx < dataLen; idx++)
     {
-        status = ReadByteInTimeframe(self, pMsg + idx + headerLen + 1, P1_TIME_MIN, P1_TIME_MAX);
+        status = ReadByteInTimeframe(self, NULL, pMsg + idx + headerLen + 1, P1_TIME_MIN, P1_TIME_MAX);
         OBD2_ASSERT_OK(status);
     }
     *len = dataLen;
 
     // Read CS
     status.response = OBD_ERR_COMM_CS_BYTE_NOT_RECVD;
-    status = ReadByteInTimeframe(self, &recvdMsg->cs, P1_TIME_MIN, P1_TIME_MAX);
+    status = ReadByteInTimeframe(self, NULL, &recvdMsg->cs, P1_TIME_MIN, P1_TIME_MAX);
     OBD2_ASSERT_OK(status);
 
     // P2 Timeout from ECU to ECU
@@ -204,63 +204,66 @@ OBD2_STATIC obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t *self)
     (void) self;
     // message_t recvdMsg = {0};
     obd_status_t status = {0};
-    // l2_kwp_ctx_t *ctx = (l2_kwp_ctx_t *)self->pProtocolCtx;
-    // uint8_t aMessage[256] = {0};
-    // size_t msgLen = 0;
-    //
-    // obd_data_t data = {.req = *req, .len = len};
-    //
-    // // Construct the message
-    // message_t message = {0};
-    // message.header.small.fmt.val = 0x68;
-    // message.header.small.trgAddr = 0x6a;
-    // message.header.small.srcAddr = 0xf1;
-    // // message.header.small.fmt.bit.len = len + 1;
-    // message.data = data;
-    // message.cs = L2_KWP_ComputeChecksum(message.header, data);
-    //
-    // L2_KWP2000_PrepareMessage(&message, aMessage, &msgLen);
-    //
-    // status.response = OBD_ERR_COMM_SEND_MSG_FAILED;
-    // status = L2_KWP_SendMessage(self, aMessage, msgLen);
-    //
-    // // Actual StartCommunication
-    // {
-    //     header_t hdr = {
-    //         .small =
-    //         {
-    //             .fmt = {0x81},
-    //             .trgAddr = 0x33,
-    //             .srcAddr = 0xF1,
-    //         }
-    //     };
-    //
-    //     message_t sentMsg = {
-    //         .header = hdr,
-    //         .data = START_COMM_REQ,
-    //         .cs = L2_KWP_ComputeChecksum(hdr, START_COMM_REQ),
-    //     };
-    //
-    //     L2_KWP2000_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len)
-    //     status = L2_KWP_SendMessage(self, &sentMsg, &recvdMsg);
-    //     OBD2_ASSERT_OK(status);
-    // }
+    #if 0 /* TODO: Fix logic and addapt to new library structure */
+    l2_kwp_ctx_t *ctx = (l2_kwp_ctx_t *)self->pProtocolCtx;
+    uint8_t aMessage[256] = {0};
+    size_t msgLen = 0;
+
+    obd_data_t data = {.serviceRequests = *serviceRequests, .len = len};
+
+    // Construct the message
+    message_t message = {0};
+    message.header.small.fmt.val = 0x68;
+    message.header.small.trgAddr = 0x6a;
+    message.header.small.srcAddr = 0xf1;
+    // message.header.small.fmt.bit.len = len + 1;
+    message.data = data;
+    message.cs = L2_KWP_ComputeChecksum(message.header, data);
+
+    L2_KWP2000_PrepareMessage(&message, aMessage, &msgLen);
+
+    status.response = OBD_ERR_COMM_SEND_MSG_FAILED;
+    status = L2_KWP_SendMessage(self, aMessage, msgLen);
+
+    // Actual StartCommunication
+    {
+        header_t hdr = {
+            .small =
+            {
+                .fmt = {0x81},
+                .trgAddr = 0x33,
+                .srcAddr = 0xF1,
+            }
+        };
+
+        message_t sentMsg = {
+            .header = hdr,
+            .data = START_COMM_REQ,
+            .cs = L2_KWP_ComputeChecksum(hdr, START_COMM_REQ),
+        };
+
+        L2_KWP2000_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len)
+        status = L2_KWP_SendMessage(self, &sentMsg, &recvdMsg);
+        OBD2_ASSERT_OK(status);
+    }
 
     // Extension
-//     {
-//         obd_data_t *resp = &recvdMsg.data.resp;
-//
-//         if (resp->negative.negResp != 0x7F)
-//         {
-//             uint8_t kb1 = resp->positive.data[0];
-//             uint8_t kb2 = resp->positive.data[1];
-//
-//             ctx->kb1 = kb1;
-//             ctx->kb2 = kb2;
-//         }
-//     }
-//
-// exit:
+    {
+        obd_data_t *resp = &recvdMsg.data.resp;
+
+        if (resp->negative.negResp != 0x7F)
+        {
+            uint8_t kb1 = resp->positive.data[0];
+            uint8_t kb2 = resp->positive.data[1];
+
+            ctx->kb1 = kb1;
+            ctx->kb2 = kb2;
+        }
+    }
+
+exit:
+    #endif
+
     return status;
 }
 
@@ -344,14 +347,14 @@ exit:
     return status;
 }
 
-obd_status_t l2_kwp_send_request(dataLink_if_t *self, const obd_data_t *req, size_t dataLen)
+obd_status_t l2_kwp_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
 {
     l2_kwp_ctx_t ctx = *(l2_kwp_ctx_t *)(self->pProtocolCtx);
     uint8_t aSentMsg[256] = {0};
     obd_status_t status;
     size_t len = 0;
 
-    obd_data_t data = *req;
+    obd_data_t data = *serviceRequests;
 
     // Construct the message
     message_t msg = {0};

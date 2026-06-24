@@ -4,7 +4,7 @@
 #include "statusRetCodes.h"
 #include "l2_iso9141.h"
 #include "timing_if.h"
-#include "transport_if.h"
+#include "uart_if.h"
 #include "utils.h"
 #include <stddef.h>
 #include <stdio.h>
@@ -37,14 +37,13 @@ static dl_recv_response_t recvResponses[NUM_SPT_PROTOCOLS] =
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-static obd_status_t DL_IdentifyProtocol(dataLink_if_t *pDataLink)
+static obd_status_t DL_IdentifyProtocol(dataLink_if_t *pDataLink, uint8_t* protocol)
 {
     obd_status_t status = {0};
-    uint8_t protocol = PROTOCOL_NOT_FOUND;
 
-    for (uint8_t protocolIdx = 0; protocolIdx <  NUM_SPT_PROTOCOLS; protocolIdx++)
+    for (uint8_t idx = 0; idx <  NUM_SPT_PROTOCOLS; idx++)
     {
-        status = initProtocols[protocolIdx](pDataLink, &protocol);
+        status = initProtocols[idx](pDataLink, protocol);
         if (status.response == OBD_STATUS_OK)
             return status;
     }
@@ -61,7 +60,7 @@ obd_status_t DL_Connect(dataLink_if_t *pDataLink)
     LIBOBD_TransportInit(pDataLink);
     LIBOBD_TimingInit(pDataLink);
 
-    status = DL_IdentifyProtocol(pDataLink);
+    status = DL_IdentifyProtocol(pDataLink, &protocolIdx);
     if (status.response != OBD_STATUS_OK) return status;
 
     // Construct datalink interface
@@ -74,9 +73,9 @@ obd_status_t DL_Connect(dataLink_if_t *pDataLink)
     return status;
 }
 
-obd_status_t DL_SendRequest(dataLink_if_t *pDataLink, const obd_data_t *req, size_t dataLen)
+obd_status_t DL_SendRequest(dataLink_if_t *pDataLink, const obd_data_t *serviceRequests, size_t dataLen)
 {
-    return pDataLink->send_request(pDataLink, req, dataLen);
+    return pDataLink->send_request(pDataLink, serviceRequests, dataLen);
 }
 
 obd_status_t DL_RecvResponse(dataLink_if_t  *pDataLink, obd_data_t *resp, size_t* dataLen)
