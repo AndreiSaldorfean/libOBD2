@@ -19,7 +19,7 @@ SemaphoreHandle_t g_printMutex = NULL;
 #endif /* SPT_FREERTOS */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-#if !defined(DEBUG)
+#if defined(LOGGING)
 static void usbCdc_setup(void)
 {
     /* Enable GPIO clocks for USB */
@@ -47,22 +47,22 @@ static void usbCdc_setup(void)
     /* Enable USB interrupt after initialization */
     nvic_enable_irq(NVIC_OTG_FS_IRQ);
 }
-#endif /* DEBUG */
+#endif /* LOGGING */
 
 /* ================================================ MODULE API ============================================= */
 void sysInit()
 {
     /* PLL must always be configured so the CPU runs at 84MHz.
      * Without this, TIM2 prescaler (83) is wrong and all delays
-     * are ~5x longer when DEBUG=ON (MCU defaults to 16MHz HSI). */
+     * are ~5x longer when LOGGING=ON (MCU defaults to 16MHz HSI). */
     rcc_clock_setup_pll(&rcc_hsi_configs[RCC_CLOCK_3V3_84MHZ]);
 
-    #if !defined(DEBUG)
+    #if defined(LOGGING)
     usbCdc_setup();
     setbuf(stdout, NULL); // disable buffering
     *(volatile uint32_t *)(0xe000edfc) |= 0x400;
 #if defined(SPT_FREERTOS)
     g_printMutex = xSemaphoreCreateMutex();
 #endif /* SPT_FREERTOS */
-    #endif /* DEBUG */
+    #endif /* LOGGING */
 }

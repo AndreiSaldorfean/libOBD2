@@ -95,7 +95,7 @@ int _write(int file, char *ptr, uint32_t len)
     (void)ptr;
     (void)len;
 
-    #if !defined(DEBUG)
+    #if defined(LOGGING)
     xSemaphoreTake(g_printMutex, portMAX_DELAY);
     if (file == STDOUT_FILENO || file == STDERR_FILENO)
     {
@@ -146,7 +146,7 @@ int _read(int file, char *ptr, int len)
     (void)ptr;
     (void)len;
 
-    #if !defined(DEBUG)
+    #if defined(LOGGING)
     if (file != STDIN_FILENO)
     {
         errno = EBADF;

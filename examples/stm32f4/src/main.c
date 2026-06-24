@@ -15,7 +15,7 @@ int main(void)
 {
     sysInit();
 
-#if 0
+#if 1
     TaskHandle_t ecuTaskHandle = NULL;
     uint32_t status = xTaskCreate(
         EcuTask,

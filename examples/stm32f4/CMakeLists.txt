@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.14)
 project(demo LANGUAGES C)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
+option(SPT_FREERTOS "Support for FreeRTOS" ON)
+option(LOGGING "Support for logging" ON)
 
 # TinyUSB sources
 get_filename_component(TINYUSB_ROOT "${CMAKE_CURRENT_LIST_DIR}/../libs/tinyusb" ABSOLUTE)
@@ -61,19 +63,17 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     CFG_TUSB_OS=OPT_OS_NONE
     STM32F401xC
     UNITY_EXCLUDE_SETJMP_H
-    SPT_FREERTOS
 )
 
-if(DEBUG STREQUAL "ON")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG)
+if(SPT_FREERTOS STREQUAL "ON")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SPT_FREERTOS)
+endif()
+
+if(LOGGING STREQUAL "ON")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE LOGGING)
 endif()
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../../ecu ${CMAKE_BINARY_DIR}/ecu)
-
-target_compile_definitions(OBD2
-    PRIVATE
-    SPT_FREERTOS
-)
 
 get_filename_component(OPENCM3_LIB
     "${CMAKE_CURRENT_LIST_DIR}/../libs/libopencm3/lib/libopencm3_stm32f4.a"
@@ -86,21 +86,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     OBD2_ECU
 )
 
-add_custom_target(
-    renode
-    COMMAND renode ${CMAKE_SOURCE_DIR}/utils/stm_dev.resc --console
-    DEPENDS ${PROJECT_NAME}
-)
-
 target_link_options(${PROJECT_NAME} PRIVATE
   -Wl,--print-memory-usage
 )
 
-add_custom_target(
-    renode_make
-    COMMAND renode ${CMAKE_SOURCE_DIR}/utils/stm_dev_make.resc --console
-    DEPENDS ${PROJECT_NAME}
-)
 set(CMAKE_SIZE arm-none-eabi-size)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

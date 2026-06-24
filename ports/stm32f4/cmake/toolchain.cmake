@@ -17,10 +17,9 @@ set(CMAKE_C_FLAGS
 
 set(CMAKE_EXE_LINKER_FLAGS
     "-lc \
-    -T${CMAKE_CURRENT_LIST_DIR}/../utils/linker/STM32F4/stm32f4_${MEMORY}.ld \
+    -T${CMAKE_CURRENT_LIST_DIR}/../linker/stm32f4_${MEMORY}.ld \
     -Wl,-Map=output.map \
     -lgcc \
     -Wl,--gc-sections")
-set(CMAKE_BUILD_TYPE "Debug")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
