@@ -1,6 +1,7 @@
 /* ================================================ INCLUDES =============================================== */
+#include "libobd2.h"
 #include "projdefs.h"
-#include "kwp_timer.h"
+#include "libobd2_timer_port.h"
 #include <stddef.h>
 #define STM32F4
 #include "libopencm3/cm3/cortex.h"
@@ -32,7 +33,7 @@ bool isTimerStopped = 0;
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-static inline uint32_t get_time_us(void);
+static inline uint32_t get_time_us(timerCtx_t*);
 void KWP_TMR_Pause(void);
 void KWP_TMR_Resume(void);
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
@@ -41,9 +42,9 @@ void KWP_TMR_Resume(void);
  * @brief Get current time in microseconds directly from hardware
  * @return Current time in microseconds (wraps at ~71 minutes)
  */
-static inline uint32_t get_time_us(void)
+static inline uint32_t get_time_us(timerCtx_t* ctx)
 {
-    return timer_get_counter(TIM2);
+    return timer_get_counter(ctx->timer);
 }
 
 /**
@@ -68,12 +69,22 @@ void KWP_TMR_Resume(void)
 }
 
 /* ================================================ MODULE API ============================================= */
-bool KWP_TMR_Init(void *pHandle)
+bool LIBOBD2_TMR_Init(void *pHandle)
 {
     timerCtx_t *ctx = (timerCtx_t*)pHandle;
 
     /* Store context */
     g_timer_ctx = ctx;
+
+    /* If the counter is already running (e.g. a second context sharing the
+     * same TIM2 32-bit clock), just reset software state and return – do
+     * NOT touch the hardware or the free-running counter will be lost. */
+    if (TIM_CR1(ctx->timer) & TIM_CR1_CEN)
+    {
+        ctx->timeout_active  = false;
+        ctx->timeout_expired = false;
+        return 1;
+    }
 
     /* Enable TIM2 clock */
     rcc_periph_clock_enable(ctx->timerClk);
@@ -112,26 +123,37 @@ bool KWP_TMR_Init(void *pHandle)
     return 1;
 }
 
-uint32_t KWP_TMR_GetTimeMs(void *pHandle)
+uint32_t LIBOBD2_TMR_GetTimeMs(void *pHandle)
 {
-    (void)pHandle;
+    timerCtx_t *ctx = (timerCtx_t*)pHandle;
 
-    return get_time_us() / 1000U;
+    return get_time_us(ctx) / 1000U;
 }
 
-void KWP_TMR_DelayMs(void *pHandle, uint32_t delay_ms)
+void LIBOBD2_TMR_DelayMs(void *pHandle, uint32_t delay_ms)
 {
     (void)pHandle;
+#if 1 // Add special handling for testing
+    timerCtx_t *ctx = (timerCtx_t*)pHandle;
 
-    uint32_t start_us = get_time_us();
+    uint32_t start_us = get_time_us(ctx);
     uint32_t delay_us = delay_ms * 1000U;
 
     /* Yield to scheduler while waiting - gives true ms precision from
      * hardware timer (TIM2) without depending on configTICK_RATE_HZ */
-    while ((get_time_us() - start_us) < delay_us);
+    while ((get_time_us(ctx) - start_us) < delay_us);
+#else
+
+    /* Block this task and yield CPU to the other task.
+     * vTaskDelay suspends the caller for the requested number of ticks,
+     * allowing the scheduler to run the peer task freely during the wait.
+     * This replaces the previous busy-wait which starved the other task
+     * for the full duration of every P2/P3/P4 delay. */
+    vTaskDelay(pdMS_TO_TICKS(delay_ms + 1));
+#endif
 }
 
-bool KWP_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t callback, void *pUserData)
+bool LIBOBD2_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t callback, void *pUserData)
 {
     timerCtx_t *ctx = (timerCtx_t*)pHandle;
 
@@ -139,7 +161,7 @@ bool KWP_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t 
 
     ctx->timeout_callback = callback;
     ctx->timeout_user_data = pUserData;
-    ctx->timeout_start_ms = get_time_us() / 1000U;
+    ctx->timeout_start_ms = get_time_us(ctx) / 1000U;
     ctx->timeout_duration_ms = timeout_ms;
     ctx->timeout_expired = false;
     ctx->timeout_active = true;
@@ -149,7 +171,7 @@ bool KWP_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t 
     return 1;
 }
 
-bool KWP_TMR_StopTimeout(void *pHandle)
+bool LIBOBD2_TMR_StopTimeout(void *pHandle)
 {
     timerCtx_t *ctx = (timerCtx_t*)pHandle;
 
@@ -158,12 +180,12 @@ bool KWP_TMR_StopTimeout(void *pHandle)
     return 1;
 }
 
-bool KWP_TMR_IsTimeoutExpired(void *pHandle)
+bool LIBOBD2_TMR_IsTimeoutExpired(void *pHandle)
 {
     timerCtx_t *ctx = (timerCtx_t*)pHandle;
 
     if (ctx->timeout_active) {
-        uint32_t now_ms = get_time_us() / 1000U;
+        uint32_t now_ms = get_time_us(ctx) / 1000U;
         uint32_t elapsed = now_ms - ctx->timeout_start_ms;
 
         if (elapsed >= ctx->timeout_duration_ms) {

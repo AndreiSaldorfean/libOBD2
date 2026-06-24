@@ -53,7 +53,7 @@ void otg_fs_isr(void)
     tud_int_handler(0);
 }
 
-/* TIM2 interrupt handler - defined in kwp_timer.c */
+/* TIM2 interrupt handler - defined in libobd2_timer_port.c */
 extern void tim2_isr(void);
 
 /* NOTE: Renamed vector_table to obd2VectorTable due to collision with libopencm3 */

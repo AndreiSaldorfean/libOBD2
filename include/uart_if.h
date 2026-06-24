@@ -21,7 +21,7 @@ typedef struct
     void (*send_byte)(void *handle, uint8_t data);
     void (*send_pulse)(void *handle, bool pulse);
     void (*switch_mode)(void *handle, uint8_t mode);
-} obd_transport_ops_t;
+} obd_uart_ops_t;
 
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 

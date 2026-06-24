@@ -32,12 +32,12 @@ typedef struct
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-bool UART_Init(void* handle);
-bool UART_RecvByte(void* handle, uint8_t *recv_buffer);
-void UART_WriteByte(void* handle, uint8_t data);
-void UART_FlushRx(void* handle);
-void UART_SendPulse(void* handle, bool pulse);
-void UART_SwitchMode(void* handle, uint8_t mode);
+bool LIBOBD2_UART_Init(void* handle);
+bool LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer);
+void LIBOBD2_UART_WriteByte(void* handle, uint8_t data);
+void LIBOBD2_UART_FlushRx(void* handle);
+void LIBOBD2_UART_SendPulse(void* handle, bool pulse);
+void LIBOBD2_UART_SwitchMode(void* handle, uint8_t mode);
 
 
 #endif /* UART_TRANSPORT_PORT_H */

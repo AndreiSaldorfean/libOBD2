@@ -7,8 +7,10 @@
 #include "libopencm3/stm32/usart.h"
 #include "libopencm3/stm32/gpio.h"
 #include "statusRetCodes.h"
-#include "transport_if.h"
-#include "uart_kwp_transport_port.h"
+#include "uart_if.h"
+#include "libobd2_uart_port.h"
+#include "init.h"
+#include "trace.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -16,7 +18,7 @@
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */
-bool UART_Init(void* handle)
+bool LIBOBD2_UART_Init(void* handle)
 {
     uart_ctx_t *ctx = (uart_ctx_t*)handle;
 
@@ -45,41 +47,48 @@ bool UART_Init(void* handle)
 
     gpio_set_output_options(ctx->gpio, ctx->gpioOutType, ctx->gpioOutSpeed ,ctx->usartTxPin);
 
+    trace_init();
+
     return 1;
 }
 
-void UART_WriteByte(void* handle, uint8_t data)
+void LIBOBD2_UART_WriteByte(void* handle, uint8_t data)
 {
     uart_ctx_t *ctx = (uart_ctx_t*)handle;
 
-    YIELD;
     usart_send_blocking(ctx->usartNum, data);
+    TRACE_LOG(TRACE_TAG_TX, data, ctx->usartNum);
 
-    /* Wait for transmission to fully complete (shift register empty) */
+    /* Yield on every poll so the receiver task gets CPU while the byte
+     * shifts out (~960 µs at 10400 baud).  Without this the sender holds
+     * the CPU for a full baud period and the receiver can miss the RXNE
+     * window, causing an overrun on the next byte. */
     while (!(USART_SR(ctx->usartNum) & USART_SR_TC))
     {
         YIELD;
     }
 }
 
-bool UART_RecvByte(void* handle, uint8_t *recv_buffer)
+bool LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer)
 {
     uart_ctx_t *ctx = (uart_ctx_t*)handle;
 
     if((USART_SR(ctx->usartNum) & USART_SR_RXNE))
     {
         *recv_buffer = usart_recv(ctx->usartNum);
+        TRACE_LOG(TRACE_TAG_RX, *recv_buffer, ctx->usartNum);
         return 1;
     }
 
     YIELD;
-
     return 0;
 }
 
-void UART_FlushRx(void* handle)
+void LIBOBD2_UART_FlushRx(void* handle)
 {
     uart_ctx_t *ctx = (uart_ctx_t*)handle;
+
+    TRACE_LOG(TRACE_TAG_FLUSH, 0x00, ctx->usartNum);
 
     /* Wait for previous send to finish */
     for (int i = 0; i < 1000; i++)
@@ -94,7 +103,7 @@ void UART_FlushRx(void* handle)
     }
 }
 
-void UART_SendPulse(void* handle, bool pulse)
+void LIBOBD2_UART_SendPulse(void* handle, bool pulse)
 {
     uart_ctx_t *ctx = (uart_ctx_t*)handle;
 
@@ -111,14 +120,14 @@ void UART_SendPulse(void* handle, bool pulse)
     YIELD;
 }
 
-void UART_SwitchMode(void* handle, uint8_t mode)
+void LIBOBD2_UART_SwitchMode(void* handle, uint8_t mode)
 {
     uart_ctx_t *ctx = (uart_ctx_t*)handle;
 
     switch (mode)
     {
         case FAST_INIT_WAKEUP_START:
-        case SLOW_INIT_5BAUD_START:
+        case DIGITAL_MODE_BEGIN:
         {
             // Disable USART first
             usart_disable(ctx->usartNum);
@@ -129,7 +138,7 @@ void UART_SwitchMode(void* handle, uint8_t mode)
             break;
         }
         case FAST_INIT_WAKEUP_END:
-        case SLOW_INIT_5BAUD_END:
+        case DIGITAL_MODE_END:
         {
             // Switch TX pin back to USART alternate function
             gpio_mode_setup(ctx->gpio, GPIO_MODE_AF, GPIO_PUPD_NONE, ctx->usartTxPin);

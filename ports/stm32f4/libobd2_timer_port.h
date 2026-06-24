@@ -26,12 +26,12 @@ typedef struct
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-bool KWP_TMR_Init(void *pHandle);
-uint32_t KWP_TMR_GetTimeMs(void *pHandle);
-void KWP_TMR_DelayMs(void *pHandle, uint32_t delay_ms);
-bool KWP_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t callback, void *pUserData);
-bool KWP_TMR_StopTimeout(void *pHandle);
-bool KWP_TMR_IsTimeoutExpired(void *pHandle);
+bool LIBOBD2_TMR_Init(void *pHandle);
+uint32_t LIBOBD2_TMR_GetTimeMs(void *pHandle);
+void LIBOBD2_TMR_DelayMs(void *pHandle, uint32_t delay_ms);
+bool LIBOBD2_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t callback, void *pUserData);
+bool LIBOBD2_TMR_StopTimeout(void *pHandle);
+bool LIBOBD2_TMR_IsTimeoutExpired(void *pHandle);
 
 /* Debug helpers – freeze/resume the logical clock at GDB breakpoints */
 void KWP_TMR_Pause(void);

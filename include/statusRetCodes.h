@@ -5,15 +5,15 @@
 #include <stdint.h>
 
 /* ================================================= MACROS ================================================ */
-#define SRV_STATUS_MODULE            (0x01)
+#define SRV_STATUS_GENERIC            (0x01)
 #define OBD_MAKE_ERROR(module, code) ((uint16_t)(((module) << 8) | ((code) & 0xFF)))
 #define OBD_STATUS_OK                ((uint16_t)0x0U)
-#define OBD_GENERIC_ERROR            (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (uint16_t)0x1U))
-#define OBD_ERR_NULL_PTR             (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (uint16_t)0x2U))
-#define OBD_NOT_SUPPORTED            (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (uint16_t)0x3U))
-#define OBD_ERR_TIMEOUT_MAX          (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (uint16_t)0x4U))
-#define OBD_ERR_TIMEOUT_MIN          (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (uint16_t)0x5U))
-#define OBD_ERR_INVALID_PARAM        (OBD_MAKE_ERROR(SRV_STATUS_MODULE, (uint16_t)0x6U))
+#define OBD_GENERIC_ERROR            (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x1U))
+#define OBD_ERR_NULL_PTR             (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x2U))
+#define OBD_NOT_SUPPORTED            (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x3U))
+#define OBD_ERR_TIMEOUT_MAX          (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x4U))
+#define OBD_ERR_TIMEOUT_MIN          (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x5U))
+#define OBD_ERR_INVALID_PARAM        (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x6U))
 
 // Init status codes
 #define SRV_STATUS_INIT                   (0x02)
@@ -43,6 +43,7 @@
 #define OBD_ERR_COMM_SEND_MSG_FAILED           (OBD_MAKE_ERROR(SRV_STATUS_COMM, (uint16_t)0xBU))
 #define OBD_ERR_COMM_RECV_MSG_FAILED           (OBD_MAKE_ERROR(SRV_STATUS_COMM, (uint16_t)0xCU))
 #define OBD_ERR_COMM_ECU_RESPONSE_7F           (OBD_MAKE_ERROR(SRV_STATUS_COMM, (uint16_t)0xCU))
+#define OBD_ERR_COMM_ECU_CONNECTION_CLSD       (OBD_MAKE_ERROR(SRV_STATUS_COMM, (uint16_t)0xDU))
 
 // Transport status codes
 #define SRV_STATUS_TRANSPORT               (0x04)

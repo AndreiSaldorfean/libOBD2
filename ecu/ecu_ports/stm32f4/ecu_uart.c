@@ -8,8 +8,8 @@
 #include "libopencm3/stm32/f4/rcc.h"
 #include "libopencm3/stm32/usart.h"
 #include "libopencm3/stm32/gpio.h"
-#include "transport_if.h"
-#include "uart_kwp_transport_port.h"
+#include "uart_if.h"
+#include "libobd2_uart_port.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
