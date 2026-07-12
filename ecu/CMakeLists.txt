@@ -30,10 +30,12 @@ file(GLOB ECU_SOURCES
 
 add_library(${PROJECT_NAME} ${ECU_SOURCES})
 
-target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-    SPT_FREERTOS
-)
+if(SPT_FREERTOS STREQUAL "ON")
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+        SPT_FREERTOS
+    )
+endif()
 
 if(DEBUG STREQUAL "ON")
     target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG)
