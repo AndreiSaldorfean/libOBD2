@@ -13,7 +13,7 @@
 typedef struct
 {
     uint8_t byte;
-    uint32_t timestamp;
+    uint32_t timeReceived;
     bool valid;
 }uartEvent_t;
 
