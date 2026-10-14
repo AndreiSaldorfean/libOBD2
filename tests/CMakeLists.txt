@@ -40,6 +40,7 @@ file(GLOB SOURCES
     "${CMAKE_SOURCE_DIR}/src/os/*.c"
     "${CMAKE_SOURCE_DIR}/../ports/${PLATFORM}/startup/*.c"
     "${CMAKE_SOURCE_DIR}/../ports/${PLATFORM}/*.c"
+    "${CMAKE_SOURCE_DIR}/../ports/${PLATFORM}/third_party/*.c"
 )
 
 list(APPEND SOURCES ${TEST_PLATFORM_SOURCES})
@@ -56,6 +57,7 @@ target_include_directories(${PROJECT_NAME}
     ../include
     ../include/freertos/
     "../ports/${PLATFORM}/"
+    "../ports/${PLATFORM}/third_party/"
     ../utils
     ../interface/
     ../include/app/

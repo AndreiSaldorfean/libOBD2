@@ -4,9 +4,12 @@
 #include "libobd2.h"
 #include "libobd2_timer_port.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include "statusRetCodes.h"
 #include "uart_if.h"
 #include "libobd2_uart_port.h"
+#include "uart_trace.h"
+#include "cQueue.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -16,6 +19,53 @@ static uint16_t bitbangIdx;
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
+static inline bool byteReceived(void* handle)
+{
+    virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t*)handle;
+    uint32_t timeNow = ctx->tmrHandle->timeNow;
+    uartEvent_t event;
+
+    q_peek(ctx->uartEventQueue, &event);
+
+    // TODO: can add random small delay for simulating cpu clk cycles
+
+    // if we received a byte in the past
+    return (timeNow > event.timeReceived);
+}
+
+static inline void incTime(void *handle)
+{
+    virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t*)handle;
+    ctx->tmrHandle->timeNow += ctx->tmrHandle->timeStep;
+
+    // TODO: can add random small delay for simulating cpu clk cycles
+}
+
+/* ================================================ MODULE API ============================================= */
+bool LIBOBD2_UART_Init(void* handle)
+{
+    virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t*)handle;
+    memset(ctx, 0, sizeof(virtUartLinkCtx_t));
+    Queue_t *pQueue;
+    q_init(
+        /* Queue_t */    pQueue,               /* pointer to the queue struct */
+        /* size_t */     sizeof(uartEvent_t),  /* size of a record in the queue */
+        /* uint16_t */   128,                  /* number of records in the queue */
+        /* QueueType */  FIFO,                 /* queue implementation type: FIFO, LIFO */
+        /* overwite */   true                  /* overwrite previous records when queue is full if set to true */
+    );
+
+    free(ctx->uartEventQueue);
+    ctx->uartEventQueue = pQueue;
+
+    currentMode   = DIGITAL_MODE_BEGIN;
+    bitbangedByte = 0;
+    bitbangIdx    = 0;
+
+    // TODO: can add random small delay for simulating cpu clk cycles
+    return 1;
+}
+
 /******************************************************************
  * Descriptions: Pushes uart events in a queue
  *   1. State 1: uart event queue
@@ -36,20 +86,25 @@ static uint16_t bitbangIdx;
  * Input: byte to be pushed
  * Output: Byte to be pushed will be saved in the queue at the current time
  ******************************************************************/
-static inline void pushEvent(void* handle, uint8_t byte)
+void LIBOBD2_UART_WriteByte(void* handle, uint8_t data)
 {
     virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t*)handle;
+    uartEvent_t event =
+    {
+        .byte = data,
+        .timeReceived = ctx->tmrHandle->timeNow,
+        .error = UART_NO_ERROR
+    };
 
-    uint32_t *tail = &ctx->tail;
-    uint32_t timeNow = ctx->tmrHandle->timeNow;
+    /* simualte uart erorrs if callback set */
+    if(NULL != ctx->erorr_generator)
+    {
+        ctx->erorr_generator(&event);
+    }
 
-    ctx->uartEventQueue[*tail].byte = byte;
-    ctx->uartEventQueue[*tail].timeReceived = timeNow;
+    q_push(ctx->uartEventQueue, &event);
 
-    *tail += 1;
-    *tail %= ctx->queueSize;
-
-    // TODO: can add random small delay for simulating cpu clk cycles
+    UART_TRACE_LogWrite(data, ctx->tmrHandle->timeNow);
 }
 
 /******************************************************************
@@ -72,70 +127,31 @@ static inline void pushEvent(void* handle, uint8_t byte)
  * Input: Nothing
  * Output: The byte at the current head index.
  ******************************************************************/
-static inline void popEvent(void* handle, uint8_t *byte)
-{
-    virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t*)handle;
-    uint32_t *head = &ctx->head;
-
-    *byte = ctx->uartEventQueue[*head].byte;
-
-    *head += 1;
-    *head %= ctx->queueSize;
-
-    // TODO: can add random small delay for simulating cpu clk cycles
-}
-
-static inline bool byteReceived(void* handle)
-{
-    virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t*)handle;
-    uint32_t *head = &ctx->head;
-    uint32_t timeNow = ctx->tmrHandle->timeNow;
-
-    // TODO: can add random small delay for simulating cpu clk cycles
-
-    // if we received a byte in the past
-    return (timeNow > ctx->uartEventQueue[*head].timeReceived);
-}
-
-static inline void incTime(void *handle)
-{
-    virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t*)handle;
-    ctx->tmrHandle->timeNow += ctx->tmrHandle->timeStep;
-
-    // TODO: can add random small delay for simulating cpu clk cycles
-}
-
-/* ================================================ MODULE API ============================================= */
-bool LIBOBD2_UART_Init(void* handle)
-{
-    virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t*)handle;
-    memset(ctx, 0, sizeof(virtUartLinkCtx_t));
-    currentMode   = DIGITAL_MODE_BEGIN;
-    bitbangedByte = 0;
-    bitbangIdx    = 0;
-
-    // TODO: can add random small delay for simulating cpu clk cycles
-    return 1;
-}
-
-void LIBOBD2_UART_WriteByte(void* handle, uint8_t data)
-{
-    pushEvent(handle, data);
-}
-
 bool LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer)
 {
+    virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t*)handle;
+    uartEvent_t event;
     bool status = 0;
+
+    /* simualte uart erorrs if callback set */
+    if(NULL != ctx->erorr_generator)
+    {
+        ctx->erorr_generator(&event);
+    }
 
     if (byteReceived(handle))
     {
         // ack message
-        popEvent(handle, recv_buffer);
+        q_pop(ctx->uartEventQueue, &event);
         status = 1;
     }
 
     // advance time
     incTime(handle);
+
+    *recv_buffer = event.byte;
+
+    UART_TRACE_LogRead(*recv_buffer, ctx->tmrHandle->timeNow, status);
 
     return status;
 }
@@ -168,9 +184,11 @@ void LIBOBD2_UART_SendPulse(void* handle, bool pulse)
 
     if (currentMode == DIGITAL_MODE_END)
     {
+        uartEvent_t event = {0};
         bitbangedByte &= 0b0111111110;
         bitbangedByte >>= 1;
-        pushEvent(handle, bitbangedByte);
+        event.byte = bitbangedByte;
+        q_push(ctx->uartEventQueue, &event);
     }
 }
 

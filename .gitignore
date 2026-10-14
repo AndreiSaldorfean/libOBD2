@@ -5,3 +5,4 @@ builds/
 .clangd
 .gdb_history
 ./examples/STM32F401CCU/build
+*_log.txt

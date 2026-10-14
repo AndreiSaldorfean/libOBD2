@@ -5,25 +5,34 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include "cQueue.h"
 #include "libobd2_timer_port.h"
 #include "statusRetCodes.h"
 
 /* ================================================= MACROS ================================================ */
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
+typedef enum
+{
+    UART_NO_ERROR = 0U,
+    PARITY_ERROR,
+    FRAMING_ERROR,
+    OVERRUN_ERROR,
+    NOISE_ERROR,
+    UART_MAX_NUM_ERRORS
+}uartErrors_t;
+
 typedef struct
 {
     uint8_t byte;
     uint32_t timeReceived;
-    bool valid;
+    uartErrors_t error;
 }uartEvent_t;
 
 typedef struct
 {
-    uartEvent_t *uartEventQueue;
-    size_t queueSize;
-    uint32_t head;
-    uint32_t tail;
+    Queue_t *uartEventQueue;
     virtTmrCtx_t *tmrHandle;
+    void (*erorr_generator)(uartEvent_t *event);
 }virtUartLinkCtx_t;
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
