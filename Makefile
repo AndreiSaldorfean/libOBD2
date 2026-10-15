@@ -2,13 +2,13 @@
 # This makefile is used for generating the build directory and compiling targets
 # ==============================================================================
 
-# build_type=Debug
-build_type=Release
+build_type=Debug
+# build_type=Release
 memory=flash
 # memory=ram
 
-app=example
-# app=tests
+# app=example
+app=tests
 # app=library
 
 ifneq ($(app),library)
@@ -21,6 +21,8 @@ all: clean
 	python utils/gen.py --app $(app)
 b:
 	cmake --build builds/$(dir) -j12
+r:
+	./builds/$(dir)/test
 clean:
 	rm -rf builds/$(dir)
 

@@ -75,6 +75,29 @@ bool LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer)
 
     if((USART_SR(ctx->usartNum) & USART_SR_RXNE))
     {
+        #if 0 /** TODO: Add error handling */
+        uint8_t byte = (uint8_t)USART1->DR;
+
+        switch (USART_SR(ctx->usartNum))
+        {
+            case USART_SR_FE:
+            case USART_SR_PE:
+            // case overrun
+            // case noise::
+                while( not error)
+                {
+                    //read again
+                    (uint8_t)USART1->DR
+                    //retry count--
+                }
+                if retry == 0;
+                    reset the board with usart erorr saved somewhere.
+
+            default:
+                continue
+        }
+        #endif /* 0 */
+
         *recv_buffer = usart_recv(ctx->usartNum);
         TRACE_LOG(TRACE_TAG_RX, *recv_buffer, ctx->usartNum);
         return 1;
