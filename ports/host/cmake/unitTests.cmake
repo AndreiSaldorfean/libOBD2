@@ -17,3 +17,7 @@ list(APPEND TEST_PLATFORM_INCLUDES
     src/unit/datalink/host/common/
     src/unit/app/host/
 )
+
+# VCDio: waveform traces of the virtual K-line (tests/src/ports/host/uart_trace.c)
+add_subdirectory(${CMAKE_SOURCE_DIR}/../libs/VCDio ${CMAKE_BINARY_DIR}/VCDio)
+list(APPEND TEST_PLATFORM_LINK_LIBS VCDio)

@@ -219,18 +219,18 @@ static enum theft_trial_res prop_RecvByteBlocking_returns_pushed_byte(struct the
 }
 
 /* --------------------------------------------------------------------------
- * Runs a theft config with the generic UART tracer (tests/src/ports/host/
- * uart_trace.*) enabled for its duration, logging every byte that crosses
- * LIBOBD2_UART_WriteByte()/LIBOBD2_UART_RecvByte() while it runs.
+ * Runs a theft config while the UART tracer (tests/src/ports/host/uart_trace.*)
+ * records the virtual K-line into a .vcd waveform, one session per trial.
+ * Open it in PulseView (UART decoder on kline.line, 10400 baud) or GTKWave.
  * -------------------------------------------------------------------------- */
-static enum theft_run_res runTraced(struct theft_run_config *cfg, const char *logPath)
+static enum theft_run_res runTraced(struct theft_run_config *cfg, const char *tracePath)
 {
-    UART_TRACE_SetLogPath(logPath);
-    g_uartTraceEnabled = true;
+    UART_TRACE_Begin(tracePath);
+    UART_TRACE_Note(cfg->name);
 
     enum theft_run_res res = theft_run(cfg);
 
-    g_uartTraceEnabled = false;
+    UART_TRACE_End();
     return res;
 }
 
@@ -243,7 +243,7 @@ void test_DL_PBT_ReadByteInTimeframe_ReturnsByteWithinWindow(void)
         .type_info = { &readByteCase_type_info },
         .trials    = PBT_TRIALS,
     };
-    TEST_ASSERT_EQUAL(THEFT_RUN_PASS, runTraced(&cfg, "test_DL_PBT_ReadByteInTimeframe_ReturnsByteWithinWindow_log.txt"));
+    TEST_ASSERT_EQUAL(THEFT_RUN_PASS, runTraced(&cfg, "test_DL_PBT_ReadByteInTimeframe_ReturnsByteWithinWindow.vcd"));
 }
 
 void test_DL_PBT_ReadByteInTimeframe_TimesOutWhenByteNeverArrives(void)
@@ -254,7 +254,7 @@ void test_DL_PBT_ReadByteInTimeframe_TimesOutWhenByteNeverArrives(void)
         .type_info = { &timeoutCase_type_info },
         .trials    = PBT_TRIALS,
     };
-    TEST_ASSERT_EQUAL(THEFT_RUN_PASS, runTraced(&cfg, "test_DL_PBT_ReadByteInTimeframe_TimesOutWhenByteNeverArrives_log.txt"));
+    TEST_ASSERT_EQUAL(THEFT_RUN_PASS, runTraced(&cfg, "test_DL_PBT_ReadByteInTimeframe_TimesOutWhenByteNeverArrives.vcd"));
 }
 
 void test_DL_PBT_RecvByteBlocking_ReturnsPushedByte(void)
@@ -265,5 +265,5 @@ void test_DL_PBT_RecvByteBlocking_ReturnsPushedByte(void)
         .type_info = { &readByteCase_type_info },
         .trials    = PBT_TRIALS,
     };
-    TEST_ASSERT_EQUAL(THEFT_RUN_PASS, runTraced(&cfg, "test_DL_PBT_RecvByteBlocking_ReturnsPushedByte_log.txt"));
+    TEST_ASSERT_EQUAL(THEFT_RUN_PASS, runTraced(&cfg, "test_DL_PBT_RecvByteBlocking_ReturnsPushedByte.vcd"));
 }

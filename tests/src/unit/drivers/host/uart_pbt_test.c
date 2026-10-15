@@ -139,18 +139,18 @@ static enum theft_trial_res prop_byte_not_ready_at_same_timestamp(struct theft *
 }
 
 /* --------------------------------------------------------------------------
- * Runs a theft config with the generic UART tracer (tests/src/ports/host/
- * uart_trace.*) enabled for its duration, logging every byte that crosses
- * LIBOBD2_UART_WriteByte()/LIBOBD2_UART_RecvByte() while it runs.
+ * Runs a theft config while the UART tracer (tests/src/ports/host/uart_trace.*)
+ * records the virtual K-line into a .vcd waveform, one session per trial.
+ * Open it in PulseView (UART decoder on kline.line, 10400 baud) or GTKWave.
  * -------------------------------------------------------------------------- */
-static enum theft_run_res runTraced(struct theft_run_config *cfg, const char *logPath)
+static enum theft_run_res runTraced(struct theft_run_config *cfg, const char *tracePath)
 {
-    UART_TRACE_SetLogPath(logPath);
-    g_uartTraceEnabled = true;
+    UART_TRACE_Begin(tracePath);
+    UART_TRACE_Note(cfg->name);
 
     enum theft_run_res res = theft_run(cfg);
 
-    g_uartTraceEnabled = false;
+    UART_TRACE_End();
     return res;
 }
 
@@ -163,7 +163,7 @@ void test_UART_PBT_WriteReadRoundtrip(void)
         .type_info = { &byte_type_info },
         .trials    = PBT_TRIALS,
     };
-    TEST_ASSERT_EQUAL(THEFT_RUN_PASS, runTraced(&cfg, "test_UART_PBT_WriteReadRoundtrip_log.txt"));
+    TEST_ASSERT_EQUAL(THEFT_RUN_PASS, runTraced(&cfg, "test_UART_PBT_WriteReadRoundtrip.vcd"));
 }
 
 void test_UART_PBT_ByteNotReadyBeforeTimestamp(void)
@@ -174,7 +174,7 @@ void test_UART_PBT_ByteNotReadyBeforeTimestamp(void)
         .type_info = { &byte_type_info },
         .trials    = PBT_TRIALS,
     };
-    TEST_ASSERT_EQUAL(THEFT_RUN_PASS, runTraced(&cfg, "test_UART_PBT_ByteNotReadyBeforeTimestamp_log.txt"));
+    TEST_ASSERT_EQUAL(THEFT_RUN_PASS, runTraced(&cfg, "test_UART_PBT_ByteNotReadyBeforeTimestamp.vcd"));
 }
 
 void test_UART_PBT_IncTimeOnByteRead(void)
@@ -185,5 +185,5 @@ void test_UART_PBT_IncTimeOnByteRead(void)
         .type_info = { &byte_type_info },
         .trials    = PBT_TRIALS,
     };
-    TEST_ASSERT_EQUAL(THEFT_RUN_PASS, runTraced(&cfg, "test_UART_PBT_IncTimeOnByteRead_log.txt"));
+    TEST_ASSERT_EQUAL(THEFT_RUN_PASS, runTraced(&cfg, "test_UART_PBT_IncTimeOnByteRead.vcd"));
 }
