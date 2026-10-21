@@ -1,5 +1,4 @@
 /* ================================================ INCLUDES =============================================== */
-#include "ecu_uart.h"
 #include "l2_iso9141.h"
 #include "datalink.h"
 #include "libobd2.h"
@@ -162,7 +161,7 @@ OBD2_STATIC obd_status_t ECU_L2_ISO9141_5BaudInit(dataLink_if_t *self)
 
     status.response = 0x255;
     // Read wake-up byte at 5 baudRate
-    if(!ECUSIM_ReadByteBitBanged(self, &syncByte, 5))
+    if(!RecvByteBlocking(self, &syncByte)) // TODO: Fix bug here, it shall read bye at 5 baud rate
     {
         goto exit;
     }

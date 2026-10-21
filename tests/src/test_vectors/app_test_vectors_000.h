@@ -1,14 +1,29 @@
-#ifndef ECU_UART_H
-#define ECU_UART_H
+#ifndef APP_TEST_VECTORS_000_H
+#define APP_TEST_VECTORS_000_H
 
 /* ================================================ INCLUDES =============================================== */
-#include "datalink.h"
+#include "libobd2.h"
+#include "datalink_test_vectors_000.h"
 
 /* ================================================= MACROS ================================================ */
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-bool ECUSIM_ReadByteBitBanged(dataLink_if_t *self, uint8_t *byte, uint8_t baudRate);
+obd_ctx_t ctx_ecu =
+{
+        .pDataLink = &dl_ecu,
+        // .pDataLinkHandle = &kwpCtx,
+        .connectionStatus = 0
+};
 
-#endif /* ECU_UART_H */
+obd_ctx_t ctx_tester =
+{
+        .pDataLink = &dl_tester,
+        // .pDataLinkHandle = &kwpCtx,
+        .connectionStatus = 0
+};
+
+
+#endif /* TEST_VECTORS_000_H */
+

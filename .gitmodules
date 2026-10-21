@@ -23,3 +23,6 @@
     url = "https://github.com/hathach/tinyusb.git"
 
 
+[submodule "tests/theft"]
+	path = tests/theft
+	url = https://github.com/silentbicycle/theft.git
