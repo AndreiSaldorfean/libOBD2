@@ -12,7 +12,7 @@
         size_t cnt = 0; \
         for (size_t i = 0; i < libobd2DataLen; i++) \
         { \
-            for (size_t j = 3; j < d[i].dataLen - 1; j++) \
+            for (size_t j = 2; j < d[i].dataLen - 1; j++) \
             { \
                 resp[cnt++] = d[i].data.param[j]; \
             } \
@@ -25,7 +25,7 @@
         size_t cnt = 0; \
         for (size_t i = 0; i < libobd2DataLen; i++) \
         { \
-            for (size_t j = 3; j < d[i].dataLen - 1; j++) \
+            for (size_t j = 2; j < d[i].dataLen - 1; j++) \
             { \
                 resp[cnt++] = d[i].data.param[j]; \
             } \
