@@ -82,6 +82,7 @@ static obd_status_t dispatchSid(obd_ctx_t* ctx, libobd2_service_t *libobd2Servic
                 }
             break;
             case TP_READ_UNTIL_TO: // NOTE: Not tested
+                #if 0 /* TODO: fix  the implementation here*/
                 while (P2_TIME_MAX != status.timeout)
                 {
                     status = DL_RecvResponse(pDataLink, &resp, &len);
@@ -89,6 +90,7 @@ static obd_status_t dispatchSid(obd_ctx_t* ctx, libobd2_service_t *libobd2Servic
                     response[respIdx].data = resp;
                     response[respIdx++].dataLen = len;
                 }
+                #endif /* 0 */
             break;
         }
 
