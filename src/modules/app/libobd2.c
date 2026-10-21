@@ -41,6 +41,11 @@ static obd_status_t dispatchSid(obd_ctx_t* ctx, libobd2_service_t *libobd2Servic
         OBD2_ASSERT_OK(status);
         status = DL_RecvResponse(ctx->pDataLink, &resp, &len);
         OBD2_ASSERT_OK(status);
+
+        response->data = resp;
+        response->dataLen = 1;
+        *respLen = 1;
+        goto exit;
     }
 
     while (TP_END != tpState)
