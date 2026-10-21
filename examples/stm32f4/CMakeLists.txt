@@ -2,7 +2,10 @@ cmake_minimum_required(VERSION 3.14)
 project(demo LANGUAGES C)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
-option(SPT_FREERTOS "Support for FreeRTOS" ON)
+# The demo always runs on FreeRTOS (main.c creates tasks, isr_vector.c routes SysTick/SVC/PendSV
+# to the FreeRTOS port), so force it ON even if build_config.json passes -DSPT_FREERTOS=OFF.
+# option() would not override a value given on the command line.
+set(SPT_FREERTOS "ON" CACHE STRING "Support for FreeRTOS" FORCE)
 option(LOGGING "Support for logging" ON)
 
 # TinyUSB sources
