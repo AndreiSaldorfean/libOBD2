@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include "timer_utils.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -18,26 +19,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *
 OBD2_STATIC OBD2_INLINE obd_status_t L2_ISO9141_ReadHeader(dataLink_if_t *self, header_t *header);
 OBD2_STATIC void L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen,size_t *len);
 
-
-OBD2_STATIC OBD2_INLINE void startTimeout(dataLink_if_t *self, uint32_t timeout);
-OBD2_STATIC OBD2_INLINE bool isTimeoutMinDone(dataLink_if_t *self, uint32_t minTimeout);
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-OBD2_STATIC OBD2_INLINE bool isTimeoutMinDone(dataLink_if_t *self, uint32_t minTimeout)
-{
-    uint32_t p2TimeElapsed = 0;
-
-    p2TimeElapsed = LIBOBD_GetTimeMs(self);
-    p2TimeElapsed -= LIBOBD_GetTimeSample(self);
-
-    return p2TimeElapsed >= minTimeout;
-}
-
-OBD2_STATIC OBD2_INLINE void startTimeout(dataLink_if_t *self, uint32_t timeout)
-{
-    LIBOBD_SetTimeSample(self, LIBOBD_GetTimeMs(self));
-    LIBOBD_StartTimeout(self, timeout);
-}
-
 OBD2_STATIC uint8_t L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t dataLen)
 {
     uint8_t *hdr      = (uint8_t *)&header;
@@ -73,7 +55,7 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_ISO9141_ReadHeader(dataLink_if_t *self, 
     }
 
     status.timeout = OBD_ERR_COMM_P2_TIMEOUT_MIN_TESTER_ECU;
-    OBD2_ASSERT_EQUAL_OR_EXIT(true, isTimeoutMinDone(self, P2_TIME_MIN));
+    OBD2_ASSERT_EQUAL_OR_EXIT(true, TMR_IsTimeoutMinDone(self, P2_TIME_MIN));
     LIBOBD_StopTimeout(self);
 
     // Target byte
@@ -103,7 +85,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_SendMessage(dataLink_if_t *self, uint8_t *ms
         LIBOBD_Delay(self, P4_TIME_MIN);
     }
 
-    startTimeout(self, P2_TIME_MAX);
+    TMR_StartTimeout(self, P2_TIME_MAX);
 
     // Clear echo
     LIBOBD_FlushRx(self);
@@ -150,7 +132,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *
 
     status.response = OBD_ERR_COMM_RECV_MSG_FAILED;
 exit:
-    startTimeout(self, P2_TIME_MAX);
+    TMR_StartTimeout(self, P2_TIME_MAX);
     return status;
 }
 
