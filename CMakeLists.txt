@@ -63,7 +63,7 @@ file(GLOB SOURCES
     "./src/modules/datalink/common/*.c"
     "./src/modules/datalink/specific/l2_iso9141/*.c"
     "./src/modules/datalink/specific/l2_kwp2000/*.c"
-    "./utils/*.c"
+    "./src/modules/utils/common/*.c"
     "./src/data_link/l2_kwp/*.c"
 )
 
@@ -112,10 +112,10 @@ endif()
 target_include_directories(${PROJECT_NAME}
     PUBLIC
     ./include/
-    ./utils/
     ./src/modules/datalink/common
     ./src/modules/datalink/specific/l2_iso9141/
     ./src/modules/datalink/specific/l2_kwp2000/
+    ./src/modules/utils/common/
     ./src/modules/app/
 )
 
