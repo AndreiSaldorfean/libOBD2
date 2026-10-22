@@ -99,3 +99,4 @@ if __name__ == "__main__":
     app = parse_arguments().app
     build_config = parse_build_config(app)
     create_cfg(app)
+

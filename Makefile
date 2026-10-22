@@ -18,7 +18,7 @@ dir=library
 endif
 
 all: clean
-	python utils/gen.py --app $(app)
+	python scripts/gen.py --app $(app)
 b:
 	cmake --build builds/$(dir) -j12
 r:
