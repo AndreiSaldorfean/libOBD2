@@ -37,6 +37,9 @@ static dl_recv_response_t recvResponses[NUM_SPT_PROTOCOLS] =
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
+static obd_status_t DL_IdentifyProtocol(dataLink_if_t *pDataLink, uint8_t* protocol);
+
+/* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 static obd_status_t DL_IdentifyProtocol(dataLink_if_t *pDataLink, uint8_t* protocol)
 {
     obd_status_t status = {0};
@@ -45,23 +48,24 @@ static obd_status_t DL_IdentifyProtocol(dataLink_if_t *pDataLink, uint8_t* proto
     {
         status = initProtocols[idx](pDataLink, protocol);
         if (status.response == OBD_STATUS_OK)
-            return status;
+            goto exit;
     }
 
+exit:
     return status;
 }
 
-/* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */
 obd_status_t DL_Connect(dataLink_if_t *pDataLink)
 {
     obd_status_t status = {0};
     uint8_t protocolIdx = PROTOCOL_NOT_FOUND;
+
     LIBOBD_TransportInit(pDataLink);
     LIBOBD_TimingInit(pDataLink);
 
     status = DL_IdentifyProtocol(pDataLink, &protocolIdx);
-    if (status.response != OBD_STATUS_OK) return status;
+    OBD2_ASSERT_OK(status);
 
     // Construct datalink interface
     pDataLink->connect       = initProtocols[protocolIdx];
@@ -69,7 +73,7 @@ obd_status_t DL_Connect(dataLink_if_t *pDataLink)
     pDataLink->recv_response = recvResponses[protocolIdx];
 
     status.response = OBD_STATUS_OK;
-
+exit:
     return status;
 }
 
