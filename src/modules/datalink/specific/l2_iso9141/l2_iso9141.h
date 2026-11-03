@@ -18,6 +18,8 @@
 #define ISO9141_W4_INV_ADDR_TIME_MAX (200U)
 #define ISO9141_W5_TIME_MIN (300U)
 
+#define ISO9141_MAX_DATA_FIELD (((uint8_t)(sizeof(obd_data_t)) + 1U))
+
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
 {

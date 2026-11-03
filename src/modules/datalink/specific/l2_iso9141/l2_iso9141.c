@@ -111,7 +111,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *
                     + recvdMsg->header.srcAddr;
 
     status.response = OBD_ERR_COMM_DATA_BYTE_NOT_RECVD;
-    while (((uint8_t)(sizeof(obd_data_t)) + 1U) > idx)
+    while (ISO9141_MAX_DATA_FIELD > idx)
     {
         status = DL_ReadByteInTimeframe(self, &elapsedTime , &byte, P1_TIME_MIN, P1_TIME_MAX);
         OBD2_ASSERT_OK(status);
