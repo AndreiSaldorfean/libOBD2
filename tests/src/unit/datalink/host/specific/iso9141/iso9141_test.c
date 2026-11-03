@@ -183,3 +183,99 @@ void test_ISO9141_RecvMessage_TargetByteTimeout(void)
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_TIMEOUT_MAX, status.timeout);
     TEST_ASSERT_EQUAL_HEX8(0x48u, recvdMsg.header.fmt);
 }
+
+/******************************************************************
+ * Every public ISO9141 entry point rejects a NULL data link with
+ * OBD_ERR_NULL_PTR before touching the line.
+ ******************************************************************/
+void test_ISO9141_Api_NullLink(void)
+{
+    uint8_t protocol = 0u;
+    obd_data_t data = {0};
+    size_t len = 0;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, l2_iso9141_connect(NULL, &protocol).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, l2_iso9141_send_request(NULL, &data, 2u).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, l2_iso9141_recv_response(NULL, &data, &len).response);
+}
+
+/******************************************************************
+ * send_request accepts 1..7 data bytes (sid + up to 6 params).
+ *   0 used to underflow in PrepareMessage; 8 would overrun the frame buffer.
+ ******************************************************************/
+void test_ISO9141_SendRequest_InvalidDataLen(void)
+{
+    obd_data_t data = { .sid = 0x01u };
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_INVALID_PARAM, l2_iso9141_send_request(&dl_tester, &data, 0u).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_INVALID_PARAM, l2_iso9141_send_request(&dl_tester, &data, 8u).response);
+}
+
+/******************************************************************
+ * PrepareMessage with dataLen 0 is rejected and leaves the buffer as it was.
+ ******************************************************************/
+void test_ISO9141_PrepareMessage_ZeroDataLen(void)
+{
+    message_t msg = msg_tester;
+    uint8_t aSentMsg[MSG_WIRE_LEN];
+    uint8_t expected[MSG_WIRE_LEN];
+    size_t wireLen = 0xA5u;
+
+    memset(aSentMsg, 0xEEu, sizeof(aSentMsg));
+    memset(expected, 0xEEu, sizeof(expected));
+
+    obd_status_t status = L2_ISO9141_PrepareMessage(&msg, aSentMsg, 0u, &wireLen);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_INVALID_PARAM, status.response);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, aSentMsg, MSG_WIRE_LEN);
+    TEST_ASSERT_EQUAL_size_t(0xA5u, wireLen);
+}
+
+/******************************************************************
+ * The ECU completes the 5-baud handshake but sends keyword bytes
+ * 0x12 0x34, which match neither ISO9141-2 (08 08) nor KWP2000 (94 94).
+ * Init must fail with OBD_ERR_5BAUD_WRONG_KEYBYTES and store no header.
+ ******************************************************************/
+void test_ISO9141_5BaudInit_WrongKeyBytes(void)
+{
+    virtTmrCtx_t timer =
+    {
+        .timeNow        = 0u,
+        .timeStep       = 10u,
+        .timeoutTime    = 0u,
+        .timeoutStarted = false,
+    };
+    virtUartLinkCtx_t uartCtx =
+    {
+        .tmrHandle = &timer,
+    };
+    l2_iso9141_ctx_t protoCtx = {0};
+    dataLink_if_t self =
+    {
+        .pProtocolCtx     = &protoCtx,
+        .pTimingOps       = &tmr_ops,
+        .pTimingHandle    = &timer,
+        .pUartOps         = &uart_ops,
+        .pTransportHandle = &uartCtx,
+    };
+    uint8_t protocol = 0xFFu;
+
+    TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&uartCtx));
+
+    /* Same timing as test_ISO9141_5BaudInit_000, only the keyword bytes differ */
+    timer.timeNow = 300U + 2000U + ISO9141_W1_TIME_MIN;
+    LIBOBD2_UART_WriteByte(&uartCtx, 0x55u);
+    timer.timeNow += ISO9141_W2_TIME_MIN;
+    LIBOBD2_UART_WriteByte(&uartCtx, 0x12u);
+    timer.timeNow += ISO9141_W3_TIME_MIN;
+    LIBOBD2_UART_WriteByte(&uartCtx, 0x34u);
+    timer.timeNow += 3*ISO9141_W4_TIME_MIN;
+    LIBOBD2_UART_WriteByte(&uartCtx, (uint8_t)(~0x33u));
+
+    timer.timeNow = 0u;
+    obd_status_t status = L2_ISO9141_5BaudInit(&self, &protocol);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_5BAUD_WRONG_KEYBYTES, status.response);
+    TEST_ASSERT_EQUAL_HEX8(0xFFu, protocol);
+    TEST_ASSERT_EQUAL_HEX8(0x00u, protoCtx.header.fmt);
+}
