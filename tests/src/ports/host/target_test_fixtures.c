@@ -64,7 +64,7 @@ void targetRunTests()
     RUN_TEST(test_ISO9141_RecvMessage_TargetByteTimeout);
     RUN_TEST(test_ISO9141_Api_NullLink);
     RUN_TEST(test_ISO9141_SendRequest_InvalidDataLen);
-    RUN_TEST(test_ISO9141_PrepareMessage_ZeroDataLen);
+    RUN_TEST(test_ISO9141_SerializeMessage_ZeroDataLen);
     RUN_TEST(test_ISO9141_5BaudInit_WrongKeyBytes);
     /* ---- DATALINK TESTS ---- */
 
@@ -92,7 +92,7 @@ void targetRunTests()
     // RUN_TEST(test_DL_PBT_RecvByteBlocking_ReturnsPushedByte);
     //
     // RUN_TEST(test_ISO9141_PBT_ComputeCheckSum);
-    // RUN_TEST(test_ISO9141_PBT_PrepareMessageSerializesCorrectly);
+    // RUN_TEST(test_ISO9141_PBT_SerializeMessageWireLayout);
     // RUN_TEST(test_ISO9141_PBT_SendThenRecvRoundtrip);
     //
     // RUN_TEST(test_LIBOBD2_PBT_VinRoundtripAcrossMultiFrameResponse);

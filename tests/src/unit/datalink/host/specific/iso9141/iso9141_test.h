@@ -12,7 +12,7 @@ void test_ISO9141_5BaudInit_000(void);
 void test_ISO9141_RecvMessage_TargetByteTimeout(void);
 void test_ISO9141_Api_NullLink(void);
 void test_ISO9141_SendRequest_InvalidDataLen(void);
-void test_ISO9141_PrepareMessage_ZeroDataLen(void);
+void test_ISO9141_SerializeMessage_ZeroDataLen(void);
 void test_ISO9141_5BaudInit_WrongKeyBytes(void);
 
 #endif /* ISO9141_TEST_H */

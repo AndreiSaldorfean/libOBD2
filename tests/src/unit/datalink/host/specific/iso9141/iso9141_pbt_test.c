@@ -24,7 +24,7 @@
 
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 extern obd_status_t L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t dataLen, uint8_t *cs);
-extern obd_status_t L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
+extern obd_status_t L2_ISO9141_SerializeMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
 extern obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t *len);
 static enum theft_alloc_res alloc_arr(struct theft *t, void *env, void **output);
 static enum theft_alloc_res alloc_time(struct theft *t, void *env, void **output);
@@ -153,7 +153,7 @@ static enum theft_trial_res prop_message_checksum(struct theft *t, void *arg)
     uint8_t realCs     = 0;
     uint8_t expectedCs = 0;
 
-    if (OBD_STATUS_OK != L2_ISO9141_PrepareMessage(&msg, aSentMsg, 7, &len).response) { return THEFT_TRIAL_FAIL; }
+    if (OBD_STATUS_OK != L2_ISO9141_SerializeMessage(&msg, aSentMsg, 7, &len).response) { return THEFT_TRIAL_FAIL; }
 
     /* aSentMsg holds 11 bytes: 3 header + sid + 6 params + cs. The checksum
      * covers everything but the trailing cs byte itself, i.e. the first 10
@@ -167,18 +167,18 @@ static enum theft_trial_res prop_message_checksum(struct theft *t, void *arg)
 }
 
 /* --------------------------------------------------------------------------
- * Property: L2_ISO9141_PrepareMessage must serialize a message_t into the
+ * Property: L2_ISO9141_SerializeMessage must serialize a message_t into the
  * exact wire layout the protocol defines: [fmt, trg, src, sid, param x6, cs],
  * with the reported length always equal to MSG_WIRE_LEN.
  * -------------------------------------------------------------------------- */
-static enum theft_trial_res prop_prepare_message_serializes_correctly(struct theft *t, void *arg)
+static enum theft_trial_res prop_serialize_message_wire_layout(struct theft *t, void *arg)
 {
     (void)t;
     message_t msg = *(message_t *)arg;
     uint8_t aSentMsg[MSG_WIRE_LEN] = {0};
     size_t len = 0;
 
-    if (OBD_STATUS_OK != L2_ISO9141_PrepareMessage(&msg, aSentMsg, MSG_DATA_LEN, &len).response) { return THEFT_TRIAL_FAIL; }
+    if (OBD_STATUS_OK != L2_ISO9141_SerializeMessage(&msg, aSentMsg, MSG_DATA_LEN, &len).response) { return THEFT_TRIAL_FAIL; }
 
     if (len != MSG_WIRE_LEN) { return THEFT_TRIAL_FAIL; }
 
@@ -198,7 +198,7 @@ static enum theft_trial_res prop_prepare_message_serializes_correctly(struct the
 }
 
 /* --------------------------------------------------------------------------
- * Property: a message serialized by L2_ISO9141_PrepareMessage and delivered
+ * Property: a message serialized by L2_ISO9141_SerializeMessage and delivered
  * byte-by-byte over the virtual UART must come back out of
  * L2_ISO9141_RecvMessage unchanged: same header, same data, same length.
  * This exercises L2_ISO9141_ReadHeader's P1/P2 timing checks together with
@@ -214,7 +214,7 @@ static enum theft_trial_res prop_send_then_recv_roundtrip(struct theft *t, void 
 
     uint8_t aSentMsg[MSG_WIRE_LEN] = {0};
     size_t wireLen = 0;
-    if (OBD_STATUS_OK != L2_ISO9141_PrepareMessage(&msg, aSentMsg, MSG_DATA_LEN, &wireLen).response) { return THEFT_TRIAL_FAIL; }
+    if (OBD_STATUS_OK != L2_ISO9141_SerializeMessage(&msg, aSentMsg, MSG_DATA_LEN, &wireLen).response) { return THEFT_TRIAL_FAIL; }
 
     virtTmrCtx_t      timer                 = { .timeNow = 0u, .timeStep = 0u };
     virtUartLinkCtx_t uartCtx =
@@ -363,11 +363,11 @@ void test_ISO9141_PBT_ComputeCheckSum(void)
     TEST_ASSERT_EQUAL(THEFT_RUN_PASS, theft_run(&cfg));
 }
 
-void test_ISO9141_PBT_PrepareMessageSerializesCorrectly(void)
+void test_ISO9141_PBT_SerializeMessageWireLayout(void)
 {
     struct theft_run_config cfg = {
-        .name      = "PrepareMessage serializes header/data/cs into wire layout",
-        .prop1     = prop_prepare_message_serializes_correctly,
+        .name      = "SerializeMessage writes header/data/cs in wire layout",
+        .prop1     = prop_serialize_message_wire_layout,
         .type_info = { &message_type_info },
         .trials    = PBT_TRIALS,
     };

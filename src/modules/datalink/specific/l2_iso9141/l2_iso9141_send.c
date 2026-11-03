@@ -10,10 +10,10 @@ OBD2_STATIC obd_status_t L2_ISO9141_ComputeChecksum_Execute(header_t header, obd
 OBD2_STATIC obd_status_t L2_ISO9141_ComputeChecksum_Verify(uint8_t *cs);
 OBD2_STATIC obd_status_t L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t dataLen, uint8_t *cs);
 
-OBD2_STATIC obd_status_t L2_ISO9141_PrepareMessage_Validate(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
-OBD2_STATIC obd_status_t L2_ISO9141_PrepareMessage_Execute(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
-OBD2_STATIC obd_status_t L2_ISO9141_PrepareMessage_Verify(size_t dataLen, size_t *len);
-OBD2_STATIC obd_status_t L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
+OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage_Validate(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
+OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage_Execute(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
+OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage_Verify(size_t dataLen, size_t *len);
+OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
 
 OBD2_STATIC obd_status_t L2_ISO9141_SendMessage_Validate(dataLink_if_t *self, uint8_t *msg, size_t len);
 OBD2_STATIC obd_status_t L2_ISO9141_SendMessage_Execute(dataLink_if_t *self, uint8_t *msg, size_t len);
@@ -117,15 +117,15 @@ exit:
 }
 
 /******************************************
-* title: L2_ISO9141_PrepareMessage_Validate
-* brief: Checks the inputs of L2_ISO9141_PrepareMessage.
+* title: L2_ISO9141_SerializeMessage_Validate
+* brief: Checks the inputs of L2_ISO9141_SerializeMessage.
 * input: sentMsg  - message to serialize
 *        aSentMsg - output buffer
 *        dataLen  - sid + params count, 1..ISO9141_MAX_REQ_DATA_LEN
 *        len      - output for the number of bytes written
 * output: obd_status_t - OK, OBD_ERR_NULL_PTR or OBD_ERR_INVALID_PARAM
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_PrepareMessage_Validate(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len)
+OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage_Validate(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len)
 {
     obd_status_t status = {0};
 
@@ -142,7 +142,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_PrepareMessage_Validate(message_t *sentMsg, 
 }
 
 /******************************************
-* title: L2_ISO9141_PrepareMessage_Execute
+* title: L2_ISO9141_SerializeMessage_Execute
 * brief: Writes header, sid, params and checksum into the wire buffer.
 * input: sentMsg  - message to serialize
 *        aSentMsg - output buffer, at least dataLen + ISO9141_WIRE_OVERHEAD bytes
@@ -150,21 +150,24 @@ OBD2_STATIC obd_status_t L2_ISO9141_PrepareMessage_Validate(message_t *sentMsg, 
 *        len      - output for the number of bytes written
 * output: obd_status_t - always OK
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_PrepareMessage_Execute(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len)
+OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage_Execute(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len)
 {
     obd_status_t status = {0};
     size_t idx = 0;
 
+    // fill the header
     aSentMsg[idx++] = sentMsg->header.fmt;
     aSentMsg[idx++] = sentMsg->header.trgAddr;
     aSentMsg[idx++] = sentMsg->header.srcAddr;
     aSentMsg[idx++] = sentMsg->data.sid;
 
+    // fill the data
     for (uint8_t i = 0; i < dataLen - 1; i++)
     {
         aSentMsg[idx++] = sentMsg->data.param[i];
     }
 
+    // fill the checksum
     aSentMsg[idx++] = sentMsg->cs;
 
     *len = idx;
@@ -172,13 +175,13 @@ OBD2_STATIC obd_status_t L2_ISO9141_PrepareMessage_Execute(message_t *sentMsg, u
 }
 
 /******************************************
-* title: L2_ISO9141_PrepareMessage_Verify
+* title: L2_ISO9141_SerializeMessage_Verify
 * brief: Checks that the frame has exactly header + data + checksum bytes.
 * input: dataLen - sid + params count
 *        len     - number of bytes written
 * output: obd_status_t - OK, or OBD_ERR_COMM_SEND_MSG_FAILED
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_PrepareMessage_Verify(size_t dataLen, size_t *len)
+OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage_Verify(size_t dataLen, size_t *len)
 {
     obd_status_t status = {0};
 
@@ -191,7 +194,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_PrepareMessage_Verify(size_t dataLen, size_t
 }
 
 /******************************************
-* title: L2_ISO9141_PrepareMessage
+* title: L2_ISO9141_SerializeMessage
 * brief: Serializes a message_t into the ISO9141 wire layout
 *        (header, sid, params, checksum).
 * input: sentMsg  - message to serialize
@@ -201,15 +204,15 @@ OBD2_STATIC obd_status_t L2_ISO9141_PrepareMessage_Verify(size_t dataLen, size_t
 * output: obd_status_t - OK, OBD_ERR_NULL_PTR, OBD_ERR_INVALID_PARAM
 *         or OBD_ERR_COMM_SEND_MSG_FAILED
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len)
+OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len)
 {
     obd_status_t status = {0};
 
-    status = L2_ISO9141_PrepareMessage_Validate(sentMsg, aSentMsg, dataLen, len);
+    status = L2_ISO9141_SerializeMessage_Validate(sentMsg, aSentMsg, dataLen, len);
     OBD2_ASSERT_OK(status);
-    status = L2_ISO9141_PrepareMessage_Execute(sentMsg, aSentMsg, dataLen, len);
+    status = L2_ISO9141_SerializeMessage_Execute(sentMsg, aSentMsg, dataLen, len);
     OBD2_ASSERT_OK(status);
-    status = L2_ISO9141_PrepareMessage_Verify(dataLen, len);
+    status = L2_ISO9141_SerializeMessage_Verify(dataLen, len);
 
 exit:
     return status;
@@ -360,7 +363,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_SendRequest_Execute(dataLink_if_t *self, con
     status = L2_ISO9141_ComputeChecksum(msg.header, data, dataLen, &msg.cs);
     OBD2_ASSERT_OK(status);
 
-    status = L2_ISO9141_PrepareMessage(&msg, aSentMsg, dataLen, &len);
+    status = L2_ISO9141_SerializeMessage(&msg, aSentMsg, dataLen, &len);
     OBD2_ASSERT_OK(status);
 
     status = L2_ISO9141_SendMessage(self, aSentMsg, len);

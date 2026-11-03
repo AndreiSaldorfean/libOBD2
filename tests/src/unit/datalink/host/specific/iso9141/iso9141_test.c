@@ -18,7 +18,7 @@
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 extern obd_status_t L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t dataLen, uint8_t *cs);
-extern obd_status_t L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
+extern obd_status_t L2_ISO9141_SerializeMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
 extern obd_status_t L2_ISO9141_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len);
 extern obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t *len);
 extern obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t *protocol);
@@ -40,7 +40,7 @@ void test_ISO9141_SendRecvMessage_000(void)
 
     uint8_t aSentMsg[MSG_WIRE_LEN] = {0};
     size_t wireLen = 0;
-    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, L2_ISO9141_PrepareMessage(&msg, aSentMsg, 2, &wireLen).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, L2_ISO9141_SerializeMessage(&msg, aSentMsg, 2, &wireLen).response);
     TEST_ASSERT_EQUAL_size_t(6, wireLen);
 
     /* The vectors are static: start every run from a clean clock and an empty line.
@@ -201,7 +201,7 @@ void test_ISO9141_Api_NullLink(void)
 
 /******************************************************************
  * send_request accepts 1..7 data bytes (sid + up to 6 params).
- *   0 used to underflow in PrepareMessage; 8 would overrun the frame buffer.
+ *   0 used to underflow in SerializeMessage; 8 would overrun the frame buffer.
  ******************************************************************/
 void test_ISO9141_SendRequest_InvalidDataLen(void)
 {
@@ -212,9 +212,9 @@ void test_ISO9141_SendRequest_InvalidDataLen(void)
 }
 
 /******************************************************************
- * PrepareMessage with dataLen 0 is rejected and leaves the buffer as it was.
+ * SerializeMessage with dataLen 0 is rejected and leaves the buffer as it was.
  ******************************************************************/
-void test_ISO9141_PrepareMessage_ZeroDataLen(void)
+void test_ISO9141_SerializeMessage_ZeroDataLen(void)
 {
     message_t msg = msg_tester;
     uint8_t aSentMsg[MSG_WIRE_LEN];
@@ -224,7 +224,7 @@ void test_ISO9141_PrepareMessage_ZeroDataLen(void)
     memset(aSentMsg, 0xEEu, sizeof(aSentMsg));
     memset(expected, 0xEEu, sizeof(expected));
 
-    obd_status_t status = L2_ISO9141_PrepareMessage(&msg, aSentMsg, 0u, &wireLen);
+    obd_status_t status = L2_ISO9141_SerializeMessage(&msg, aSentMsg, 0u, &wireLen);
 
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_INVALID_PARAM, status.response);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, aSentMsg, MSG_WIRE_LEN);
