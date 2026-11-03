@@ -19,7 +19,8 @@
 #define ISO9141_W5_TIME_MIN (300U)
 
 #define ISO9141_MAX_DATA_FIELD (((uint8_t)(sizeof(obd_data_t)) + 1U))
-
+#define DL_ISO9141_HEADR       ((header_t){.fmt = 0x68, .trgAddr = 0x6A, .srcAddr = 0xF1})
+#define DL_KWP2000_HEADR       ((header_t){.fmt = 0xC0, .trgAddr = 0x33, .srcAddr = 0xF1})
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
 {

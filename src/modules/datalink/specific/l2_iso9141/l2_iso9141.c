@@ -156,9 +156,43 @@ OBD2_STATIC void L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg
         *len = idx;
 }
 
-OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* protocol)
+OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol(dataLink_if_t *self, uint8_t *protocol, uint8_t kb1, uint8_t kb2)
 {
     l2_iso9141_ctx_t *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
+    obd_status_t status = {0}; // ok
+
+    // Store keyword bytes for protocol identification
+    ctx->kb1 = kb1;
+    ctx->kb2 = kb2;
+
+    // ISO9141-2
+    // If 0x08 then 0x68 0x6A 0xF1 header is used always with 7 bytes of data max
+    if (kb1 == 0x08 && kb2 == 0x08)
+    {
+        ctx->header = DL_ISO9141_HEADR;
+        *protocol   = ISO9141;
+    }
+    // Can use KWP2000
+    else if (kb1 == 0x94 && kb2 == 0x94)
+    {
+        // Functional addr
+        // Can use kwp2000 header and len
+        ctx->header = DL_KWP2000_HEADR;
+        *protocol   = ISO9141; /* TODO: Change to KWP2000 once support is added for it */
+    }
+    // Invalid keybytes
+    else
+    {
+        status.response = OBD_ERR_5BAUD_WRONG_KEYBYTES;
+        goto exit;
+    }
+
+exit:
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* protocol)
+{
     obd_status_t status = {0};
     (void)status;
     uint8_t syncByte = 0;
@@ -204,45 +238,8 @@ OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* prot
     status.response = OBD_ERR_5BAUD_WRONG_INV_ADDR;
     OBD2_ASSERT_EQUAL_OR_EXIT((uint8_t)(~targetAddr), invAddr);
 
-    // Store keyword bytes for protocol identification
-    ctx->kb1 = kb1;
-    ctx->kb2 = kb2;
-
-    // ISO9141-2
-    // If 0x08 then 0x68 0x6A 0xF1 header is used always with 7 bytes of data max
-    if (kb1 == 0x08 && kb2 == 0x08)
-    {
-        // Request
-        ctx->header.fmt = 0x68;
-
-        // ECU
-        ctx->header.trgAddr = 0x6A;
-
-        // Tester
-        ctx->header.srcAddr = 0xF1;
-
-        *protocol = ISO9141;
-    }
-    // Can use KWP2000
-    else if (kb1 == 0x94 && kb2 == 0x94)
-    {
-        // Functional addr
-        // Can use kwp2000 header and len
-        ctx->header.fmt |= 0xC0;
-
-        // ECU
-        ctx->header.trgAddr = 0x33;
-
-        // Tester
-        ctx->header.srcAddr = 0xF1;
-
-        *protocol = ISO9141; /* TODO: Change to KWP2000 once support is added for it */
-    }
-    // Invalid keybytes
-    else
-    {
-        status.response = OBD_ERR_5BAUD_WRONG_KEYBYTES;
-    }
+    status = L2_ISO9141_StoreKwbAndSelectProtocol(self, protocol, kb1, kb2);
+    OBD2_ASSERT_OK(status);
 
     memset(&status, 0, sizeof(obd_status_t));
 exit:
