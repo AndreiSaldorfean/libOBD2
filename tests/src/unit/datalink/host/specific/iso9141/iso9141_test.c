@@ -134,3 +134,52 @@ void test_ISO9141_5BaudInit_000(void)
     TEST_ASSERT_EQUAL_HEX8(0x08u, dl_ctx_tester.kb2);
 }
 
+
+/******************************************************************
+ * The ECU sends only the format byte of a response.
+ *   1. The format byte arrives after P2 min, so the header read starts
+ *   2. The target byte never arrives, so the P1 window expires
+ *   3. RecvMessage must report OBD_ERR_COMM_TRGT_BYTE_NOT_RECVD together
+ *      with the P1 timeout, not a bare timeout with response OK
+ ******************************************************************/
+void test_ISO9141_RecvMessage_TargetByteTimeout(void)
+{
+    virtTmrCtx_t timer =
+    {
+        .timeNow        = 0u,
+        .timeStep       = 10u,
+        .timeoutTime    = 0u,
+        .timeoutStarted = false,
+    };
+    virtUartLinkCtx_t uartCtx =
+    {
+        .tmrHandle = &timer,
+    };
+    dataLink_if_t self =
+    {
+        .pProtocolCtx     = &dl_ctx_tester,
+        .pTimingOps       = &tmr_ops,
+        .pTimingHandle    = &timer,
+        .pUartOps         = &uart_ops,
+        .pTransportHandle = &uartCtx,
+    };
+    message_t recvdMsg = {0};
+    size_t recvdLen = 0;
+
+    TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&uartCtx));
+
+    /* 1. Only the format byte is on the line, after P2 min */
+    timer.timeNow = P2_TIME_MIN + timer.timeStep;
+    LIBOBD2_UART_WriteByte(&uartCtx, 0x48u);
+
+    /* P2 starts at the end of the (virtual) request */
+    timer.timeNow = 0u;
+    DL_StartTimeout(&self, P2_TIME_MAX);
+
+    /* 2. + 3. */
+    obd_status_t status = L2_ISO9141_RecvMessage(&self, &recvdMsg, &recvdLen);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_COMM_TRGT_BYTE_NOT_RECVD, status.response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_TIMEOUT_MAX, status.timeout);
+    TEST_ASSERT_EQUAL_HEX8(0x48u, recvdMsg.header.fmt);
+}

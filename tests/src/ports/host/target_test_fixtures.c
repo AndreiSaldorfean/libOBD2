@@ -61,6 +61,7 @@ void targetRunTests()
     /* ISO9141 */
     RUN_TEST(test_ISO9141_SendRecvMessage_000);
     RUN_TEST(test_ISO9141_5BaudInit_000);
+    RUN_TEST(test_ISO9141_RecvMessage_TargetByteTimeout);
     /* ---- DATALINK TESTS ---- */
 
 

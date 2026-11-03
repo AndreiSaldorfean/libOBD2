@@ -59,14 +59,14 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_ISO9141_ReadHeader(dataLink_if_t *self, 
     LIBOBD_StopTimeout(self);
 
     // Target byte
-    status.response = OBD_ERR_COMM_TRGT_BYTE_NOT_RECVD;
     status = DL_ReadByteInTimeframe(self, NULL, buffer + 1, P1_TIME_MIN, P1_TIME_MAX);
-    OBD2_ASSERT_OK(status);
+    status.response = OBD_ERR_COMM_TRGT_BYTE_NOT_RECVD;
+    OBD2_ASSERT_NO_TIMEOUT(status);
 
     // Source byte
-    status.response = OBD_ERR_COMM_SRC_BYTE_NOT_RECVD;
     status = DL_ReadByteInTimeframe(self, NULL, buffer + 2, P1_TIME_MIN, P1_TIME_MAX);
-    OBD2_ASSERT_OK(status);
+    status.response = OBD_ERR_COMM_SRC_BYTE_NOT_RECVD;
+    OBD2_ASSERT_NO_TIMEOUT(status);
 
     memset(&status, 0, sizeof(obd_status_t));
 exit:
@@ -110,11 +110,11 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *
                     + recvdMsg->header.trgAddr
                     + recvdMsg->header.srcAddr;
 
-    status.response = OBD_ERR_COMM_DATA_BYTE_NOT_RECVD;
     while (ISO9141_MAX_DATA_FIELD > idx)
     {
         status = DL_ReadByteInTimeframe(self, &elapsedTime , &byte, P1_TIME_MIN, P1_TIME_MAX);
-        OBD2_ASSERT_OK(status);
+        status.response = OBD_ERR_COMM_DATA_BYTE_NOT_RECVD;
+        OBD2_ASSERT_NO_TIMEOUT(status);
 
         if (byte == runningCheckSum)
         {
