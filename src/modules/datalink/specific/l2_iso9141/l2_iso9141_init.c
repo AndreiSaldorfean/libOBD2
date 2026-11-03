@@ -20,6 +20,13 @@ OBD2_STATIC obd_status_t L2_ISO9141_Connect_Execute(dataLink_if_t *self, uint8_t
 OBD2_STATIC obd_status_t L2_ISO9141_Connect_Verify(dataLink_if_t *self, uint8_t *protocol);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
+/******************************************
+* title: L2_ISO9141_StoreKwbAndSelectProtocol_Validate
+* brief: Checks the inputs of L2_ISO9141_StoreKwbAndSelectProtocol.
+* input: self     - data link, must have a protocol context
+*        protocol - output for the selected protocol
+* output: obd_status_t - OK, or OBD_ERR_NULL_PTR
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol_Validate(dataLink_if_t *self, uint8_t *protocol)
 {
     obd_status_t status = L2_ISO9141_ValidateLinkWithCtx(self);
@@ -34,6 +41,15 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_StoreKwbAndSelectProtocol_Execute
+* brief: Stores the keyword bytes in the context and picks the header and
+*        protocol that go with them.
+* input: self     - data link
+*        protocol - output for the selected protocol
+*        kb1, kb2 - keyword bytes received during 5-baud init
+* output: obd_status_t - OK, or OBD_ERR_5BAUD_WRONG_KEYBYTES
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol_Execute(dataLink_if_t *self, uint8_t *protocol, uint8_t kb1, uint8_t kb2)
 {
     l2_iso9141_ctx_t *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
@@ -69,6 +85,13 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_StoreKwbAndSelectProtocol_Verify
+* brief: Checks that a known protocol was selected and a header was stored.
+* input: self     - data link
+*        protocol - selected protocol
+* output: obd_status_t - OK, or OBD_ERR_PROTOCOL_NOT_FOUND
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol_Verify(dataLink_if_t *self, uint8_t *protocol)
 {
     l2_iso9141_ctx_t *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
@@ -82,6 +105,15 @@ OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol_Verify(dataLink_if
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_StoreKwbAndSelectProtocol
+* brief: Selects the protocol and header from the keyword bytes.
+* input: self     - data link, must have a protocol context
+*        protocol - output for the selected protocol
+*        kb1, kb2 - keyword bytes received during 5-baud init
+* output: obd_status_t - OK, OBD_ERR_NULL_PTR, OBD_ERR_5BAUD_WRONG_KEYBYTES
+*         or OBD_ERR_PROTOCOL_NOT_FOUND
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol(dataLink_if_t *self, uint8_t *protocol, uint8_t kb1, uint8_t kb2)
 {
     obd_status_t status = {0};
@@ -96,6 +128,13 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_5BaudInit_Validate
+* brief: Checks the inputs of L2_ISO9141_5BaudInit.
+* input: self     - data link, must have a protocol context
+*        protocol - output for the selected protocol
+* output: obd_status_t - OK, or OBD_ERR_NULL_PTR
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit_Validate(dataLink_if_t *self, uint8_t *protocol)
 {
     obd_status_t status = L2_ISO9141_ValidateLinkWithCtx(self);
@@ -110,6 +149,15 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_5BaudInit_Execute
+* brief: Runs the ISO9141-2 5-baud wake-up: sends the address at 5 baud,
+*        reads sync and keyword bytes, answers with ~KB2 and reads the
+*        inverted address back.
+* input: self     - data link
+*        protocol - output for the selected protocol
+* output: obd_status_t - OK, or the OBD_ERR_5BAUD_* code of the failed step
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit_Execute(dataLink_if_t *self, uint8_t *protocol)
 {
     obd_status_t status = {0};
@@ -165,6 +213,14 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_5BaudInit_Verify
+* brief: No extra check. The last step of Execute,
+*        L2_ISO9141_StoreKwbAndSelectProtocol, already verifies the result.
+* input: self     - data link (unused)
+*        protocol - selected protocol (unused)
+* output: obd_status_t - always OK
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit_Verify(dataLink_if_t *self, uint8_t *protocol)
 {
     obd_status_t status = {0};
@@ -173,6 +229,14 @@ OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit_Verify(dataLink_if_t *self, uint8_
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_5BaudInit
+* brief: Wakes up the ECU with the ISO9141-2 5-baud init and selects the
+*        protocol from its keyword bytes.
+* input: self     - data link, must have a protocol context
+*        protocol - output for the selected protocol
+* output: obd_status_t - OK, OBD_ERR_NULL_PTR, or the code of the failed step
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* protocol)
 {
     obd_status_t status = {0};
@@ -187,6 +251,13 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_Connect_Validate
+* brief: Checks the inputs of l2_iso9141_connect.
+* input: self     - data link, must have a protocol context
+*        protocol - output for the selected protocol
+* output: obd_status_t - OK, or OBD_ERR_NULL_PTR
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_Connect_Validate(dataLink_if_t *self, uint8_t *protocol)
 {
     obd_status_t status = L2_ISO9141_ValidateLinkWithCtx(self);
@@ -201,6 +272,13 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_Connect_Execute
+* brief: Clears the protocol context and runs the 5-baud init.
+* input: self     - data link
+*        protocol - output for the selected protocol
+* output: obd_status_t - result of L2_ISO9141_5BaudInit
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_Connect_Execute(dataLink_if_t *self, uint8_t *protocol)
 {
     l2_iso9141_ctx_t  *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
@@ -209,6 +287,14 @@ OBD2_STATIC obd_status_t L2_ISO9141_Connect_Execute(dataLink_if_t *self, uint8_t
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_Connect_Verify
+* brief: Checks that the connection left a header in the context. Execute
+*        clears the context first, so a header means init filled it in.
+* input: self     - data link
+*        protocol - selected protocol (unused)
+* output: obd_status_t - OK, or OBD_ERR_PROTOCOL_NOT_FOUND
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_Connect_Verify(dataLink_if_t *self, uint8_t *protocol)
 {
     l2_iso9141_ctx_t *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
@@ -224,6 +310,15 @@ OBD2_STATIC obd_status_t L2_ISO9141_Connect_Verify(dataLink_if_t *self, uint8_t 
 }
 
 /* ================================================ MODULE API ============================================= */
+/******************************************
+* title: l2_iso9141_connect
+* brief: Opens an ISO9141-2 connection to the ECU (5-baud init) and stores
+*        the header to use in the protocol context.
+* input: self     - data link, must have a protocol context
+*        protocol - output for the selected protocol
+* output: obd_status_t - OK, OBD_ERR_NULL_PTR, OBD_ERR_PROTOCOL_NOT_FOUND,
+*         or the OBD_ERR_5BAUD_* code of the failed init step
+******************************************/
 obd_status_t l2_iso9141_connect(dataLink_if_t *self, uint8_t* protocol)
 {
     obd_status_t status = {0};

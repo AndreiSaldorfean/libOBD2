@@ -24,6 +24,14 @@
 #define DL_KWP2000_HEADR         ((header_t){.fmt = 0xC0, .trgAddr = 0x33, .srcAddr = 0xF1})
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 /* ============================================ INLINE FUNCTIONS =========================================== */
+/******************************************
+* title: L2_ISO9141_ValidateLink
+* brief: Checks that the data link has the UART and timer ops and handles
+*        every ISO9141 function needs. The protocol context is not checked
+*        here; functions that use it check it themselves.
+* input: self - data link to check
+* output: obd_status_t - OK, or OBD_ERR_NULL_PTR if any of them is NULL
+******************************************/
 static inline obd_status_t L2_ISO9141_ValidateLink(const dataLink_if_t *self)
 {
     obd_status_t status = {0};
@@ -40,6 +48,12 @@ static inline obd_status_t L2_ISO9141_ValidateLink(const dataLink_if_t *self)
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_ValidateLinkWithCtx
+* brief: Same as L2_ISO9141_ValidateLink, and also checks the protocol context.
+* input: self - data link to check
+* output: obd_status_t - OK, or OBD_ERR_NULL_PTR
+******************************************/
 static inline obd_status_t L2_ISO9141_ValidateLinkWithCtx(const dataLink_if_t *self)
 {
     obd_status_t status = L2_ISO9141_ValidateLink(self);

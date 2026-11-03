@@ -20,6 +20,13 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Execute(dataLink_if_t *self, ob
 OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Verify(obd_data_t *resp);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
+/******************************************
+* title: L2_ISO9141_ReadHeader_Validate
+* brief: Checks the inputs of L2_ISO9141_ReadHeader.
+* input: self   - data link
+*        header - output for the received header
+* output: obd_status_t - OK, or OBD_ERR_NULL_PTR
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Validate(dataLink_if_t *self, header_t *header)
 {
     obd_status_t status = L2_ISO9141_ValidateLink(self);
@@ -34,6 +41,15 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_ReadHeader_Execute
+* brief: Waits for the format byte inside the P2 window, then reads the
+*        target and source bytes with P1 timing.
+* input: self   - data link, with the P2 timeout already running
+*        header - output for the received header
+* output: obd_status_t - OK, or the OBD_ERR_COMM_* code of the missing byte
+*         together with its timeout
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Execute(dataLink_if_t *self, header_t *header)
 {
     uint8_t *buffer     = (uint8_t *)header;
@@ -67,6 +83,13 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_ReadHeader_Verify
+* brief: No extra check. The header bytes are not fixed for a response, so
+*        the checksum in L2_ISO9141_RecvMessage is what catches bad bytes.
+* input: header - received header (unused)
+* output: obd_status_t - always OK
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Verify(header_t *header)
 {
     obd_status_t status = {0};
@@ -74,6 +97,14 @@ OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Verify(header_t *header)
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_ReadHeader
+* brief: Reads the 3-byte ISO9141 header of an ECU response.
+* input: self   - data link, with the P2 timeout already running
+*        header - output for the received header
+* output: obd_status_t - OK, OBD_ERR_NULL_PTR, or the OBD_ERR_COMM_* code of
+*         the missing byte together with its timeout
+******************************************/
 OBD2_STATIC OBD2_INLINE obd_status_t L2_ISO9141_ReadHeader(dataLink_if_t *self, header_t *header)
 {
     obd_status_t status = {0};
@@ -88,6 +119,14 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_RecvMessage_Validate
+* brief: Checks the inputs of L2_ISO9141_RecvMessage.
+* input: self     - data link
+*        recvdMsg - output for the received message
+*        len      - output for the number of data bytes
+* output: obd_status_t - OK, or OBD_ERR_NULL_PTR
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Validate(dataLink_if_t *self, message_t *recvdMsg, size_t* len)
 {
     obd_status_t status = L2_ISO9141_ValidateLink(self);
@@ -102,6 +141,16 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_RecvMessage_Execute
+* brief: Reads the header, then data bytes until one equals the running
+*        checksum, which ends the frame. Restarts the P2 timeout at the end.
+* input: self     - data link, with the P2 timeout already running
+*        recvdMsg - output for the received message
+*        len      - output for the number of data bytes (sid included)
+* output: obd_status_t - OK, the OBD_ERR_COMM_* code of the missing byte,
+*         or OBD_ERR_COMM_RECV_MSG_FAILED when no checksum is found
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Execute(dataLink_if_t *self, message_t *recvdMsg, size_t* len)
 {
     uint8_t *pMsg       = (uint8_t *)recvdMsg;
@@ -144,6 +193,12 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_RecvMessage_Verify
+* brief: Checks that the frame carried at least a sid and fits the data field.
+* input: len - number of data bytes received
+* output: obd_status_t - OK, or OBD_ERR_COMM_RECV_MSG_FAILED
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Verify(size_t* len)
 {
     obd_status_t status = {0};
@@ -156,6 +211,15 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Verify(size_t* len)
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_RecvMessage
+* brief: Receives one ISO9141 frame from the ECU.
+* input: self     - data link, with the P2 timeout already running
+*        recvdMsg - output for the received message
+*        len      - output for the number of data bytes (sid included)
+* output: obd_status_t - OK, OBD_ERR_NULL_PTR, the OBD_ERR_COMM_* code of the
+*         missing byte, or OBD_ERR_COMM_RECV_MSG_FAILED
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t* len)
 {
     obd_status_t status = {0};
@@ -170,6 +234,14 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_RecvResponse_Validate
+* brief: Checks the inputs of l2_iso9141_recv_response.
+* input: self    - data link
+*        resp    - output for the response data
+*        dataLen - output for the number of data bytes
+* output: obd_status_t - OK, or OBD_ERR_NULL_PTR
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Validate(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
 {
     obd_status_t status = L2_ISO9141_ValidateLink(self);
@@ -184,6 +256,14 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_RecvResponse_Execute
+* brief: Receives one frame and copies its data part to resp.
+* input: self    - data link
+*        resp    - output for the response data
+*        dataLen - output for the number of data bytes
+* output: obd_status_t - OK, or the error of L2_ISO9141_RecvMessage
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Execute(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
 {
     message_t recvdMsg = {0};
@@ -199,6 +279,12 @@ exit:
     return status;
 }
 
+/******************************************
+* title: L2_ISO9141_RecvResponse_Verify
+* brief: Checks that the ECU did not answer with a negative response (0x7F).
+* input: resp - received response data
+* output: obd_status_t - OK, or OBD_ERR_COMM_ECU_RESPONSE_7F
+******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Verify(obd_data_t *resp)
 {
     obd_status_t status = {0};
@@ -212,6 +298,15 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Verify(obd_data_t *resp)
 }
 
 /* ================================================ MODULE API ============================================= */
+/******************************************
+* title: l2_iso9141_recv_response
+* brief: Receives the ECU response to the last request over ISO9141-2.
+* input: self    - data link, after l2_iso9141_send_request
+*        resp    - output for the response data (sid + params)
+*        dataLen - output for the number of data bytes
+* output: obd_status_t - OK, OBD_ERR_NULL_PTR, OBD_ERR_COMM_ECU_RESPONSE_7F,
+*         or the error of the failed receive step
+******************************************/
 obd_status_t l2_iso9141_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
 {
     obd_status_t status = {0};

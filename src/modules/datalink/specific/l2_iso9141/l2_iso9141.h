@@ -29,8 +29,37 @@ typedef struct
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
+/******************************************
+* title: l2_iso9141_connect
+* brief: Opens an ISO9141-2 connection to the ECU (5-baud init) and stores
+*        the header to use in the protocol context.
+* input: self     - data link, must have a protocol context
+*        protocol - output for the selected protocol
+* output: obd_status_t - OK, OBD_ERR_NULL_PTR, OBD_ERR_PROTOCOL_NOT_FOUND,
+*         or the OBD_ERR_5BAUD_* code of the failed init step
+******************************************/
 obd_status_t l2_iso9141_connect(dataLink_if_t *self, uint8_t* protocol);
+
+/******************************************
+* title: l2_iso9141_send_request
+* brief: Sends an OBD service request to the ECU over ISO9141-2.
+* input: self            - connected data link, must have a protocol context
+*        serviceRequests - sid and params to send
+*        dataLen         - sid + params count, 1..7 (sid + up to 6 params)
+* output: obd_status_t - OK, OBD_ERR_NULL_PTR, OBD_ERR_INVALID_PARAM,
+*         or the error of the failed send step
+******************************************/
 obd_status_t l2_iso9141_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
+
+/******************************************
+* title: l2_iso9141_recv_response
+* brief: Receives the ECU response to the last request over ISO9141-2.
+* input: self    - data link, after l2_iso9141_send_request
+*        resp    - output for the response data (sid + params)
+*        dataLen - output for the number of data bytes
+* output: obd_status_t - OK, OBD_ERR_NULL_PTR, OBD_ERR_COMM_ECU_RESPONSE_7F,
+*         or the error of the failed receive step
+******************************************/
 obd_status_t l2_iso9141_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
 
 #endif /* L2_ISO9141_H */
