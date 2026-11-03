@@ -1,6 +1,7 @@
 /* ================================================ INCLUDES =============================================== */
 #include "dl_test.h"
 #include "datalink.h"
+#include "datalink_utils.h"
 #include "l2_iso9141.h"
 #include "libobd2_timer_port.h"
 #include "libobd2_uart_port.h"
@@ -153,7 +154,7 @@ void test_DL_ReadByteInTimeframe_000(void)
     setUpLine();
     lineWriteAt(30u, 0x55u);
 
-    obd_status_t status = ReadByteInTimeframe(&dataLink, &elapsed, &byte, P2_TIME_MIN, P2_TIME_MAX);
+    obd_status_t status = DL_ReadByteInTimeframe(&dataLink, &elapsed, &byte, P2_TIME_MIN, P2_TIME_MAX);
 
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
@@ -173,7 +174,7 @@ void test_DL_ReadByteInTimeframe_TooEarly(void)
     setUpLine();
     lineWriteAt(0u, 0x55u);
 
-    obd_status_t status = ReadByteInTimeframe(&dataLink, &elapsed, &byte, P2_TIME_MIN, P2_TIME_MAX);
+    obd_status_t status = DL_ReadByteInTimeframe(&dataLink, &elapsed, &byte, P2_TIME_MIN, P2_TIME_MAX);
 
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_TIMEOUT_MIN, status.timeout);
     TEST_ASSERT_EQUAL_HEX8(0x55u, byte);
@@ -193,7 +194,7 @@ void test_DL_ReadByteInTimeframe_NoByte(void)
     setUpLine();
     timer.timeNow = start;
 
-    obd_status_t status = ReadByteInTimeframe(&dataLink, NULL, &byte, ISO9141_W4_TIME_MIN, timeMax);
+    obd_status_t status = DL_ReadByteInTimeframe(&dataLink, NULL, &byte, ISO9141_W4_TIME_MIN, timeMax);
 
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_TIMEOUT_MAX, status.timeout);
     TEST_ASSERT_GREATER_THAN_UINT32(start + timeMax, timer.timeNow);
@@ -210,7 +211,7 @@ void test_DL_RecvByteBlocking_000(void)
     setUpLine();
     lineWriteAt(1000u, 0xA5u);
 
-    TEST_ASSERT_TRUE(RecvByteBlocking(&dataLink, &byte));
+    TEST_ASSERT_TRUE(DL_RecvByteBlocking(&dataLink, &byte));
     TEST_ASSERT_EQUAL_HEX8(0xA5u, byte);
     TEST_ASSERT_GREATER_THAN_UINT32(1000u, timer.timeNow);
 }
@@ -224,7 +225,7 @@ void test_DL_RecvByteBlocking_NoByte(void)
 
     setUpLine();
 
-    TEST_ASSERT_FALSE(RecvByteBlocking(&dataLink, &byte));
+    TEST_ASSERT_FALSE(DL_RecvByteBlocking(&dataLink, &byte));
     TEST_ASSERT_GREATER_THAN_UINT32(MAX_BLOCKING_RECV_TIME, timer.timeNow);
 }
 
@@ -244,7 +245,7 @@ void test_DL_SendByteBitBanged_000(void)
     setUpLine();
 
     UART_TRACE_Begin("test_DL_SendByteBitBanged_000.vcd");
-    SendByteBitBanged(&dataLink, TARGET_ADDR, 5u);
+    DL_SendByteBitBanged(&dataLink, TARGET_ADDR, 5u);
     UART_TRACE_End();
 
     /* 1. */

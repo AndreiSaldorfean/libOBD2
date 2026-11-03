@@ -1,6 +1,7 @@
 /* ================================================ INCLUDES =============================================== */
 #include "iso9141_pbt_test.h"
 #include "datalink.h"
+#include "datalink_utils.h"
 #include "libobd2_timer_port.h"
 #include "libobd2_uart_port.h"
 #include "statusRetCodes.h"

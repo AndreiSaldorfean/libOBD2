@@ -1,13 +1,13 @@
 /* ================================================ INCLUDES =============================================== */
 #include "l2_iso9141.h"
 #include "datalink.h"
+#include "datalink_utils.h"
 #include "libobd2.h"
 #include "statusRetCodes.h"
 #include "utils.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-#include "timer_utils.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -55,17 +55,17 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_ISO9141_ReadHeader(dataLink_if_t *self, 
     }
 
     status.timeout = OBD_ERR_COMM_P2_TIMEOUT_MIN_TESTER_ECU;
-    OBD2_ASSERT_EQUAL_OR_EXIT(true, TMR_IsTimeoutMinDone(self, P2_TIME_MIN));
+    OBD2_ASSERT_EQUAL_OR_EXIT(true, DL_IsTimeoutMinDone(self, P2_TIME_MIN));
     LIBOBD_StopTimeout(self);
 
     // Target byte
     status.response = OBD_ERR_COMM_TRGT_BYTE_NOT_RECVD;
-    status = ReadByteInTimeframe(self, NULL, buffer + 1, P1_TIME_MIN, P1_TIME_MAX);
+    status = DL_ReadByteInTimeframe(self, NULL, buffer + 1, P1_TIME_MIN, P1_TIME_MAX);
     OBD2_ASSERT_OK(status);
 
     // Source byte
     status.response = OBD_ERR_COMM_SRC_BYTE_NOT_RECVD;
-    status = ReadByteInTimeframe(self, NULL, buffer + 2, P1_TIME_MIN, P1_TIME_MAX);
+    status = DL_ReadByteInTimeframe(self, NULL, buffer + 2, P1_TIME_MIN, P1_TIME_MAX);
     OBD2_ASSERT_OK(status);
 
     memset(&status, 0, sizeof(obd_status_t));
@@ -85,7 +85,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_SendMessage(dataLink_if_t *self, uint8_t *ms
         LIBOBD_Delay(self, P4_TIME_MIN);
     }
 
-    TMR_StartTimeout(self, P2_TIME_MAX);
+    DL_StartTimeout(self, P2_TIME_MAX);
 
     // Clear echo
     LIBOBD_FlushRx(self);
@@ -113,7 +113,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *
     status.response = OBD_ERR_COMM_DATA_BYTE_NOT_RECVD;
     while (((uint8_t)(sizeof(obd_data_t)) + 1U) > idx)
     {
-        status = ReadByteInTimeframe(self, &elapsedTime , &byte, P1_TIME_MIN, P1_TIME_MAX);
+        status = DL_ReadByteInTimeframe(self, &elapsedTime , &byte, P1_TIME_MIN, P1_TIME_MAX);
         OBD2_ASSERT_OK(status);
 
         if (byte == runningCheckSum)
@@ -132,7 +132,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *
 
     status.response = OBD_ERR_COMM_RECV_MSG_FAILED;
 exit:
-    TMR_StartTimeout(self, P2_TIME_MAX);
+    DL_StartTimeout(self, P2_TIME_MAX);
     return status;
 }
 
@@ -170,22 +170,22 @@ OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* prot
     LIBOBD_Delay(self, ISO9141_W5_TIME_MIN);
 
     // Send address byte at 5 baud rate
-    SendByteBitBanged(self, targetAddr, 5);
+    DL_SendByteBitBanged(self, targetAddr, 5);
 
     // Read Sync byte
-    status = ReadByteInTimeframe(self, NULL, &syncByte, ISO9141_W1_TIME_MIN, ISO9141_W1_TIME_MAX);
+    status = DL_ReadByteInTimeframe(self, NULL, &syncByte, ISO9141_W1_TIME_MIN, ISO9141_W1_TIME_MAX);
     status.response = OBD_ERR_5BAUD_SYNC_NOT_RECVD;
     OBD2_ASSERT_NO_TIMEOUT(status);
     status.response = OBD_ERR_5BAUD_WRONG_SYNC_BYTE;
     OBD2_ASSERT_EQUAL_OR_EXIT(0x55, syncByte);
 
     // Receive KB1 (W2 timing: 5-20ms)
-    status = ReadByteInTimeframe(self, NULL, &kb1, ISO9141_W2_TIME_MIN, ISO9141_W2_TIME_MAX);
+    status = DL_ReadByteInTimeframe(self, NULL, &kb1, ISO9141_W2_TIME_MIN, ISO9141_W2_TIME_MAX);
     status.response = OBD_ERR_5BAUD_KB1_NOT_RECVD;
     OBD2_ASSERT_NO_TIMEOUT(status);
 
     // Receive KB2 (W3 timing: 0-20ms)
-    status = ReadByteInTimeframe(self, NULL, &kb2, ISO9141_W3_TIME_MIN, ISO9141_W3_TIME_MAX);
+    status = DL_ReadByteInTimeframe(self, NULL, &kb2, ISO9141_W3_TIME_MIN, ISO9141_W3_TIME_MAX);
     status.response = OBD_ERR_5BAUD_KB2_NOT_RECVD;
     OBD2_ASSERT_NO_TIMEOUT(status);
 
@@ -198,7 +198,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* prot
     LIBOBD_FlushRx(self);
 
     // Receive inverted address from ECU (W4 timing: 25-50ms)
-    status = ReadByteInTimeframe(self, NULL, &invAddr, ISO9141_W4_TIME_MIN, ISO9141_W4_TIME_MAX);
+    status = DL_ReadByteInTimeframe(self, NULL, &invAddr, ISO9141_W4_TIME_MIN, ISO9141_W4_TIME_MAX);
     status.response = OBD_ERR_5BAUD_INV_ADDR_NOT_RECVD;
     OBD2_ASSERT_NO_TIMEOUT(status);
     status.response = OBD_ERR_5BAUD_WRONG_INV_ADDR;

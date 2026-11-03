@@ -1,6 +1,7 @@
 /* ================================================ INCLUDES =============================================== */
 #include "l2_kwp2000.h"
 #include "datalink.h"
+#include "datalink_utils.h"
 #include "statusRetCodes.h"
 #include "utils.h"
 #include <stdio.h>
@@ -70,12 +71,12 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
 
     // Target byte
     status.response = OBD_ERR_COMM_TRGT_BYTE_NOT_RECVD;
-    status = ReadByteInTimeframe(self, NULL, buffer + 1, P1_TIME_MIN, P1_TIME_MAX);
+    status = DL_ReadByteInTimeframe(self, NULL, buffer + 1, P1_TIME_MIN, P1_TIME_MAX);
     OBD2_ASSERT_OK(status);
 
     // Source byte
     status.response = OBD_ERR_COMM_SRC_BYTE_NOT_RECVD;
-    status = ReadByteInTimeframe(self, NULL, buffer + 2, P1_TIME_MIN, P1_TIME_MAX);
+    status = DL_ReadByteInTimeframe(self, NULL, buffer + 2, P1_TIME_MIN, P1_TIME_MAX);
     OBD2_ASSERT_OK(status);
 
     *headerLen = 3;
@@ -86,7 +87,7 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
 
         // Length byte
         status.response = OBD_ERR_COMM_LEN_BYTE_NOT_RECVD;
-        status = ReadByteInTimeframe(self, NULL, buffer + 3, P1_TIME_MIN, P1_TIME_MAX);
+        status = DL_ReadByteInTimeframe(self, NULL, buffer + 3, P1_TIME_MIN, P1_TIME_MAX);
         OBD2_ASSERT_OK(status);
     }
 
@@ -138,14 +139,14 @@ OBD2_STATIC obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recv
     status.response = OBD_ERR_COMM_DATA_BYTE_NOT_RECVD;
     for (int idx = 0; idx < dataLen; idx++)
     {
-        status = ReadByteInTimeframe(self, NULL, pMsg + idx + headerLen + 1, P1_TIME_MIN, P1_TIME_MAX);
+        status = DL_ReadByteInTimeframe(self, NULL, pMsg + idx + headerLen + 1, P1_TIME_MIN, P1_TIME_MAX);
         OBD2_ASSERT_OK(status);
     }
     *len = dataLen;
 
     // Read CS
     status.response = OBD_ERR_COMM_CS_BYTE_NOT_RECVD;
-    status = ReadByteInTimeframe(self, NULL, &recvdMsg->cs, P1_TIME_MIN, P1_TIME_MAX);
+    status = DL_ReadByteInTimeframe(self, NULL, &recvdMsg->cs, P1_TIME_MIN, P1_TIME_MAX);
     OBD2_ASSERT_OK(status);
 
     // P2 Timeout from ECU to ECU

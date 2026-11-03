@@ -1,6 +1,7 @@
 /* ================================================ INCLUDES =============================================== */
 #include "l2_kwp2000.h"
 #include "ecu_datalink.h"
+#include "datalink_utils.h"
 #include "statusRetCodes.h"
 #include "ecu_l2_iso9141.h"
 #include "timing_if.h"

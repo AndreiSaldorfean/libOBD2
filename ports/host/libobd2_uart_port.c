@@ -3,6 +3,7 @@
  * TODO: Therefore a more suitable name and place shall be found */
 /* ================================================ INCLUDES =============================================== */
 #include "datalink.h"
+#include "datalink_utils.h"
 #include "l2_kwp2000.h"
 #include "libobd2.h"
 #include "libobd2_timer_port.h"
@@ -103,7 +104,7 @@ bool LIBOBD2_UART_Init(void* handle)
     Queue_t *pQueue = (Queue_t *)calloc(1, sizeof(Queue_t));
 
     if (!UART_Init_validate(ctx, pQueue)) { return 0; }
-    if (!UART_Init_execute(ctx, pQueue)) { return 0; }
+    if (!UART_Init_execute(ctx, pQueue))  { return 0; }
     // TODO: add some verification
 
     // Other operations

@@ -2,6 +2,7 @@
 #include "uart_trace.h"
 #include "libobd2_uart_port.h"
 #include "datalink.h"
+#include "datalink_utils.h"
 #include "vcd_io.h"
 #include <stdio.h>
 

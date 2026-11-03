@@ -1,6 +1,7 @@
 /* ================================================ INCLUDES =============================================== */
 #include "l2_iso9141.h"
 #include "datalink.h"
+#include "datalink_utils.h"
 #include "libobd2.h"
 #include "statusRetCodes.h"
 #include "utils.h"
@@ -64,19 +65,19 @@ OBD2_STATIC OBD2_INLINE obd_status_t ECU_L2_ISO9141_ReadHeader(dataLink_if_t *se
     obd_status_t status = {0};
 
     // Format byte
-    if (!RecvByteBlocking(self, buffer))
+    if (!DL_RecvByteBlocking(self, buffer))
     {
         status.response = OBD_ERR_COMM_ECU_CONNECTION_CLSD;
         goto exit;
     }
 
     // Target byte
-    status = ReadByteInTimeframe(self, NULL, buffer + 1, P1_TIME_MIN, P1_TIME_MAX);
+    status = DL_ReadByteInTimeframe(self, NULL, buffer + 1, P1_TIME_MIN, P1_TIME_MAX);
     status.response = OBD_ERR_COMM_TRGT_BYTE_NOT_RECVD;
     OBD2_ASSERT_NO_TIMEOUT(status);
 
     // Source byte
-    status = ReadByteInTimeframe(self, NULL, buffer + 2, P1_TIME_MIN, P1_TIME_MAX);
+    status = DL_ReadByteInTimeframe(self, NULL, buffer + 2, P1_TIME_MIN, P1_TIME_MAX);
     status.response = OBD_ERR_COMM_SRC_BYTE_NOT_RECVD;
     OBD2_ASSERT_NO_TIMEOUT(status);
 
@@ -116,7 +117,7 @@ OBD2_STATIC obd_status_t ECU_L2_ISO9141_RecvMessage(dataLink_if_t *self, message
     // Read data
     while(OBD_ERR_TIMEOUT_MAX != status.timeout)
     {
-        status = ReadByteInTimeframe(self, NULL, pMsg + idx + 4, P4_TIME_MIN, 20);
+        status = DL_ReadByteInTimeframe(self, NULL, pMsg + idx + 4, P4_TIME_MIN, 20);
         idx++;
     }
     *len = idx;
@@ -161,7 +162,7 @@ OBD2_STATIC obd_status_t ECU_L2_ISO9141_5BaudInit(dataLink_if_t *self)
 
     status.response = 0x255;
     // Read wake-up byte at 5 baudRate
-    if(!RecvByteBlocking(self, &syncByte)) // TODO: Fix bug here, it shall read bye at 5 baud rate
+    if(!DL_RecvByteBlocking(self, &syncByte)) // TODO: Fix bug here, it shall read bye at 5 baud rate
     {
         goto exit;
     }
@@ -184,7 +185,7 @@ OBD2_STATIC obd_status_t ECU_L2_ISO9141_5BaudInit(dataLink_if_t *self)
     LIBOBD_FlushRx(self);
 
     // Receive kb2 inverted
-    status = ReadByteInTimeframe(self, NULL, &kb2Inverted, 0, ISO9141_W4_TIME_MAX);
+    status = DL_ReadByteInTimeframe(self, NULL, &kb2Inverted, 0, ISO9141_W4_TIME_MAX);
     OBD2_ASSERT_EQUAL_OR_EXIT((uint8_t)~0x08, kb2Inverted);
 
     // Send inverted address
