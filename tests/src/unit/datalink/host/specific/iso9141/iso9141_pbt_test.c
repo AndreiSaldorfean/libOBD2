@@ -23,8 +23,8 @@
 #define MSG_QUEUE_SIZE    16u
 
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-extern uint8_t L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t dataLen);
-extern void L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
+extern obd_status_t L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t dataLen, uint8_t *cs);
+extern obd_status_t L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
 extern obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t *len);
 static enum theft_alloc_res alloc_arr(struct theft *t, void *env, void **output);
 static enum theft_alloc_res alloc_time(struct theft *t, void *env, void **output);
@@ -153,14 +153,14 @@ static enum theft_trial_res prop_message_checksum(struct theft *t, void *arg)
     uint8_t realCs     = 0;
     uint8_t expectedCs = 0;
 
-    L2_ISO9141_PrepareMessage(&msg, aSentMsg, 7, &len);
+    if (OBD_STATUS_OK != L2_ISO9141_PrepareMessage(&msg, aSentMsg, 7, &len).response) { return THEFT_TRIAL_FAIL; }
 
     /* aSentMsg holds 11 bytes: 3 header + sid + 6 params + cs. The checksum
      * covers everything but the trailing cs byte itself, i.e. the first 10
      * bytes -- TESTUTIL_ComputeChecksum sums (size - 1) bytes, so size=11. */
     expectedCs = TESTUTIL_ComputeChecksum(aSentMsg, 11);
 
-    realCs     = L2_ISO9141_ComputeChecksum(msg.header, msg.data, 7);
+    if (OBD_STATUS_OK != L2_ISO9141_ComputeChecksum(msg.header, msg.data, 7, &realCs).response) { return THEFT_TRIAL_FAIL; }
 
     if (realCs != expectedCs) { return THEFT_TRIAL_FAIL; }
     return THEFT_TRIAL_PASS;
@@ -178,7 +178,7 @@ static enum theft_trial_res prop_prepare_message_serializes_correctly(struct the
     uint8_t aSentMsg[MSG_WIRE_LEN] = {0};
     size_t len = 0;
 
-    L2_ISO9141_PrepareMessage(&msg, aSentMsg, MSG_DATA_LEN, &len);
+    if (OBD_STATUS_OK != L2_ISO9141_PrepareMessage(&msg, aSentMsg, MSG_DATA_LEN, &len).response) { return THEFT_TRIAL_FAIL; }
 
     if (len != MSG_WIRE_LEN) { return THEFT_TRIAL_FAIL; }
 
@@ -208,13 +208,13 @@ static enum theft_trial_res prop_send_then_recv_roundtrip(struct theft *t, void 
 {
     (void)t;
     message_t msg = *(message_t *)arg;
-    msg.cs = L2_ISO9141_ComputeChecksum(msg.header, msg.data, MSG_DATA_LEN);
+    if (OBD_STATUS_OK != L2_ISO9141_ComputeChecksum(msg.header, msg.data, MSG_DATA_LEN, &msg.cs).response) { return THEFT_TRIAL_FAIL; }
 
     if (hasPrematureChecksumMatch(msg.header, msg.data, MSG_DATA_LEN)) { return THEFT_TRIAL_SKIP; }
 
     uint8_t aSentMsg[MSG_WIRE_LEN] = {0};
     size_t wireLen = 0;
-    L2_ISO9141_PrepareMessage(&msg, aSentMsg, MSG_DATA_LEN, &wireLen);
+    if (OBD_STATUS_OK != L2_ISO9141_PrepareMessage(&msg, aSentMsg, MSG_DATA_LEN, &wireLen).response) { return THEFT_TRIAL_FAIL; }
 
     virtTmrCtx_t      timer                 = { .timeNow = 0u, .timeStep = 0u };
     virtUartLinkCtx_t uartCtx =

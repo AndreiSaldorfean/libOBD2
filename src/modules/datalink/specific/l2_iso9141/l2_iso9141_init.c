@@ -5,11 +5,36 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
+OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol_Validate(dataLink_if_t *self, uint8_t *protocol);
+OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol_Execute(dataLink_if_t *self, uint8_t *protocol, uint8_t kb1, uint8_t kb2);
+OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol_Verify(dataLink_if_t *self, uint8_t *protocol);
 OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol(dataLink_if_t *self, uint8_t *protocol, uint8_t kb1, uint8_t kb2);
+
+OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit_Validate(dataLink_if_t *self, uint8_t *protocol);
+OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit_Execute(dataLink_if_t *self, uint8_t *protocol);
+OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit_Verify(dataLink_if_t *self, uint8_t *protocol);
 OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* protocol);
 
+OBD2_STATIC obd_status_t L2_ISO9141_Connect_Validate(dataLink_if_t *self, uint8_t *protocol);
+OBD2_STATIC obd_status_t L2_ISO9141_Connect_Execute(dataLink_if_t *self, uint8_t *protocol);
+OBD2_STATIC obd_status_t L2_ISO9141_Connect_Verify(dataLink_if_t *self, uint8_t *protocol);
+
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol(dataLink_if_t *self, uint8_t *protocol, uint8_t kb1, uint8_t kb2)
+OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol_Validate(dataLink_if_t *self, uint8_t *protocol)
+{
+    obd_status_t status = L2_ISO9141_ValidateLinkWithCtx(self);
+    OBD2_ASSERT_OK(status);
+
+    if (NULL == protocol)
+    {
+        status.response = OBD_ERR_NULL_PTR;
+    }
+
+exit:
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol_Execute(dataLink_if_t *self, uint8_t *protocol, uint8_t kb1, uint8_t kb2)
 {
     l2_iso9141_ctx_t *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
     obd_status_t status = {0}; // ok
@@ -44,7 +69,48 @@ exit:
     return status;
 }
 
-OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* protocol)
+OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol_Verify(dataLink_if_t *self, uint8_t *protocol)
+{
+    l2_iso9141_ctx_t *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
+    obd_status_t status = {0};
+
+    if (((ISO9141 != *protocol) && (KWP2000 != *protocol)) || (0U == ctx->header.fmt))
+    {
+        status.response = OBD_ERR_PROTOCOL_NOT_FOUND;
+    }
+
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol(dataLink_if_t *self, uint8_t *protocol, uint8_t kb1, uint8_t kb2)
+{
+    obd_status_t status = {0};
+
+    status = L2_ISO9141_StoreKwbAndSelectProtocol_Validate(self, protocol);
+    OBD2_ASSERT_OK(status);
+    status = L2_ISO9141_StoreKwbAndSelectProtocol_Execute(self, protocol, kb1, kb2);
+    OBD2_ASSERT_OK(status);
+    status = L2_ISO9141_StoreKwbAndSelectProtocol_Verify(self, protocol);
+
+exit:
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit_Validate(dataLink_if_t *self, uint8_t *protocol)
+{
+    obd_status_t status = L2_ISO9141_ValidateLinkWithCtx(self);
+    OBD2_ASSERT_OK(status);
+
+    if (NULL == protocol)
+    {
+        status.response = OBD_ERR_NULL_PTR;
+    }
+
+exit:
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit_Execute(dataLink_if_t *self, uint8_t *protocol)
 {
     obd_status_t status = {0};
     (void)status;
@@ -99,11 +165,75 @@ exit:
     return status;
 }
 
-/* ================================================ MODULE API ============================================= */
-obd_status_t l2_iso9141_connect(dataLink_if_t *self, uint8_t* protocol)
+OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit_Verify(dataLink_if_t *self, uint8_t *protocol)
+{
+    obd_status_t status = {0};
+    (void)self;
+    (void)protocol;
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* protocol)
+{
+    obd_status_t status = {0};
+
+    status = L2_ISO9141_5BaudInit_Validate(self, protocol);
+    OBD2_ASSERT_OK(status);
+    status = L2_ISO9141_5BaudInit_Execute(self, protocol);
+    OBD2_ASSERT_OK(status);
+    status = L2_ISO9141_5BaudInit_Verify(self, protocol);
+
+exit:
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_Connect_Validate(dataLink_if_t *self, uint8_t *protocol)
+{
+    obd_status_t status = L2_ISO9141_ValidateLinkWithCtx(self);
+    OBD2_ASSERT_OK(status);
+
+    if (NULL == protocol)
+    {
+        status.response = OBD_ERR_NULL_PTR;
+    }
+
+exit:
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_Connect_Execute(dataLink_if_t *self, uint8_t *protocol)
 {
     l2_iso9141_ctx_t  *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
     memset(ctx, 0, sizeof(l2_iso9141_ctx_t));
     obd_status_t status = L2_ISO9141_5BaudInit(self, protocol);
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_Connect_Verify(dataLink_if_t *self, uint8_t *protocol)
+{
+    l2_iso9141_ctx_t *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
+    obd_status_t status = {0};
+    (void)protocol;
+
+    if (0U == ctx->header.fmt)
+    {
+        status.response = OBD_ERR_PROTOCOL_NOT_FOUND;
+    }
+
+    return status;
+}
+
+/* ================================================ MODULE API ============================================= */
+obd_status_t l2_iso9141_connect(dataLink_if_t *self, uint8_t* protocol)
+{
+    obd_status_t status = {0};
+
+    status = L2_ISO9141_Connect_Validate(self, protocol);
+    OBD2_ASSERT_OK(status);
+    status = L2_ISO9141_Connect_Execute(self, protocol);
+    OBD2_ASSERT_OK(status);
+    status = L2_ISO9141_Connect_Verify(self, protocol);
+
+exit:
     return status;
 }

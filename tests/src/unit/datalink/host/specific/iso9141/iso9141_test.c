@@ -17,8 +17,8 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-extern uint8_t L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t dataLen);
-extern void L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
+extern obd_status_t L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t dataLen, uint8_t *cs);
+extern obd_status_t L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
 extern obd_status_t L2_ISO9141_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len);
 extern obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t *len);
 extern obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t *protocol);
@@ -35,12 +35,12 @@ void test_ISO9141_SendRecvMessage_000(void)
 {
     dataLink_if_t *self = &dl_tester;
     message_t msg = msg_tester;
-    msg.cs = L2_ISO9141_ComputeChecksum(msg.header, msg.data, MSG_DATA_LEN);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, L2_ISO9141_ComputeChecksum(msg.header, msg.data, MSG_DATA_LEN, &msg.cs).response);
     TEST_ASSERT_EQUAL_HEX8(msg_tester.cs, msg.cs);
 
     uint8_t aSentMsg[MSG_WIRE_LEN] = {0};
     size_t wireLen = 0;
-    L2_ISO9141_PrepareMessage(&msg, aSentMsg, 2, &wireLen);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, L2_ISO9141_PrepareMessage(&msg, aSentMsg, 2, &wireLen).response);
     TEST_ASSERT_EQUAL_size_t(6, wireLen);
 
     /* The vectors are static: start every run from a clean clock and an empty line.

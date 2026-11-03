@@ -5,11 +5,36 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
+OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Validate(dataLink_if_t *self, header_t *header);
+OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Execute(dataLink_if_t *self, header_t *header);
+OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Verify(header_t *header);
 OBD2_STATIC OBD2_INLINE obd_status_t L2_ISO9141_ReadHeader(dataLink_if_t *self, header_t *header);
+
+OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Validate(dataLink_if_t *self, message_t *recvdMsg, size_t* len);
+OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Execute(dataLink_if_t *self, message_t *recvdMsg, size_t* len);
+OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Verify(size_t* len);
 OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t* len);
 
+OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Validate(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
+OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Execute(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
+OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Verify(obd_data_t *resp);
+
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-OBD2_STATIC OBD2_INLINE obd_status_t L2_ISO9141_ReadHeader(dataLink_if_t *self, header_t *header)
+OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Validate(dataLink_if_t *self, header_t *header)
+{
+    obd_status_t status = L2_ISO9141_ValidateLink(self);
+    OBD2_ASSERT_OK(status);
+
+    if (NULL == header)
+    {
+        status.response = OBD_ERR_NULL_PTR;
+    }
+
+exit:
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Execute(dataLink_if_t *self, header_t *header)
 {
     uint8_t *buffer     = (uint8_t *)header;
     obd_status_t status = {0};
@@ -42,7 +67,42 @@ exit:
     return status;
 }
 
-OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t* len)
+OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Verify(header_t *header)
+{
+    obd_status_t status = {0};
+    (void)header;
+    return status;
+}
+
+OBD2_STATIC OBD2_INLINE obd_status_t L2_ISO9141_ReadHeader(dataLink_if_t *self, header_t *header)
+{
+    obd_status_t status = {0};
+
+    status = L2_ISO9141_ReadHeader_Validate(self, header);
+    OBD2_ASSERT_OK(status);
+    status = L2_ISO9141_ReadHeader_Execute(self, header);
+    OBD2_ASSERT_OK(status);
+    status = L2_ISO9141_ReadHeader_Verify(header);
+
+exit:
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Validate(dataLink_if_t *self, message_t *recvdMsg, size_t* len)
+{
+    obd_status_t status = L2_ISO9141_ValidateLink(self);
+    OBD2_ASSERT_OK(status);
+
+    if ((NULL == recvdMsg) || (NULL == len))
+    {
+        status.response = OBD_ERR_NULL_PTR;
+    }
+
+exit:
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Execute(dataLink_if_t *self, message_t *recvdMsg, size_t* len)
 {
     uint8_t *pMsg       = (uint8_t *)recvdMsg;
     obd_status_t status = {0};
@@ -84,25 +144,84 @@ exit:
     return status;
 }
 
-/* ================================================ MODULE API ============================================= */
-obd_status_t l2_iso9141_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
+OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Verify(size_t* len)
+{
+    obd_status_t status = {0};
+
+    if ((0U == *len) || (*len > ISO9141_MAX_DATA_FIELD))
+    {
+        status.response = OBD_ERR_COMM_RECV_MSG_FAILED;
+    }
+
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t* len)
+{
+    obd_status_t status = {0};
+
+    status = L2_ISO9141_RecvMessage_Validate(self, recvdMsg, len);
+    OBD2_ASSERT_OK(status);
+    status = L2_ISO9141_RecvMessage_Execute(self, recvdMsg, len);
+    OBD2_ASSERT_OK(status);
+    status = L2_ISO9141_RecvMessage_Verify(len);
+
+exit:
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Validate(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
+{
+    obd_status_t status = L2_ISO9141_ValidateLink(self);
+    OBD2_ASSERT_OK(status);
+
+    if ((NULL == resp) || (NULL == dataLen))
+    {
+        status.response = OBD_ERR_NULL_PTR;
+    }
+
+exit:
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Execute(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
 {
     message_t recvdMsg = {0};
     obd_status_t status;
 
-    status.response = OBD_ERR_COMM_RECV_MSG_FAILED;
     status = L2_ISO9141_RecvMessage(self, &recvdMsg, dataLen);
     OBD2_ASSERT_OK(status);
 
     *resp = recvdMsg.data;
 
+    memset(&status, 0, sizeof(obd_status_t));
+exit:
+    return status;
+}
+
+OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Verify(obd_data_t *resp)
+{
+    obd_status_t status = {0};
+
     if (resp->sid == 0x7F)
     {
         status.response = OBD_ERR_COMM_ECU_RESPONSE_7F;
-        goto exit;
     }
 
-    memset(&status, 0, sizeof(obd_status_t));
+    return status;
+}
+
+/* ================================================ MODULE API ============================================= */
+obd_status_t l2_iso9141_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
+{
+    obd_status_t status = {0};
+
+    status = L2_ISO9141_RecvResponse_Validate(self, resp, dataLen);
+    OBD2_ASSERT_OK(status);
+    status = L2_ISO9141_RecvResponse_Execute(self, resp, dataLen);
+    OBD2_ASSERT_OK(status);
+    status = L2_ISO9141_RecvResponse_Verify(resp);
+
 exit:
     return status;
 }
