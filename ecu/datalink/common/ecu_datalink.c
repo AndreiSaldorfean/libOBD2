@@ -17,19 +17,19 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 static dl_connect_t initProtocols[NUM_SPT_PROTOCOLS ] =
 {
-    [ISO9141] = ecu_iso9141_connect,
+    [ISO9141] = ECU_ISO9141_Connect,
 };
 
 static dl_send_request_t sendRequests[NUM_SPT_PROTOCOLS] =
 {
 
-    [ISO9141] = ecu_iso9141_send_request,
+    [ISO9141] = ECU_ISO9141_SendRequest,
 };
 
 static dl_recv_response_t recvResponses[NUM_SPT_PROTOCOLS] =
 {
 
-    [ISO9141] = ecu_iso9141_recv_response,
+    [ISO9141] = ECU_ISO9141_RecvResponse,
 };
 
 /* ============================================ GLOBAL VARIABLES =========================================== */

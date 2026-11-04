@@ -128,7 +128,7 @@ exit:
 
 /******************************************
 * title: ISO9141_RecvResponse_Validate
-* brief: Checks the arguments of iso9141_recv_response. The link itself is
+* brief: Checks the arguments of ISO9141_RecvResponse. The link itself is
 *        checked by DL_RecvResponse.
 ******************************************/
 OBD2_STATIC obd_status_t ISO9141_RecvResponse_Validate(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
@@ -182,10 +182,10 @@ OBD2_STATIC obd_status_t ISO9141_RecvResponse_Verify(const obd_data_t *resp)
 
 /* ================================================ MODULE API ============================================= */
 /******************************************
-* title: iso9141_recv_response
+* title: ISO9141_RecvResponse
 * brief: Receives the ECU response to the last request over ISO9141-2.
 ******************************************/
-obd_status_t iso9141_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
+obd_status_t ISO9141_RecvResponse(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
 {
     obd_status_t status = {0};
 

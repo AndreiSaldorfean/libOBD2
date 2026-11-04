@@ -112,7 +112,7 @@ exit:
 
 /******************************************
 * title: ISO9141_Connect_Validate
-* brief: Checks the arguments of iso9141_connect. The link itself is
+* brief: Checks the arguments of ISO9141_Connect. The link itself is
 *        checked by DL_Connect.
 ******************************************/
 OBD2_STATIC obd_status_t ISO9141_Connect_Validate(dataLink_if_t *self, uint8_t *protocol)
@@ -161,11 +161,11 @@ OBD2_STATIC obd_status_t ISO9141_Connect_Verify(dataLink_if_t *self)
 
 /* ================================================ MODULE API ============================================= */
 /******************************************
-* title: iso9141_connect
+* title: ISO9141_Connect
 * brief: Opens an ISO9141-2 connection to the ECU (5-baud init) and stores
 *        the header to use in the protocol context.
 ******************************************/
-obd_status_t iso9141_connect(dataLink_if_t *self, uint8_t* protocol)
+obd_status_t ISO9141_Connect(dataLink_if_t *self, uint8_t* protocol)
 {
     obd_status_t status = {0};
 

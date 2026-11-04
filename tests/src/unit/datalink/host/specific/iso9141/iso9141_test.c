@@ -194,8 +194,8 @@ void test_ISO9141_SendRequest_InvalidDataLen(void)
 
     tmr_ctx_tester.timeNow = 0u;
 
-    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_INVALID_PARAM, iso9141_send_request(&dl_tester, &data, 0u).response);
-    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_INVALID_PARAM, iso9141_send_request(&dl_tester, &data, 8u).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_INVALID_PARAM, ISO9141_SendRequest(&dl_tester, &data, 0u).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_INVALID_PARAM, ISO9141_SendRequest(&dl_tester, &data, 8u).response);
     TEST_ASSERT_EQUAL_UINT32(0u, tmr_ctx_tester.timeNow);
 }
 

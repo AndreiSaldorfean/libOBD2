@@ -47,8 +47,8 @@ typedef struct
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-obd_status_t kwp_connect(dataLink_if_t *self, uint8_t* protocol);
-obd_status_t kwp_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
-obd_status_t kwp_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
+obd_status_t KWP_Connect(dataLink_if_t *self, uint8_t* protocol);
+obd_status_t KWP_SendRequest(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
+obd_status_t KWP_RecvResponse(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
 
 #endif /* KWP2000_H */

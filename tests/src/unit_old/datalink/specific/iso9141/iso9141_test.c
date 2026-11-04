@@ -126,9 +126,9 @@ static dataLink_if_t ecu_iso9141_dataLink_tx =
     .pTimingHandle    = &tmrCtxTx,
     .pTransportHandle = &uartCtxTx,
     .pUartOps    = &iso9141_transportOps,
-    .connect          = ecu_iso9141_connect,
-    .send_request     = ecu_iso9141_send_request,
-    .recv_response    = ecu_iso9141_recv_response,
+    .connect          = ECU_ISO9141_Connect,
+    .send_request     = ECU_ISO9141_SendRequest,
+    .recv_response    = ECU_ISO9141_RecvResponse,
 };
 
 static dataLink_if_t iso9141_dataLink_tx =
@@ -138,9 +138,9 @@ static dataLink_if_t iso9141_dataLink_tx =
     .pTimingHandle    = &tmrCtxTx,
     .pTransportHandle = &uartCtxTx,
     .pUartOps    = &iso9141_transportOps,
-    .connect          = iso9141_connect,
-    .send_request     = iso9141_send_request,
-    .recv_response    = iso9141_recv_response,
+    .connect          = ISO9141_Connect,
+    .send_request     = ISO9141_SendRequest,
+    .recv_response    = ISO9141_RecvResponse,
 };
 
 static dataLink_if_t iso9141_dataLink_rx =
@@ -150,9 +150,9 @@ static dataLink_if_t iso9141_dataLink_rx =
     .pTimingHandle    = &tmrCtxRx,
     .pTransportHandle = &uartCtxRx,
     .pUartOps    = &iso9141_transportOps,
-    .connect          = iso9141_connect,
-    .send_request     = iso9141_send_request,
-    .recv_response    = iso9141_recv_response,
+    .connect          = ISO9141_Connect,
+    .send_request     = ISO9141_SendRequest,
+    .recv_response    = ISO9141_RecvResponse,
 };
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
@@ -326,8 +326,8 @@ static void test_ISO9141_connect_000_Sender(void *param)
 
     (void)param;
 
-    actual = iso9141_connect(pDataLinkTx, &protocol);
-    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "iso9141_connect");
+    actual = ISO9141_Connect(pDataLinkTx, &protocol);
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "ISO9141_Connect");
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
@@ -360,9 +360,9 @@ static void test_ISO9141_send_request_000_Sender(void *param)
     LIBOBD2_TMR_StartTimeout(pDataLinkTx, P3_TIME_MAX);
     LIBOBD2_TMR_Delay(pDataLinkTx, P3_TIME_MIN);
 
-    actual = iso9141_send_request(pDataLinkTx, &iso9141_obd_data_00, 1);
+    actual = ISO9141_SendRequest(pDataLinkTx, &iso9141_obd_data_00, 1);
     LIBOBD2_TMR_StopTimeout(pDataLinkTx);
-    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "kwp_send_request");
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "KWP_SendRequest");
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
@@ -420,8 +420,8 @@ static void test_ISO9141_recv_response_000_Receiver(void *param)
     LIBOBD2_TMR_SetTimeSample(pDataLinkRx, timeSample);
     LIBOBD2_TMR_StartTimeout(pDataLinkRx, P2_TIME_MAX);
 
-    actual = iso9141_recv_response(pDataLinkRx, &resp, &len);
-    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "kwp_recv_response return");
+    actual = ISO9141_RecvResponse(pDataLinkRx, &resp, &len);
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "KWP_RecvResponse return");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x81, resp.sid, "resp sid");
 
     g_receiver_done = pdTRUE;
@@ -646,7 +646,7 @@ void test_ISO9141_PrepareMessage_000(void)
 // Description: Test successful KWP2000 connection establishment via 5-baud initialization
 // Type: Positive
 // Steps:
-//  - kwp_connect resets context, initializes timing and transport, then calls KWP_Init
+//  - KWP_Connect resets context, initializes timing and transport, then calls KWP_Init
 //  - ECU sim performs the full 5-baud handshake (sync, KB1, KB2, inverted address)
 //  - Expected: OBD_STATUS_OK, CONN_OK bit set in connection status
 // ==========================================================================================================
@@ -696,7 +696,7 @@ void test_ISO9141_connect_000(void)
 // Steps:
 //  - Set kwpCtx.header to known state (3-byte header format, len=0)
 //  - Set up P3 timing (start timeout, delay P3_TIME_MIN)
-//  - Call kwp_send_request with request_00 (sid=0x81, param=0x01)
+//  - Call KWP_SendRequest with request_00 (sid=0x81, param=0x01)
 //  - ECU sim drains MSG_00_SIZE received bytes
 //  - Expected response OBD_STATUS_OK
 // ==========================================================================================================
@@ -746,7 +746,7 @@ void test_ISO9141_send_request_000(void)
 // Steps:
 //  - ECU sim sends 5-byte wire message: {0xC1, 0x33, 0xF1, 0x81, 0x45}
 //    (fmt.bit.len=1 → 3-byte header, 1 data byte, 1 cs byte)
-//  - Receiver sets P2 timeout, delays P2_TIME_MIN, calls kwp_recv_response
+//  - Receiver sets P2 timeout, delays P2_TIME_MIN, calls KWP_RecvResponse
 //  - Expected: OBD_STATUS_OK, resp.positive.sid == 0x81
 // ==========================================================================================================
 void test_ISO9141_recv_response_000(void)

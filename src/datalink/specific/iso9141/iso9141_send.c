@@ -96,7 +96,7 @@ OBD2_STATIC obd_status_t ISO9141_SendMessage(dataLink_if_t *self, const uint8_t 
 
 /******************************************
 * title: ISO9141_SendRequest_Validate
-* brief: Checks the arguments of iso9141_send_request. The link itself is
+* brief: Checks the arguments of ISO9141_SendRequest. The link itself is
 *        checked by DL_SendRequest.
 ******************************************/
 OBD2_STATIC obd_status_t ISO9141_SendRequest_Validate(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
@@ -137,10 +137,10 @@ OBD2_STATIC obd_status_t ISO9141_SendRequest_Execute(dataLink_if_t *self, const 
 
 /* ================================================ MODULE API ============================================= */
 /******************************************
-* title: iso9141_send_request
+* title: ISO9141_SendRequest
 * brief: Sends an OBD service request to the ECU over ISO9141-2.
 ******************************************/
-obd_status_t iso9141_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
+obd_status_t ISO9141_SendRequest(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
 {
     obd_status_t status = {0};
 

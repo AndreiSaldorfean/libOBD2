@@ -20,7 +20,7 @@ OBD2_STATIC libobd2_service_t libobd2Services[OBD2_MAX_NUM_SERVICES] = {OBD_SUPP
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-static obd_status_t dispatchSid(obd_ctx_t* ctx, libobd2_service_t *libobd2Service, libobd2_data_t* response, size_t * respLen)
+static obd_status_t LibOBD2_DispatchSid(obd_ctx_t* ctx, libobd2_service_t *libobd2Service, libobd2_data_t* response, size_t * respLen)
 {
     dataLink_if_t* pDataLink = ctx->pDataLink;
     obd_status_t status = {0};
@@ -102,7 +102,7 @@ exit:
     return status;
 }
 
-static void decodeLiveData(libobd2_data_t *buffer, uint8_t *response)
+static void LibOBD2_DecodeLiveData(libobd2_data_t *buffer, uint8_t *response)
 {
     uint8_t pid = buffer[0].data.param[0];
 
@@ -114,7 +114,7 @@ static void decodeLiveData(libobd2_data_t *buffer, uint8_t *response)
     }
 }
 
-static void decodeVehicleInfo(libobd2_data_t *buffer, size_t bufferLen, uint8_t *response, size_t* responseLen)
+static void LibOBD2_DecodeVehicleInfo(libobd2_data_t *buffer, size_t bufferLen, uint8_t *response, size_t* responseLen)
 {
     uint8_t pid = buffer[0].data.param[0];
 
@@ -129,7 +129,7 @@ static void decodeVehicleInfo(libobd2_data_t *buffer, size_t bufferLen, uint8_t 
     }
 }
 
-static void decodeAndSend(libobd2_data_t *buffer, size_t bufferLen, uint8_t *response, size_t* responseLen)
+static void LibOBD2_DecodeAndSend(libobd2_data_t *buffer, size_t bufferLen, uint8_t *response, size_t* responseLen)
 {
     uint8_t sid = 0;
 
@@ -141,11 +141,11 @@ static void decodeAndSend(libobd2_data_t *buffer, size_t bufferLen, uint8_t *res
     switch (sid)
     {
         case SID_SHOW_CURRENT_DATA:
-            decodeLiveData(buffer, response);
+            LibOBD2_DecodeLiveData(buffer, response);
             *responseLen = 1;
         break;
         case SID_REQUEST_VEHICLE_INFO:
-            decodeVehicleInfo(buffer, bufferLen, response, responseLen);
+            LibOBD2_DecodeVehicleInfo(buffer, bufferLen, response, responseLen);
         break;
 
         // Currently not supported
@@ -198,10 +198,10 @@ obd_status_t LibOBD2_RequestService(
         goto exit;
     }
 
-    status = dispatchSid(ctx, service, responseBuffer, &respBufLen);
+    status = LibOBD2_DispatchSid(ctx, service, responseBuffer, &respBufLen);
     OBD2_ASSERT_OK(status);
 
-    decodeAndSend(responseBuffer, respBufLen, response, responseLen);
+    LibOBD2_DecodeAndSend(responseBuffer, respBufLen, response, responseLen);
 
 exit:
     return status;

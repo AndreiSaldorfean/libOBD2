@@ -75,9 +75,9 @@ static dataLink_if_t dl_ecu =
     .pTimingHandle    = &tmr_ctx_ecu,
     .pUartOps         = &uart_ops,
     .pTransportHandle = &uart_ctx_ecu,
-    .connect          = ecu_iso9141_connect,
-    .send_request     = ecu_iso9141_send_request,
-    .recv_response    = ecu_iso9141_recv_response,
+    .connect          = ECU_ISO9141_Connect,
+    .send_request     = ECU_ISO9141_SendRequest,
+    .recv_response    = ECU_ISO9141_RecvResponse,
 };
 
 static dataLink_if_t dl_tester =
@@ -87,9 +87,9 @@ static dataLink_if_t dl_tester =
     .pTimingHandle    = &tmr_ctx_tester,
     .pUartOps         = &uart_ops,
     .pTransportHandle = &uart_ctx_tester,
-    .connect          = iso9141_connect,
-    .send_request     = iso9141_send_request,
-    .recv_response    = iso9141_recv_response,
+    .connect          = ISO9141_Connect,
+    .send_request     = ISO9141_SendRequest,
+    .recv_response    = ISO9141_RecvResponse,
 };
 
 #endif /* DATALINK_TEST_VECTORS_000_H */

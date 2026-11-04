@@ -104,9 +104,9 @@ void test_LIBOBD2_0(void)
         .pTimingHandle = &tmrCtx,
         .pTransportHandle = &uartCtx,
         .pUartOps = &transportOps,
-        .connect = kwp_connect,
-        .send_request = kwp_send_request,
-        .recv_response = kwp_recv_response,
+        .connect = KWP_Connect,
+        .send_request = KWP_SendRequest,
+        .recv_response = KWP_RecvResponse,
     };
 
     obd_ctx_t ctx =

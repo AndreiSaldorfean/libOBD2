@@ -122,9 +122,9 @@ static void setUpLine(void)
         .pTimingHandle    = &timer,
         .pUartOps         = &uartOps,
         .pTransportHandle = &uartCtx,
-        .connect          = iso9141_connect,
-        .send_request     = iso9141_send_request,
-        .recv_response    = iso9141_recv_response,
+        .connect          = ISO9141_Connect,
+        .send_request     = ISO9141_SendRequest,
+        .recv_response    = ISO9141_RecvResponse,
     };
 }
 
@@ -317,9 +317,9 @@ void test_DL_Connect_000(void)
 
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
-    TEST_ASSERT_EQUAL_PTR(iso9141_connect, dataLink.connect);
-    TEST_ASSERT_EQUAL_PTR(iso9141_send_request, dataLink.send_request);
-    TEST_ASSERT_EQUAL_PTR(iso9141_recv_response, dataLink.recv_response);
+    TEST_ASSERT_EQUAL_PTR(ISO9141_Connect, dataLink.connect);
+    TEST_ASSERT_EQUAL_PTR(ISO9141_SendRequest, dataLink.send_request);
+    TEST_ASSERT_EQUAL_PTR(ISO9141_RecvResponse, dataLink.recv_response);
     TEST_ASSERT_EQUAL_HEX8(header_tester.fmt, protoCtx.header.fmt);
     TEST_ASSERT_EQUAL_HEX8(header_tester.trgAddr, protoCtx.header.trgAddr);
     TEST_ASSERT_EQUAL_HEX8(header_tester.srcAddr, protoCtx.header.srcAddr);

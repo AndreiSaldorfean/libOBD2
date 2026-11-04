@@ -174,9 +174,9 @@ dataLink_if_t dataLink_00 =
     .pTimingHandle    = &tmrCtxTx,
     .pTransportHandle = &uartCtxTx,
     .pUartOps    = &transportOps,
-    .connect          = iso9141_connect,
-    .send_request     = iso9141_send_request,
-    .recv_response    = iso9141_recv_response,
+    .connect          = ISO9141_Connect,
+    .send_request     = ISO9141_SendRequest,
+    .recv_response    = ISO9141_RecvResponse,
 };
 
 dataLink_if_t dataLink_tx =
@@ -186,9 +186,9 @@ dataLink_if_t dataLink_tx =
     .pTimingHandle    = &tmrCtxTx,
     .pTransportHandle = &uartCtxTx,
     .pUartOps    = &transportOps,
-    .connect          = iso9141_connect,
-    .send_request     = iso9141_send_request,
-    .recv_response    = iso9141_recv_response,
+    .connect          = ISO9141_Connect,
+    .send_request     = ISO9141_SendRequest,
+    .recv_response    = ISO9141_RecvResponse,
 };
 dataLink_if_t dataLink_rx =
 {
@@ -197,9 +197,9 @@ dataLink_if_t dataLink_rx =
     .pTimingHandle    = &tmrCtxRx,
     .pTransportHandle = &uartCtxRx,
     .pUartOps    = &transportOps,
-    .connect          = iso9141_connect,
-    .send_request     = iso9141_send_request,
-    .recv_response    = iso9141_recv_response,
+    .connect          = ISO9141_Connect,
+    .send_request     = ISO9141_SendRequest,
+    .recv_response    = ISO9141_RecvResponse,
 };
 obd_ctx_t ctxRx =
 {

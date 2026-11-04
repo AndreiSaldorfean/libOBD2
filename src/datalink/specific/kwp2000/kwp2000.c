@@ -334,7 +334,7 @@ OBD2_STATIC obd_status_t KWP_FastInit(dataLink_if_t *self)
 }
 
 /* ================================================ MODULE API ============================================= */
-obd_status_t kwp_connect(dataLink_if_t *self, uint8_t* protocol)
+obd_status_t KWP_Connect(dataLink_if_t *self, uint8_t* protocol)
 {
     kwp_ctx_t *ctx = (kwp_ctx_t *)(self->pProtocolCtx);
     obd_status_t status = {0};
@@ -356,7 +356,7 @@ exit:
     return status;
 }
 
-obd_status_t kwp_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
+obd_status_t KWP_SendRequest(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
 {
     kwp_ctx_t ctx = *(kwp_ctx_t *)(self->pProtocolCtx);
     uint8_t aSentMsg[256] = {0};
@@ -386,7 +386,7 @@ exit:
     return status;
 }
 
-obd_status_t kwp_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t *dataLen)
+obd_status_t KWP_RecvResponse(dataLink_if_t *self, obd_data_t *resp, size_t *dataLen)
 {
     message_t recvdMsg = {0};
     obd_status_t status;

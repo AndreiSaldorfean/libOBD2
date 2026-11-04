@@ -203,7 +203,7 @@ exit:
 }
 
 /* ================================================ MODULE API ============================================= */
-obd_status_t ecu_iso9141_connect(dataLink_if_t *self, uint8_t* protocol)
+obd_status_t ECU_ISO9141_Connect(dataLink_if_t *self, uint8_t* protocol)
 {
     iso9141_ctx_t  *ctx = (iso9141_ctx_t *)(self->pProtocolCtx);
     memset(ctx, 0, sizeof(iso9141_ctx_t));
@@ -212,7 +212,7 @@ obd_status_t ecu_iso9141_connect(dataLink_if_t *self, uint8_t* protocol)
     return ECU_ISO9141_5BaudInit(self);
 }
 
-obd_status_t ecu_iso9141_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t len)
+obd_status_t ECU_ISO9141_SendRequest(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t len)
 {
     iso9141_ctx_t ctx = *(iso9141_ctx_t *)(self->pProtocolCtx);
     uint8_t aMessage[11] = {0};
@@ -241,7 +241,7 @@ exit:
     return status;
 }
 
-obd_status_t ecu_iso9141_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t *len)
+obd_status_t ECU_ISO9141_RecvResponse(dataLink_if_t *self, obd_data_t *resp, size_t *len)
 {
     message_t recvdMsg = {0};
     obd_status_t status;

@@ -101,9 +101,9 @@ static dataLink_if_t dataLink =
     .pTimingHandle    = &tmrCtx,
     .pTransportHandle = &uartCtx,
     .pUartOps    = &transportOps,
-    .connect          = ecu_iso9141_connect,
-    .send_request     = ecu_iso9141_send_request,
-    .recv_response    = ecu_iso9141_recv_response
+    .connect          = ECU_ISO9141_Connect,
+    .send_request     = ECU_ISO9141_SendRequest,
+    .recv_response    = ECU_ISO9141_RecvResponse
 };
 
 static obd_ctx_t libobd2Ctx =

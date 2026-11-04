@@ -18,22 +18,22 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 static dl_connect_t initProtocols[NUM_SPT_PROTOCOLS ] =
 {
-    [ISO9141] = iso9141_connect,
-    [KWP2000] = kwp_connect,
+    [ISO9141] = ISO9141_Connect,
+    [KWP2000] = KWP_Connect,
 };
 
 static dl_send_request_t sendRequests[NUM_SPT_PROTOCOLS] =
 {
 
-    [ISO9141] = iso9141_send_request,
-    [KWP2000] = kwp_send_request,
+    [ISO9141] = ISO9141_SendRequest,
+    [KWP2000] = KWP_SendRequest,
 };
 
 static dl_recv_response_t recvResponses[NUM_SPT_PROTOCOLS] =
 {
 
-    [ISO9141] = iso9141_recv_response,
-    [KWP2000] = kwp_recv_response,
+    [ISO9141] = ISO9141_RecvResponse,
+    [KWP2000] = KWP_RecvResponse,
 };
 
 /* ============================================ GLOBAL VARIABLES =========================================== */

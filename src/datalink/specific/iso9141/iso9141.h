@@ -31,22 +31,22 @@ typedef struct
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 /******************************************
-* title: iso9141_connect
+* title: ISO9141_Connect
 * brief: Opens an ISO9141-2 connection to the ECU (5-baud init) and stores
 *        the header to use in the protocol context.
 ******************************************/
-obd_status_t iso9141_connect(dataLink_if_t *self, uint8_t* protocol);
+obd_status_t ISO9141_Connect(dataLink_if_t *self, uint8_t* protocol);
 
 /******************************************
-* title: iso9141_send_request
+* title: ISO9141_SendRequest
 * brief: Sends an OBD service request to the ECU over ISO9141-2.
 ******************************************/
-obd_status_t iso9141_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
+obd_status_t ISO9141_SendRequest(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
 
 /******************************************
-* title: iso9141_recv_response
+* title: ISO9141_RecvResponse
 * brief: Receives the ECU response to the last request over ISO9141-2.
 ******************************************/
-obd_status_t iso9141_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
+obd_status_t ISO9141_RecvResponse(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
 
 #endif /* ISO9141_H */
