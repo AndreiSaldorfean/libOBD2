@@ -42,6 +42,7 @@ void targetRunTests()
     RUN_TEST(test_TMR_StartTimeout_001);
     RUN_TEST(test_TMR_IsTimeoutExpired_000);
     RUN_TEST(test_TMR_StopTimeout_000);
+    RUN_TEST(test_TMR_StopTimeout_NotExpired);
 
     RUN_TEST(test_UART_WriteByte_0);
     RUN_TEST(test_UART_WriteByte_1);

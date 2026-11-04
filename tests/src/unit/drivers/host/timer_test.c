@@ -144,3 +144,17 @@ void test_TMR_StopTimeout_000(void)
     TEST_ASSERT_FALSE(timer.timeoutStarted);
     TEST_ASSERT_EQUAL_UINT32(300u, timer.timeNow);
 }
+
+/******************************************************************
+ * A stopped timeout never reports expired, even after its deadline.
+ ******************************************************************/
+void test_TMR_StopTimeout_NotExpired(void)
+{
+    virtTmrCtx_t timer = { .timeNow = 0u, .timeStep = TIME_STEP };
+
+    TEST_ASSERT_TRUE(LIBOBD2_TMR_StartTimeout(&timer, P1_TIME_MAX, NULL, NULL));
+    TEST_ASSERT_TRUE(LIBOBD2_TMR_StopTimeout(&timer));
+    LIBOBD2_TMR_DelayMs(&timer, P1_TIME_MAX + 1u);
+
+    TEST_ASSERT_FALSE(LIBOBD2_TMR_IsTimeoutExpired(&timer));
+}

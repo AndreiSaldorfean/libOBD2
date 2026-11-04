@@ -175,7 +175,9 @@ bool LIBOBD2_TMR_StopTimeout(void *pHandle)
 {
     timerCtx_t *ctx = (timerCtx_t*)pHandle;
 
-    ctx->timeout_active = false;
+    /* A stopped timeout never reports expired */
+    ctx->timeout_active  = false;
+    ctx->timeout_expired = false;
 
     return 1;
 }

@@ -49,5 +49,7 @@ bool LIBOBD2_TMR_StopTimeout(void *pHandle)
 bool LIBOBD2_TMR_IsTimeoutExpired(void *pHandle)
 {
     virtTmrCtx_t *ctx = (virtTmrCtx_t*)pHandle;
-    return (ctx->timeoutTime < ctx->timeNow);
+
+    /* A stopped timeout never reports expired */
+    return ctx->timeoutStarted && (ctx->timeoutTime < ctx->timeNow);
 }
