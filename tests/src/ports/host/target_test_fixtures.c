@@ -45,10 +45,13 @@ void targetRunTests()
     RUN_TEST(test_TMR_FaultHook_000);
     RUN_TEST(test_TMR_StopTimeout_NotExpired);
     RUN_TEST(test_TMR_FaultHook_InitFails);
+    RUN_TEST(test_TMR_Init_Null);
 
     RUN_TEST(test_UART_WriteByte_0);
     RUN_TEST(test_UART_WriteByte_1);
     RUN_TEST(test_UART_BitBang_000);
+    RUN_TEST(test_UART_FaultHook_OnRead);
+    RUN_TEST(test_UART_Init_Null);
     /* ---- DRIVER TESTS ---- */
 
     /* ---- DATALINK TESTS ---- */
@@ -67,6 +70,10 @@ void targetRunTests()
     RUN_TEST(test_DL_SendRecv_000);
     RUN_TEST(test_DL_Api_NullLink);
     RUN_TEST(test_DL_Api_NotConnected);
+    RUN_TEST(test_DL_Api_IncompleteLink);
+    RUN_TEST(test_DL_UartRxStatusToResponse);
+    RUN_TEST(test_DL_StartTimeout_TimerError);
+    RUN_TEST(test_DL_Connect_NoProtocol);
 
     /* ISO9141 */
     RUN_TEST(test_ISO9141_SendRecvMessage_000);
@@ -74,6 +81,12 @@ void targetRunTests()
     RUN_TEST(test_ISO9141_RecvMessage_TargetByteTimeout);
     RUN_TEST(test_ISO9141_SendRequest_InvalidDataLen);
     RUN_TEST(test_ISO9141_5BaudInit_WrongKeyBytes);
+    RUN_TEST(test_ISO9141_Api_NullArgs);
+    RUN_TEST(test_ISO9141_RecvResponse_NegativeResponse);
+    RUN_TEST(test_ISO9141_RecvResponse_EmptyFrame);
+    RUN_TEST(test_ISO9141_RecvResponse_NoChecksum);
+    RUN_TEST(test_ISO9141_5BaudInit_KwpKeyBytes);
+    RUN_TEST(test_ISO9141_Connect_Verify_NoHeader);
     /* ---- DATALINK TESTS ---- */
 
 
@@ -90,6 +103,9 @@ void targetRunTests()
     RUN_TEST(test_LIBOBD2_RequestService_NullCtx);
     RUN_TEST(test_LIBOBD2_RequestService_TooManyMsgs);
     RUN_TEST(test_LIBOBD2_DispatchSid_SingleMsgLen);
+    RUN_TEST(test_LIBOBD2_RequestService_NullDataLink);
+    RUN_TEST(test_LIBOBD2_DecodeResponse_Unsupported);
+    RUN_TEST(test_LIBOBD2_DispatchSid_TransferSteps);
     /* ---- APP TESTS ---- */
     /*================= SANITY TESTS =================*/
 

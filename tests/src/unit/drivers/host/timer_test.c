@@ -206,3 +206,11 @@ void test_TMR_FaultHook_InitFails(void)
     TEST_ASSERT_EQUAL_UINT32(1234u, timer.timeNow);
     TEST_ASSERT_EQUAL_UINT32(TIME_STEP, timer.timeStep);
 }
+
+/******************************************************************
+ * TMR_Init rejects a NULL timer context.
+ ******************************************************************/
+void test_TMR_Init_Null(void)
+{
+    TEST_ASSERT_EQUAL(OBD_TMR_ERR_INVALID_ARG, TMR_Init(NULL));
+}

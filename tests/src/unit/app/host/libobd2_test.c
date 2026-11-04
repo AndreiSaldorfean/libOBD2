@@ -49,6 +49,7 @@ static const header_t header_tester =
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 extern uint8_t ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen);
 extern const libobd2_service_t libobd2Services[OBD2_MAX_NUM_SERVICES];
+extern obd_status_t LibOBD2_DecodeResponse(const libobd2_data_t *buffer, size_t bufferLen, uint8_t *response, size_t* responseLen);
 extern obd_status_t LibOBD2_DispatchSid(obd_ctx_t* ctx, const libobd2_service_t *libobd2Service, libobd2_data_t* response, size_t respCap, size_t * respLen);
 
 static obd_tmr_status_t keepTimer(void *pHandle);
@@ -409,5 +410,82 @@ void test_LIBOBD2_DispatchSid_SingleMsgLen(void)
 
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_size_t(1, respLen);
+    TEST_ASSERT_EQUAL_size_t(sizeof(ecuResp), responseBuffer[0].dataLen);
+}
+
+/******************************************************************
+ * A context without a data link is rejected before anything goes on
+ * the line.
+ ******************************************************************/
+void test_LIBOBD2_RequestService_NullDataLink(void)
+{
+    obd_ctx_t noLinkCtx = { .pDataLink = NULL };
+    uint8_t response[RESPONSE_BUF_LEN] = {0};
+    size_t responseLen = 0;
+
+    obd_status_t status = LibOBD2_RequestService(&noLinkCtx, OBD_GET_VIN, response, &responseLen);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, status.response);
+    TEST_ASSERT_EQUAL_size_t(0, responseLen);
+}
+
+/******************************************************************
+ * ECU answers the decoder does not know are reported as
+ * OBD_NOT_SUPPORTED with no data, never as OK:
+ *   1. no message at all
+ *   2. an unknown service (positive response to $03)
+ *   3. an unknown $01 PID
+ *   4. an unknown $09 PID
+ ******************************************************************/
+void test_LIBOBD2_DecodeResponse_Unsupported(void)
+{
+    const libobd2_data_t answers[] =
+    {
+        { .data = { .sid = SID_SHOW_STORED_DTCS + 0x40u,     .param = { 0x00u } },       .dataLen = 2u },
+        { .data = { .sid = SID_SHOW_CURRENT_DATA + 0x40u,    .param = { 0xFFu, 0x00u } }, .dataLen = 3u },
+        { .data = { .sid = SID_REQUEST_VEHICLE_INFO + 0x40u, .param = { 0xFFu, 0x01u } }, .dataLen = 3u },
+    };
+    uint8_t response[RESPONSE_BUF_LEN] = {0};
+    size_t responseLen = 0xA5u;
+
+    /* 1. */
+    TEST_ASSERT_EQUAL_HEX16(OBD_NOT_SUPPORTED, LibOBD2_DecodeResponse(answers, 0u, response, &responseLen).response);
+    TEST_ASSERT_EQUAL_size_t(0, responseLen);
+
+    /* 2. - 4. */
+    for (size_t idx = 0; idx < (sizeof(answers) / sizeof(answers[0])); idx++)
+    {
+        responseLen = 0xA5u;
+        TEST_ASSERT_EQUAL_HEX16(OBD_NOT_SUPPORTED, LibOBD2_DecodeResponse(&answers[idx], 1u, response, &responseLen).response);
+        TEST_ASSERT_EQUAL_size_t(0, responseLen);
+    }
+}
+
+/******************************************************************
+ * The transfer protocol steps no table service uses yet:
+ *   TP_SEND, TP_RECV (one message), TP_READ_UNTIL_TO (not implemented,
+ *   does nothing) and an unknown step (ignored), then TP_END.
+ *   ECU: 48 6B 12 41 05 7B CS
+ ******************************************************************/
+void test_LIBOBD2_DispatchSid_TransferSteps(void)
+{
+    const uint8_t ecuResp[] = { SID_SHOW_CURRENT_DATA + 0x40u, PID_01_COOLANT_TEMP, 0x7BU };
+    const libobd2_service_t service =
+    {
+        .sidSize          = OBD_LONG_SID,
+        .serviceRequests  = SREQ_GET_COOLANT_TEMP,
+        .transferProtocol = { TP_SEND, TP_RECV, TP_READ_UNTIL_TO, 0x7Fu, TP_END },
+    };
+    libobd2_data_t responseBuffer[2] = {0};
+    size_t respLen = 0;
+
+    setUpLine();
+    (void)ecuQueueFrame(REQ_DURATION(2u), ecuResp, sizeof(ecuResp));
+
+    obd_status_t status = LibOBD2_DispatchSid(&ctx, &service, responseBuffer, 2u, &respLen);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
+    TEST_ASSERT_EQUAL_size_t(1, respLen);
+    TEST_ASSERT_EQUAL_HEX8(ecuResp[0], responseBuffer[0].data.sid);
     TEST_ASSERT_EQUAL_size_t(sizeof(ecuResp), responseBuffer[0].dataLen);
 }

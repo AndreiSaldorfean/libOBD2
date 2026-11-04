@@ -13,8 +13,14 @@
 #define MSG_DATA_LEN      7u  /* sid + 6 params, matches only-supported-protocol convention */
 #define MSG_WIRE_LEN      11u /* 3 header + 7 data + 1 checksum */
 #define MSG_QUEUE_SIZE    16u
+#define ECU_BYTE_GAP      5u  /* ECU inter-byte time (P1), below the 10 ms poll step */
 
 /* ============================================ LOCAL VARIABLES ============================================ */
+/* Virtual line for the received-frame tests */
+static virtTmrCtx_t lineTimer;
+static virtUartLinkCtx_t lineUart;
+static iso9141_ctx_t lineProto;
+static dataLink_if_t lineLink;
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 extern uint8_t ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen);
@@ -22,7 +28,37 @@ extern size_t ISO9141_SerializeMessage(const message_t *msg, uint8_t *frame, siz
 extern obd_status_t ISO9141_SendMessage(dataLink_if_t *self, const uint8_t *frame, size_t frameLen);
 extern obd_status_t ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t *len);
 extern obd_status_t ISO9141_5BaudInit(dataLink_if_t *self, uint8_t *protocol);
+extern obd_status_t ISO9141_Connect_Verify(dataLink_if_t *self);
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
+/* Fresh virtual line with an ISO9141 tester link on it */
+static void setUpLine(void)
+{
+    lineTimer = (virtTmrCtx_t){ .timeStep = 10u };
+    lineUart  = (virtUartLinkCtx_t){ .tmrHandle = &lineTimer };
+    lineProto = (iso9141_ctx_t){ .header = header_tester, .protocol = ISO9141 };
+    lineLink  = (dataLink_if_t)
+    {
+        .pProtocolCtx     = &lineProto,
+        .pTimingOps       = &tmr_ops,
+        .pTimingHandle    = &lineTimer,
+        .pUartOps         = &uart_ops,
+        .pTransportHandle = &lineUart,
+    };
+    TEST_ASSERT_TRUE(UART_Init(&lineUart));
+}
+
+/* Put an ECU frame on the line from just after P2 min, ECU_BYTE_GAP apart,
+ * then rewind the clock and start P2 as a request that just ended would */
+static void lineQueueEcuFrame(const uint8_t *bytes, size_t len)
+{
+    for (size_t idx = 0; idx < len; idx++)
+    {
+        lineTimer.timeNow = P2_TIME_MIN + lineTimer.timeStep + (uint32_t)idx * ECU_BYTE_GAP;
+        UART_WriteByte(&lineUart, bytes[idx]);
+    }
+    lineTimer.timeNow = 0u;
+    (void)DL_StartTimeout(&lineLink, P2_TIME_MAX);
+}
 /* ================================================ MODULE API ============================================= */
 /******************************************************************
  * Write then read one ISO9141 message on the virtual K-line.
@@ -246,4 +282,132 @@ void test_ISO9141_5BaudInit_WrongKeyBytes(void)
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_5BAUD_WRONG_KEYBYTES, status.response);
     TEST_ASSERT_EQUAL_HEX8(0xFFu, protocol);
     TEST_ASSERT_EQUAL_HEX8(0x00u, protoCtx.header.fmt);
+}
+
+/******************************************************************
+ * Every public ISO9141 entry point rejects a NULL argument with
+ * OBD_ERR_NULL_PTR before touching the line.
+ ******************************************************************/
+void test_ISO9141_Api_NullArgs(void)
+{
+    obd_data_t data = {0};
+    size_t len = 0u;
+
+    tmr_ctx_tester.timeNow = 0u;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, ISO9141_Connect(&dl_tester, NULL).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, ISO9141_SendRequest(&dl_tester, NULL, 2u).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, ISO9141_RecvResponse(&dl_tester, NULL, &len).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, ISO9141_RecvResponse(&dl_tester, &data, NULL).response);
+    TEST_ASSERT_EQUAL_UINT32(0u, tmr_ctx_tester.timeNow);
+}
+
+/******************************************************************
+ * A negative ECU response is reported, not returned as data.
+ *   ECU: 48 6B 12 7F 01 12 57   (sid 7F, rejected sid 01, NRC 12)
+ ******************************************************************/
+void test_ISO9141_RecvResponse_NegativeResponse(void)
+{
+    const uint8_t frame[] = { 0x48u, 0x6Bu, 0x12u, 0x7Fu, 0x01u, 0x12u, 0x57u };
+    obd_data_t resp = {0};
+    size_t len = 0u;
+
+    setUpLine();
+    lineQueueEcuFrame(frame, sizeof(frame));
+
+    obd_status_t status = ISO9141_RecvResponse(&lineLink, &resp, &len);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_COMM_ECU_RESPONSE_7F, status.response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
+}
+
+/******************************************************************
+ * A frame whose checksum follows the header directly carries no sid
+ * and is rejected.
+ *   ECU: 48 6B 12 C5
+ ******************************************************************/
+void test_ISO9141_RecvResponse_EmptyFrame(void)
+{
+    const uint8_t frame[] = { 0x48u, 0x6Bu, 0x12u, 0xC5u };
+    obd_data_t resp = {0};
+    size_t len = 0u;
+
+    setUpLine();
+    lineQueueEcuFrame(frame, sizeof(frame));
+
+    obd_status_t status = ISO9141_RecvResponse(&lineLink, &resp, &len);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_COMM_RECV_MSG_FAILED, status.response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
+}
+
+/******************************************************************
+ * A frame that fills the data field without a byte matching the
+ * running checksum is rejected instead of overrunning message_t.
+ *   ECU: 48 6B 12, then 13 x 01 (the sum never comes back to 01)
+ ******************************************************************/
+void test_ISO9141_RecvResponse_NoChecksum(void)
+{
+    uint8_t frame[3u + 13u] = { 0x48u, 0x6Bu, 0x12u };
+    obd_data_t resp = {0};
+    size_t len = 0u;
+
+    for (size_t idx = 3u; idx < sizeof(frame); idx++)
+    {
+        frame[idx] = 0x01u;
+    }
+
+    setUpLine();
+    lineQueueEcuFrame(frame, sizeof(frame));
+
+    obd_status_t status = ISO9141_RecvResponse(&lineLink, &resp, &len);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_COMM_RECV_MSG_FAILED, status.response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
+}
+
+/******************************************************************
+ * Keyword bytes 94 94 complete the 5-baud init with the KWP2000
+ * header (C0 33 F1); the protocol stays ISO9141 until KWP2000 is
+ * supported.
+ ******************************************************************/
+void test_ISO9141_5BaudInit_KwpKeyBytes(void)
+{
+    uint8_t protocol = 0xFFu;
+
+    setUpLine();
+
+    /* Same timing as test_ISO9141_5BaudInit_000, only the keyword bytes differ */
+    lineTimer.timeNow = 300U + 2000U + ISO9141_W1_TIME_MIN;
+    UART_WriteByte(&lineUart, 0x55u);
+    lineTimer.timeNow += ISO9141_W2_TIME_MIN;
+    UART_WriteByte(&lineUart, 0x94u);
+    lineTimer.timeNow += ISO9141_W3_TIME_MIN;
+    UART_WriteByte(&lineUart, 0x94u);
+    lineTimer.timeNow += 3*ISO9141_W4_TIME_MIN;
+    UART_WriteByte(&lineUart, (uint8_t)(~0x33u));
+    lineTimer.timeNow = 0u;
+
+    obd_status_t status = ISO9141_5BaudInit(&lineLink, &protocol);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
+    TEST_ASSERT_EQUAL_UINT8(ISO9141, protocol);
+    TEST_ASSERT_EQUAL_HEX8(0xC0u, lineProto.header.fmt);
+    TEST_ASSERT_EQUAL_HEX8(0x33u, lineProto.header.trgAddr);
+    TEST_ASSERT_EQUAL_HEX8(0x94u, lineProto.kb1);
+}
+
+/******************************************************************
+ * Connect_Verify fails when no header was stored in the context,
+ * and passes once one is there.
+ ******************************************************************/
+void test_ISO9141_Connect_Verify_NoHeader(void)
+{
+    setUpLine();
+    lineProto.header = (header_t){0};
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_PROTOCOL_NOT_FOUND, ISO9141_Connect_Verify(&lineLink).response);
+
+    lineProto.header = header_tester;
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, ISO9141_Connect_Verify(&lineLink).response);
 }

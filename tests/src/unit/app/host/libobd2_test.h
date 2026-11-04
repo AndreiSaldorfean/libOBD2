@@ -19,6 +19,9 @@ void test_LIBOBD2_RequestService_CoolantTemp_000(void);
 void test_LIBOBD2_RequestService_NullCtx(void);
 void test_LIBOBD2_RequestService_TooManyMsgs(void);
 void test_LIBOBD2_DispatchSid_SingleMsgLen(void);
+void test_LIBOBD2_RequestService_NullDataLink(void);
+void test_LIBOBD2_DecodeResponse_Unsupported(void);
+void test_LIBOBD2_DispatchSid_TransferSteps(void);
 
 #endif /* LIBOBD2_TEST_H */
 

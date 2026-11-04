@@ -3,6 +3,7 @@
 #include "datalink.h"
 #include "datalink_utils.h"
 #include "iso9141.h"
+#include "kwp2000.h"
 #include "libobd2_timer_port.h"
 #include "libobd2_uart_port.h"
 #include "statusRetCodes.h"
@@ -475,4 +476,101 @@ void test_DL_TimeSample_PerLink(void)
 
     TEST_ASSERT_EQUAL_UINT32(0u, dataLink.timeSample);
     TEST_ASSERT_EQUAL_UINT32(100u, other.timeSample);
+}
+
+/******************************************************************
+ * A link missing any of its driver pointers is rejected by every DL
+ * entry point with OBD_ERR_NULL_PTR, before anything goes on the line.
+ ******************************************************************/
+void test_DL_Api_IncompleteLink(void)
+{
+    obd_data_t data = { .sid = 0x01u };
+    size_t len = 0u;
+
+    for (uint8_t missing = 0u; missing < 4u; missing++)
+    {
+        setUpLine();
+        switch (missing)
+        {
+            case 0u: dataLink.pUartOps         = NULL; break;
+            case 1u: dataLink.pTransportHandle = NULL; break;
+            case 2u: dataLink.pTimingOps       = NULL; break;
+            default: dataLink.pTimingHandle    = NULL; break;
+        }
+
+        TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_Connect(&dataLink).response);
+        TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_SendRequest(&dataLink, &data, 2u).response);
+        TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_RecvResponse(&dataLink, &data, &len).response);
+        TEST_ASSERT_EQUAL_UINT32(0u, timer.timeNow);
+    }
+}
+
+/******************************************************************
+ * Every recv_byte result maps to its status code; an unknown value
+ * is a generic error.
+ ******************************************************************/
+void test_DL_UartRxStatusToResponse(void)
+{
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK,        DL_UartRxStatusToResponse(OBD_UART_RX_OK));
+    TEST_ASSERT_EQUAL_HEX16(OBD_RECV_NOT_READY,   DL_UartRxStatusToResponse(OBD_UART_RX_NO_DATA));
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_UART_PARITY,  DL_UartRxStatusToResponse(OBD_UART_RX_PARITY_ERR));
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_UART_FRAMING, DL_UartRxStatusToResponse(OBD_UART_RX_FRAMING_ERR));
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_UART_OVERRUN, DL_UartRxStatusToResponse(OBD_UART_RX_OVERRUN_ERR));
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_UART_NOISE,   DL_UartRxStatusToResponse(OBD_UART_RX_NOISE_ERR));
+    TEST_ASSERT_EQUAL_HEX16(OBD_GENERIC_ERROR,    DL_UartRxStatusToResponse((obd_uart_rx_status_t)0xFFu));
+}
+
+/******************************************************************
+ * DL_StartTimeout reports a timer that cannot start.
+ ******************************************************************/
+void test_DL_StartTimeout_TimerError(void)
+{
+    setUpLine();
+    timer.faults.onOp = failStartTimeout;
+
+    obd_status_t status = DL_StartTimeout(&dataLink, P2_TIME_MAX);
+    timer.faults.onOp = NULL;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_TMR_START_FAILED, status.response);
+}
+
+/* timer_init op that succeeds only on its first call (DL_Connect's own init) */
+static size_t timerInitCnt;
+static obd_tmr_status_t timerInitOnce(void *pHandle)
+{
+    (void)pHandle;
+    return (0u == timerInitCnt++) ? OBD_TMR_OK : OBD_TMR_ERR_HW;
+}
+
+/******************************************************************
+ * When every protocol's connect fails, DL_Connect fails with the last
+ * protocol's error and binds no send/recv functions.
+ *   - ISO9141: no ECU, the tester reads back its own 5-baud address
+ *     (33) instead of the sync byte -> wrong sync
+ *   - KWP2000: its own timer init fails -> OBD_ERR_CONN_TIMER_INIT_FAILED
+ * KWP2000 clears its own context type, so the link gets a context big
+ * enough for either protocol.
+ ******************************************************************/
+void test_DL_Connect_NoProtocol(void)
+{
+    static union
+    {
+        iso9141_ctx_t iso9141;
+        kwp_ctx_t kwp;
+    } anyCtx;
+
+    setUpLine();
+    dataLink.pProtocolCtx  = &anyCtx;
+    dataLink.connect       = NULL;
+    dataLink.send_request  = NULL;
+    dataLink.recv_response = NULL;
+    timerInitCnt           = 0u;
+    tmrOps.timer_init      = timerInitOnce;
+
+    obd_status_t status = DL_Connect(&dataLink);
+    tmrOps.timer_init = keepTimer;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_CONN_TIMER_INIT_FAILED, status.response);
+    TEST_ASSERT_NULL(dataLink.send_request);
+    TEST_ASSERT_NULL(dataLink.recv_response);
 }

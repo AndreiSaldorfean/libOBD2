@@ -8,7 +8,6 @@
 #include "uart_trace.h"
 #include "utils.h"
 #include "cQueue.h"
-#include <stdlib.h>
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -19,7 +18,7 @@ static inline void UART_AdvanceTime(virtUartLinkCtx_t *ctx);
 static void UART_PutOnLine(virtUartLinkCtx_t *ctx, uartEvent_t *event);
 
 static bool UART_Init_Validate(const virtUartLinkCtx_t *ctx);
-static bool UART_Init_Execute(virtUartLinkCtx_t *ctx);
+static void UART_Init_Execute(virtUartLinkCtx_t *ctx);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /******************************************
@@ -33,7 +32,7 @@ static inline bool UART_IsByteReady(const virtUartLinkCtx_t *ctx)
     bool ready = false;
 
     // TODO: can add random small delay for simulating cpu clk cycles
-    if (q_peek(ctx->uartEventQueue, &event))
+    if (q_peek(&ctx->eventQueue, &event))
     {
         ready = (ctx->tmrHandle->timeNow > event.timeReceived);
     }
@@ -65,7 +64,7 @@ static void UART_PutOnLine(virtUartLinkCtx_t *ctx, uartEvent_t *event)
         ctx->faults.onWrite(ctx->faults.pUserData, event);
     }
 
-    q_push(ctx->uartEventQueue, event);
+    q_push(&ctx->eventQueue, event);
 }
 
 /******************************************
@@ -79,37 +78,22 @@ static bool UART_Init_Validate(const virtUartLinkCtx_t *ctx)
 
 /******************************************
 * title: UART_Init_Execute
-* brief: Gives the link a new empty line (freeing the old one) and resets the
-*        line mode and bit-bang state. Fault hooks are kept.
+* brief: Empties the line (its storage lives in the link context) and resets
+*        the line mode and bit-bang state. Fault hooks are kept.
 ******************************************/
-static bool UART_Init_Execute(virtUartLinkCtx_t *ctx)
+static void UART_Init_Execute(virtUartLinkCtx_t *ctx)
 {
-    Queue_t *pQueue = (Queue_t *)calloc(1, sizeof(Queue_t));
-    bool ok = false;
+    void *pStore = q_init_static(&ctx->eventQueue, sizeof(uartEvent_t), VIRT_UART_QUEUE_SIZE, FIFO, true,
+                                 ctx->eventStore, sizeof(ctx->eventStore));
 
-    OBD2_IF_COND_GOTO_EXIT(NULL == pQueue);
-
-    if (NULL == q_init(pQueue, sizeof(uartEvent_t), VIRT_UART_QUEUE_SIZE, FIFO, true))
-    {
-        free(pQueue);
-        goto exit;
-    }
-
-    if (NULL != ctx->uartEventQueue)
-    {
-        q_kill(ctx->uartEventQueue);
-        free(ctx->uartEventQueue);
-    }
-    ctx->uartEventQueue = pQueue;
+    OBD2_DEBUG_ASSERT(NULL != pStore);
+    (void)pStore;
 
     ctx->mode          = DIGITAL_MODE_END; /* the UART owns the line */
     ctx->bitbangedByte = 0;
     ctx->bitbangIdx    = 0;
 
     // TODO: can add random small delay for simulating cpu clk cycles
-    ok = true;
-exit:
-    return ok;
 }
 
 /* ================================================ MODULE API ============================================= */
@@ -124,8 +108,7 @@ bool UART_Init(void* handle)
 
     ok = UART_Init_Validate(ctx);
     OBD2_IF_COND_GOTO_EXIT(!ok);
-    ok = UART_Init_Execute(ctx);
-    OBD2_IF_COND_GOTO_EXIT(!ok);
+    UART_Init_Execute(ctx);
 
     // TODO: add a ifdef TRACING - endif /* TRACING */
     UART_TRACE_OnLinkInit();
@@ -143,7 +126,7 @@ void UART_WriteByte(void* handle, uint8_t data)
     virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t *)handle;
     uartEvent_t event = {0};
 
-    OBD2_DEBUG_ASSERT((NULL != ctx) && (NULL != ctx->tmrHandle) && (NULL != ctx->uartEventQueue));
+    OBD2_DEBUG_ASSERT((NULL != ctx) && (NULL != ctx->tmrHandle));
 
     event.byte  = data;
     event.error = OBD_UART_RX_OK;
@@ -163,12 +146,12 @@ obd_uart_rx_status_t UART_RecvByte(void* handle, uint8_t *recv_buffer)
     obd_uart_rx_status_t rxStatus = OBD_UART_RX_NO_DATA;
     uartEvent_t event = {0};
 
-    OBD2_DEBUG_ASSERT((NULL != ctx) && (NULL != ctx->tmrHandle) && (NULL != ctx->uartEventQueue));
+    OBD2_DEBUG_ASSERT((NULL != ctx) && (NULL != ctx->tmrHandle));
     OBD2_DEBUG_ASSERT(NULL != recv_buffer);
 
     if (UART_IsByteReady(ctx))
     {
-        q_pop(ctx->uartEventQueue, &event);
+        q_pop(&ctx->eventQueue, &event);
 
         if (NULL != ctx->faults.onRead)
         {
@@ -229,7 +212,7 @@ void UART_SwitchMode(void* handle, uint8_t mode)
     virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t *)handle;
     uartEvent_t event = {0};
 
-    OBD2_DEBUG_ASSERT((NULL != ctx) && (NULL != ctx->tmrHandle) && (NULL != ctx->uartEventQueue));
+    OBD2_DEBUG_ASSERT((NULL != ctx) && (NULL != ctx->tmrHandle));
 
     if (DIGITAL_MODE_BEGIN == mode)
     {

@@ -139,3 +139,35 @@ void test_UART_BitBang_000(void)
     TEST_ASSERT_EQUAL(OBD_UART_RX_OK, UART_RecvByte(&ctx, &received));
     TEST_ASSERT_EQUAL_HEX8(addr, received);
 }
+
+/******************************************************************
+ * The onRead fault hook marks a received byte as an overrun: the
+ * byte is still delivered, with OBD_UART_RX_OVERRUN_ERR.
+ ******************************************************************/
+static void injectOverrun(void *pUserData, uartEvent_t *event)
+{
+    (void)pUserData;
+    event->error = OBD_UART_RX_OVERRUN_ERR;
+}
+
+void test_UART_FaultHook_OnRead(void)
+{
+    virtTmrCtx_t timer = { .timeNow = 0u, .timeStep = 10u };
+    virtUartLinkCtx_t ctx = { .tmrHandle = &timer, .faults = { .onRead = injectOverrun } };
+    uint8_t received = 0u;
+
+    TEST_ASSERT_TRUE(UART_Init(&ctx));
+    UART_WriteByte(&ctx, 0x55u);
+    timer.timeNow = 1u;
+
+    TEST_ASSERT_EQUAL(OBD_UART_RX_OVERRUN_ERR, UART_RecvByte(&ctx, &received));
+    TEST_ASSERT_EQUAL_HEX8(0x55u, received);
+}
+
+/******************************************************************
+ * UART_Init rejects a NULL link context.
+ ******************************************************************/
+void test_UART_Init_Null(void)
+{
+    TEST_ASSERT_FALSE(UART_Init(NULL));
+}

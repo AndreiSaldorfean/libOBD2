@@ -21,5 +21,9 @@ void test_DL_Connect_000(void);
 void test_DL_SendRecv_000(void);
 void test_DL_Api_NullLink(void);
 void test_DL_Api_NotConnected(void);
+void test_DL_Api_IncompleteLink(void);
+void test_DL_UartRxStatusToResponse(void);
+void test_DL_StartTimeout_TimerError(void);
+void test_DL_Connect_NoProtocol(void);
 
 #endif /* DL_TEST_H */

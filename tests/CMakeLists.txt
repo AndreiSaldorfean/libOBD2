@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(test LANGUAGES C)
 
 option(SPT_FREERTOS "Support for FreeRTOS" ON)
+option(COVERAGE "Instrument the unit tests and the code under test for gcov coverage (host only)" OFF)
 
 if("${PLATFORM}" STREQUAL "")
     message(FATAL_ERROR "PLATFORM is required (e.g. stm32f4, stm32g4, host)")
@@ -22,6 +23,16 @@ if(NOT EXISTS "${UNIT_TESTS_PLATFORM_CMAKE}")
     message(FATAL_ERROR "Missing platform config: ${UNIT_TESTS_PLATFORM_CMAKE}")
 endif()
 include("${UNIT_TESTS_PLATFORM_CMAKE}")
+
+# Coverage: set before any target or subdirectory is added, so the library,
+# the ECU simulator and the tests are all instrumented. Report: scripts/coverage.py
+if(COVERAGE)
+    if(NOT "${PLATFORM}" STREQUAL "host")
+        message(FATAL_ERROR "COVERAGE is only supported for PLATFORM=host (gcc + gcov)")
+    endif()
+    add_compile_options(--coverage -O0)
+    add_link_options(--coverage)
+endif()
 
 if(NOT "${TEST_EXECUTABLE_SUFFIX}" STREQUAL "")
     set(CMAKE_EXECUTABLE_SUFFIX "${TEST_EXECUTABLE_SUFFIX}")

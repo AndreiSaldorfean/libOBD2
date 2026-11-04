@@ -54,8 +54,18 @@ def run_cmake(cmake_cmd: list[str]) -> None:
         sys.exit(1)
 
 
-def create_cfg(app: str) -> None:
+def create_cfg(app: str, coverage: bool = False) -> None:
     build_dir = PROJECT_ROOT / "builds" / f"{app}_{build_config["MEMORY"]}_{build_config["TYPE"]}"
+
+    if coverage:
+        # Coverage gets its own build directory so the normal test build stays uninstrumented
+        if app != "tests" or build_config["PLATFORM"] != "host":
+            print("Error: --coverage needs --app tests and PLATFORM host", file=sys.stderr)
+            sys.exit(1)
+        config = dict(build_config[app], COVERAGE="ON")
+        run_cmake(common_cmake_cfg(PROJECT_ROOT / "tests", build_dir.with_name(build_dir.name + "_cc"), config))
+        return
+
     match app:
         case "library":
             run_cmake(common_cmake_cfg(PROJECT_ROOT, PROJECT_ROOT / "builds" / "library", build_config[app]))
@@ -92,11 +102,14 @@ def parse_arguments():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("-a", "--app", choices=["example", "tests", "library"], help="", required=True)
+    parser.add_argument("--coverage", action="store_true",
+                        help="configure the tests in builds/<dir>_cc with gcov instrumentation (host only)")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
-    app = parse_arguments().app
+    args = parse_arguments()
+    app = args.app
     build_config = parse_build_config(app)
-    create_cfg(app)
+    create_cfg(app, args.coverage)
 

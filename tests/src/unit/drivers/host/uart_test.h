@@ -10,6 +10,8 @@
 void test_UART_WriteByte_0(void);
 void test_UART_WriteByte_1(void);
 void test_UART_BitBang_000(void);
+void test_UART_FaultHook_OnRead(void);
+void test_UART_Init_Null(void);
 
 #endif /* UART_TEST_H */
 
