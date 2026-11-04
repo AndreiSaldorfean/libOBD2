@@ -45,6 +45,7 @@ void targetRunTests()
 
     RUN_TEST(test_UART_WriteByte_0);
     RUN_TEST(test_UART_WriteByte_1);
+    RUN_TEST(test_UART_BitBang_000);
     /* ---- DRIVER TESTS ---- */
 
     /* ---- DATALINK TESTS ---- */

@@ -106,3 +106,36 @@ void test_UART_WriteByte_1(void)
 
     UART_TRACE_End();
 }
+
+/******************************************************************
+ * A 5-baud bit-banged byte reaches the line.
+ *   1. DIGITAL_MODE_BEGIN, then start bit, 0x33 LSB first, stop bit
+ *   2. DIGITAL_MODE_END puts 0x33 on the line
+ *   3. A later read returns it
+ ******************************************************************/
+void test_UART_BitBang_000(void)
+{
+    const uint8_t addr = 0x33u;
+    virtTmrCtx_t timer = { .timeNow = 0u, .timeStep = 10u };
+    virtUartLinkCtx_t ctx = { .tmrHandle = &timer };
+    uint8_t received = 0u;
+
+    TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&ctx));
+
+    /* 1. */
+    LIBOBD2_UART_SwitchMode(&ctx, DIGITAL_MODE_BEGIN);
+    LIBOBD2_UART_SendPulse(&ctx, false);
+    for (uint8_t bit = 0u; bit < 8u; bit++)
+    {
+        LIBOBD2_UART_SendPulse(&ctx, (0u != ((addr >> bit) & 0x01u)));
+    }
+    LIBOBD2_UART_SendPulse(&ctx, true);
+
+    /* 2. */
+    LIBOBD2_UART_SwitchMode(&ctx, DIGITAL_MODE_END);
+
+    /* 3. */
+    timer.timeNow = 1u;
+    TEST_ASSERT_TRUE(LIBOBD2_UART_RecvByte(&ctx, &received));
+    TEST_ASSERT_EQUAL_HEX8(addr, received);
+}

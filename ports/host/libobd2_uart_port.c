@@ -87,7 +87,7 @@ static bool UART_Init_execute(virtUartLinkCtx_t *ctx, Queue_t *pQueue)
     }
     ctx->uartEventQueue = pQueue;
 
-    currentMode   = DIGITAL_MODE_BEGIN;
+    currentMode   = DIGITAL_MODE_END; /* the UART owns the line */
     bitbangedByte = 0;
     bitbangIdx    = 0;
     s_uart_initialized = 1;
@@ -225,26 +225,41 @@ void LIBOBD2_UART_SendPulse(void* handle, bool pulse)
 
     UART_TRACE_OnPulse(pulse, ctx->tmrHandle->timeNow);
 
-    if (currentMode == DIGITAL_MODE_BEGIN)
+    /* Collect start, 8 data bits (LSB first) and stop while bit-banging */
+    if ((currentMode == DIGITAL_MODE_BEGIN) && (bitbangIdx < 10))
     {
-        bitbangedByte |= (bitbangIdx << pulse);
+        bitbangedByte |= (uint16_t)((uint16_t)pulse << bitbangIdx);
         bitbangIdx++;
-        bitbangIdx %= 10;
-    }
-
-    if (currentMode == DIGITAL_MODE_END)
-    {
-        uartEvent_t event = {0};
-        bitbangedByte &= 0b0111111110;
-        bitbangedByte >>= 1;
-        event.byte = bitbangedByte;
-        q_push(ctx->uartEventQueue, &event);
     }
 }
 
 void LIBOBD2_UART_SwitchMode(void* handle, uint8_t mode)
 {
     virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t*)handle;
+    uartEvent_t event = {0};
+
+    if (mode == DIGITAL_MODE_BEGIN)
+    {
+        bitbangedByte = 0;
+        bitbangIdx    = 0;
+    }
+
+    /* Leaving bit-bang mode puts the complete byte on the line */
+    if ((mode == DIGITAL_MODE_END) && (currentMode == DIGITAL_MODE_BEGIN) && (bitbangIdx == 10))
+    {
+        event.byte         = (uint8_t)((bitbangedByte >> 1) & 0xFF);
+        event.timeReceived = ctx->tmrHandle->timeNow;
+        event.error        = UART_NO_ERROR;
+
+        /* simualte uart erorrs if callback set */
+        if(NULL != ctx->erorr_generator)
+        {
+            ctx->erorr_generator(&event);
+        }
+
+        q_push(ctx->uartEventQueue, &event);
+    }
+
     currentMode = mode;
     UART_TRACE_OnMode(mode, ctx->tmrHandle->timeNow);
 }

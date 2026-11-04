@@ -9,6 +9,7 @@
 /* =============================================== MODULE API ============================================== */
 void test_UART_WriteByte_0(void);
 void test_UART_WriteByte_1(void);
+void test_UART_BitBang_000(void);
 
 #endif /* UART_TEST_H */
 
