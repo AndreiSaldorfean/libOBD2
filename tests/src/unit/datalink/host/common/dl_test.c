@@ -332,3 +332,44 @@ void test_DL_SendRecv_000(void)
     TEST_ASSERT_EQUAL_HEX8(request.sid, resp.sid);
     TEST_ASSERT_EQUAL_HEX8(request.param[0], resp.param[0]);
 }
+
+/******************************************************************
+ * Every DL entry point rejects a NULL or incomplete data link with
+ * OBD_ERR_NULL_PTR before touching the line.
+ ******************************************************************/
+void test_DL_Api_NullLink(void)
+{
+    obd_data_t data = { .sid = 0x01u };
+    size_t len = 0u;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_Connect(NULL).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_SendRequest(NULL, &data, 2u).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_RecvResponse(NULL, &data, &len).response);
+
+    /* A link without a protocol context is rejected too */
+    setUpLine();
+    dataLink.pProtocolCtx = NULL;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_Connect(&dataLink).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_SendRequest(&dataLink, &data, 2u).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_RecvResponse(&dataLink, &data, &len).response);
+    TEST_ASSERT_EQUAL_UINT32(0u, timer.timeNow);
+}
+
+/******************************************************************
+ * Before DL_Connect picks a protocol, send/recv have nothing to call
+ * and must fail with OBD_ERR_NULL_PTR instead of crashing.
+ ******************************************************************/
+void test_DL_Api_NotConnected(void)
+{
+    obd_data_t data = { .sid = 0x01u };
+    size_t len = 0u;
+
+    setUpLine();
+    dataLink.send_request  = NULL;
+    dataLink.recv_response = NULL;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_SendRequest(&dataLink, &data, 2u).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_RecvResponse(&dataLink, &data, &len).response);
+    TEST_ASSERT_EQUAL_UINT32(0u, timer.timeNow);
+}

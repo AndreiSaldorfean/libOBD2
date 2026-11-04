@@ -38,9 +38,32 @@ static dl_recv_response_t recvResponses[NUM_SPT_PROTOCOLS] =
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
+static obd_status_t DL_ValidateLink(const dataLink_if_t *pDataLink);
 static obd_status_t DL_IdentifyProtocol(dataLink_if_t *pDataLink, uint8_t* protocol);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
+/******************************************
+* title: DL_ValidateLink
+* brief: Checks the UART and timer ops, their handles and the protocol context
+*        that every protocol needs. Protocol layers rely on this check.
+******************************************/
+static obd_status_t DL_ValidateLink(const dataLink_if_t *pDataLink)
+{
+    obd_status_t status = {0};
+
+    if ((NULL == pDataLink)
+     || (NULL == pDataLink->pUartOps)
+     || (NULL == pDataLink->pTransportHandle)
+     || (NULL == pDataLink->pTimingOps)
+     || (NULL == pDataLink->pTimingHandle)
+     || (NULL == pDataLink->pProtocolCtx))
+    {
+        status.response = OBD_ERR_NULL_PTR;
+    }
+
+    return status;
+}
+
 static obd_status_t DL_IdentifyProtocol(dataLink_if_t *pDataLink, uint8_t* protocol)
 {
     obd_status_t status = {0};
@@ -62,6 +85,9 @@ obd_status_t DL_Connect(dataLink_if_t *pDataLink)
     obd_status_t status = {0};
     uint8_t protocolIdx = PROTOCOL_NOT_FOUND;
 
+    status = DL_ValidateLink(pDataLink);
+    OBD2_ASSERT_OK(status);
+
     LIBOBD_TransportInit(pDataLink);
     LIBOBD_TimingInit(pDataLink);
 
@@ -80,10 +106,26 @@ exit:
 
 obd_status_t DL_SendRequest(dataLink_if_t *pDataLink, const obd_data_t *serviceRequests, size_t dataLen)
 {
-    return pDataLink->send_request(pDataLink, serviceRequests, dataLen);
+    obd_status_t status = DL_ValidateLink(pDataLink);
+    OBD2_ASSERT_OK(status);
+
+    // Not connected yet
+    OBD2_CHECK_NULLPTR(pDataLink->send_request);
+
+    status = pDataLink->send_request(pDataLink, serviceRequests, dataLen);
+exit:
+    return status;
 }
 
 obd_status_t DL_RecvResponse(dataLink_if_t  *pDataLink, obd_data_t *resp, size_t* dataLen)
 {
-    return pDataLink->recv_response(pDataLink, resp, dataLen);
+    obd_status_t status = DL_ValidateLink(pDataLink);
+    OBD2_ASSERT_OK(status);
+
+    // Not connected yet
+    OBD2_CHECK_NULLPTR(pDataLink->recv_response);
+
+    status = pDataLink->recv_response(pDataLink, resp, dataLen);
+exit:
+    return status;
 }

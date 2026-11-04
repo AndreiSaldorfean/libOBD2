@@ -57,6 +57,8 @@ void targetRunTests()
     RUN_TEST(test_DL_SendByteBitBanged_000);
     RUN_TEST(test_DL_Connect_000);
     RUN_TEST(test_DL_SendRecv_000);
+    RUN_TEST(test_DL_Api_NullLink);
+    RUN_TEST(test_DL_Api_NotConnected);
 
     /* ISO9141 */
     RUN_TEST(test_ISO9141_SendRecvMessage_000);
