@@ -139,7 +139,7 @@ void test_ISO9141_5BaudInit_000(void)
  * The ECU sends only the format byte of a response.
  *   1. The format byte arrives after P2 min, so the header read starts
  *   2. The target byte never arrives, so the P1 window expires
- *   3. RecvMessage must report OBD_ERR_COMM_TRGT_BYTE_NOT_RECVD together
+ *   3. RecvMessage must report OBD_ERR_COMM_DATA_BYTE_NOT_RECVD together
  *      with the P1 timeout, not a bare timeout with response OK
  ******************************************************************/
 void test_ISO9141_RecvMessage_TargetByteTimeout(void)
@@ -179,7 +179,7 @@ void test_ISO9141_RecvMessage_TargetByteTimeout(void)
     /* 2. + 3. */
     obd_status_t status = L2_ISO9141_RecvMessage(&self, &recvdMsg, &recvdLen);
 
-    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_COMM_TRGT_BYTE_NOT_RECVD, status.response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_COMM_DATA_BYTE_NOT_RECVD, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_TIMEOUT_MAX, status.timeout);
     TEST_ASSERT_EQUAL_HEX8(0x48u, recvdMsg.header.fmt);
 }

@@ -22,6 +22,7 @@
 typedef struct
 {
     header_t header;
+    uint8_t protocol;
     uint8_t kb1;
     uint8_t kb2;
 }l2_iso9141_ctx_t;

@@ -81,6 +81,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol_Execute(dataLink_i
         goto exit;
     }
 
+    ctx->protocol = *protocol;
 exit:
     return status;
 }

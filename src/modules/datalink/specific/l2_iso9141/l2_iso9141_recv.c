@@ -1,14 +1,14 @@
 /* ================================================ INCLUDES =============================================== */
+#include "datalink.h"
 #include "l2_iso9141_priv.h"
+#include "statusRetCodes.h"
+#include "utils.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Validate(dataLink_if_t *self, header_t *header);
-OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Execute(dataLink_if_t *self, header_t *header);
-OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Verify(header_t *header);
-OBD2_STATIC OBD2_INLINE obd_status_t L2_ISO9141_ReadHeader(dataLink_if_t *self, header_t *header);
+OBD2_STATIC obd_status_t L2_ISO9141_WaitForResponseStart(dataLink_if_t *self, uint8_t *respByte);
 
 OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Validate(dataLink_if_t *self, message_t *recvdMsg, size_t* len);
 OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Execute(dataLink_if_t *self, message_t *recvdMsg, size_t* len);
@@ -21,45 +21,21 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Verify(obd_data_t *resp);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /******************************************
-* title: L2_ISO9141_ReadHeader_Validate
-* brief: Checks the inputs of L2_ISO9141_ReadHeader.
-* input: self   - data link
-*        header - output for the received header
-* output: obd_status_t - OK, or OBD_ERR_NULL_PTR
+* title: L2_ISO9141_WaitForResponseStart
+* brief: Waits for the first byte (format byte) of an ECU response inside
+*        the P2 window, then stops the P2 timeout.
+* input: self     - data link, with the P2 timeout already running
+*        respByte - output for the received format byte
+* output: obd_status_t - OK, or the P2 max/min timeout code in .timeout
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Validate(dataLink_if_t *self, header_t *header)
+OBD2_STATIC obd_status_t L2_ISO9141_WaitForResponseStart(dataLink_if_t *self, uint8_t *respByte)
 {
-    obd_status_t status = L2_ISO9141_ValidateLink(self);
-    OBD2_ASSERT_OK(status);
-
-    if (NULL == header)
-    {
-        status.response = OBD_ERR_NULL_PTR;
-    }
-
-exit:
-    return status;
-}
-
-/******************************************
-* title: L2_ISO9141_ReadHeader_Execute
-* brief: Waits for the format byte inside the P2 window, then reads the
-*        target and source bytes with P1 timing.
-* input: self   - data link, with the P2 timeout already running
-*        header - output for the received header
-* output: obd_status_t - OK, or the OBD_ERR_COMM_* code of the missing byte
-*         together with its timeout
-******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Execute(dataLink_if_t *self, header_t *header)
-{
-    uint8_t *buffer     = (uint8_t *)header;
     obd_status_t status = {0};
 
     // Format byte
-    while (!LIBOBD_ReceiveByte(self, buffer))
+    while (!LIBOBD_ReceiveByte(self, respByte))
     {
         // Check for P2 Timeout from Tester to ECU
-        status.response = OBD_ERR_COMM_FMT_BYTE_NOT_RECVD;
         status.timeout = OBD_ERR_COMM_P2_TIMEOUT_MAX_TESTER_ECU;
         OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD_IsTimeoutExpired(self));
     }
@@ -68,53 +44,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Execute(dataLink_if_t *self, head
     OBD2_ASSERT_EQUAL_OR_EXIT(true, DL_IsTimeoutMinDone(self, P2_TIME_MIN));
     LIBOBD_StopTimeout(self);
 
-    // Target byte
-    status = DL_ReadByteInTimeframe(self, NULL, buffer + 1, P1_TIME_MIN, P1_TIME_MAX);
-    status.response = OBD_ERR_COMM_TRGT_BYTE_NOT_RECVD;
-    OBD2_ASSERT_NO_TIMEOUT(status);
-
-    // Source byte
-    status = DL_ReadByteInTimeframe(self, NULL, buffer + 2, P1_TIME_MIN, P1_TIME_MAX);
-    status.response = OBD_ERR_COMM_SRC_BYTE_NOT_RECVD;
-    OBD2_ASSERT_NO_TIMEOUT(status);
-
     memset(&status, 0, sizeof(obd_status_t));
-exit:
-    return status;
-}
-
-/******************************************
-* title: L2_ISO9141_ReadHeader_Verify
-* brief: No extra check. The header bytes are not fixed for a response, so
-*        the checksum in L2_ISO9141_RecvMessage is what catches bad bytes.
-* input: header - received header (unused)
-* output: obd_status_t - always OK
-******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_ReadHeader_Verify(header_t *header)
-{
-    obd_status_t status = {0};
-    (void)header;
-    return status;
-}
-
-/******************************************
-* title: L2_ISO9141_ReadHeader
-* brief: Reads the 3-byte ISO9141 header of an ECU response.
-* input: self   - data link, with the P2 timeout already running
-*        header - output for the received header
-* output: obd_status_t - OK, OBD_ERR_NULL_PTR, or the OBD_ERR_COMM_* code of
-*         the missing byte together with its timeout
-******************************************/
-OBD2_STATIC OBD2_INLINE obd_status_t L2_ISO9141_ReadHeader(dataLink_if_t *self, header_t *header)
-{
-    obd_status_t status = {0};
-
-    status = L2_ISO9141_ReadHeader_Validate(self, header);
-    OBD2_ASSERT_OK(status);
-    status = L2_ISO9141_ReadHeader_Execute(self, header);
-    OBD2_ASSERT_OK(status);
-    status = L2_ISO9141_ReadHeader_Verify(header);
-
 exit:
     return status;
 }
@@ -143,8 +73,10 @@ exit:
 
 /******************************************
 * title: L2_ISO9141_RecvMessage_Execute
-* brief: Reads the header, then data bytes until one equals the running
-*        checksum, which ends the frame. Restarts the P2 timeout at the end.
+* brief: Waits for the format byte, then reads header and data bytes until
+*        one equals the running checksum, which ends the frame. The
+*        header.len slot is left empty when the frame has no length byte.
+*        Restarts the P2 timeout at the end.
 * input: self     - data link, with the P2 timeout already running
 *        recvdMsg - output for the received message
 *        len      - output for the number of data bytes (sid included)
@@ -153,38 +85,53 @@ exit:
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Execute(dataLink_if_t *self, message_t *recvdMsg, size_t* len)
 {
+    l2_iso9141_ctx_t ctx = *(l2_iso9141_ctx_t *)self->pProtocolCtx;
     uint8_t *pMsg       = (uint8_t *)recvdMsg;
     obd_status_t status = {0};
-    uint8_t idx         = 0;
-    uint8_t byte        = 0;
+    uint8_t byteRead    = 0;
+    uint8_t byteReadIdx = 0;
     uint8_t runningCheckSum = 0;
     uint32_t elapsedTime = 0;
+    bool hasLenByte      = false;
 
-    status = L2_ISO9141_ReadHeader(self, &recvdMsg->header);
-    OBD2_ASSERT_OK(status);
+    status = L2_ISO9141_WaitForResponseStart(self, &byteRead);
+    status.response = OBD_ERR_COMM_FMT_BYTE_NOT_RECVD;
+    OBD2_ASSERT_NO_TIMEOUT(status);
 
-    runningCheckSum = recvdMsg->header.fmt
-                    + recvdMsg->header.trgAddr
-                    + recvdMsg->header.srcAddr;
+    runningCheckSum = byteRead;
+    pMsg[byteReadIdx++] = byteRead;
 
-    while (ISO9141_MAX_DATA_FIELD_LEN > idx)
+    // Only KWP2000 frames with no length in the format byte carry a length byte
+    hasLenByte = (KWP2000 == ctx.protocol) && (0U == (recvdMsg->header.fmt & 0x3FU));
+
+    // Bound by the message_t layout (header slot incl. len + data), not the wire length,
+    // since byteReadIdx skips header.len when the frame has no length byte
+    while ((sizeof(header_t) + ISO9141_MAX_DATA_FIELD_LEN) > byteReadIdx)
     {
-        status = DL_ReadByteInTimeframe(self, &elapsedTime , &byte, P1_TIME_MIN, P1_TIME_MAX);
+        // Receive byte
+        status = DL_ReadByteInTimeframe(self, &elapsedTime , &byteRead, P1_TIME_MIN, P1_TIME_MAX);
         status.response = OBD_ERR_COMM_DATA_BYTE_NOT_RECVD;
         OBD2_ASSERT_NO_TIMEOUT(status);
 
-        if (byte == runningCheckSum)
+        // Once the header is complete, a byte equal to the running checksum ends the frame
+        if ((sizeof(header_t) <= byteReadIdx) && (byteRead == runningCheckSum))
         {
             /* This byte is the checksum — frame complete */
-            recvdMsg->cs = byte;
-            *len = idx;
+            recvdMsg->cs = byteRead;
+            *len = byteReadIdx - sizeof(header_t);
             memset(&status, 0, sizeof(obd_status_t));
             goto exit;
         }
 
-        pMsg[sizeof(header_t) + idx] = byte;
-        runningCheckSum += byte;
-        idx++;
+        // Construct frame (message_t)
+        pMsg[byteReadIdx++] = byteRead;
+        runningCheckSum += byteRead;
+
+        // Frames without a length byte leave the header.len slot empty
+        if ((3U == byteReadIdx) && !hasLenByte)
+        {
+            byteReadIdx++;
+        }
     }
 
     status.response = OBD_ERR_COMM_RECV_MSG_FAILED;
