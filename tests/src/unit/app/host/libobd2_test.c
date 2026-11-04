@@ -460,3 +460,32 @@ void test_LIBOBD2_DecodeResponse_Unsupported(void)
         TEST_ASSERT_EQUAL_size_t(0, responseLen);
     }
 }
+
+/******************************************************************
+ * The transfer protocol steps no table service uses yet:
+ *   TP_SEND, TP_RECV (one message), TP_READ_UNTIL_TO (not implemented,
+ *   does nothing) and an unknown step (ignored), then TP_END.
+ *   ECU: 48 6B 12 41 05 7B CS
+ ******************************************************************/
+void test_LIBOBD2_DispatchSid_TransferSteps(void)
+{
+    const uint8_t ecuResp[] = { SID_SHOW_CURRENT_DATA + 0x40u, PID_01_COOLANT_TEMP, 0x7BU };
+    const libobd2_service_t service =
+    {
+        .sidSize          = OBD_LONG_SID,
+        .serviceRequests  = SREQ_GET_COOLANT_TEMP,
+        .transferProtocol = { TP_SEND, TP_RECV, TP_READ_UNTIL_TO, 0x7Fu, TP_END },
+    };
+    libobd2_data_t responseBuffer[2] = {0};
+    size_t respLen = 0;
+
+    setUpLine();
+    (void)ecuQueueFrame(REQ_DURATION(2u), ecuResp, sizeof(ecuResp));
+
+    obd_status_t status = LibOBD2_DispatchSid(&ctx, &service, responseBuffer, 2u, &respLen);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
+    TEST_ASSERT_EQUAL_size_t(1, respLen);
+    TEST_ASSERT_EQUAL_HEX8(ecuResp[0], responseBuffer[0].data.sid);
+    TEST_ASSERT_EQUAL_size_t(sizeof(ecuResp), responseBuffer[0].dataLen);
+}

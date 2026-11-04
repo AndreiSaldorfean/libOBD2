@@ -28,6 +28,7 @@ extern size_t ISO9141_SerializeMessage(const message_t *msg, uint8_t *frame, siz
 extern obd_status_t ISO9141_SendMessage(dataLink_if_t *self, const uint8_t *frame, size_t frameLen);
 extern obd_status_t ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t *len);
 extern obd_status_t ISO9141_5BaudInit(dataLink_if_t *self, uint8_t *protocol);
+extern obd_status_t ISO9141_Connect_Verify(dataLink_if_t *self);
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* Fresh virtual line with an ISO9141 tester link on it */
 static void setUpLine(void)
@@ -363,4 +364,50 @@ void test_ISO9141_RecvResponse_NoChecksum(void)
 
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_COMM_RECV_MSG_FAILED, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
+}
+
+/******************************************************************
+ * Keyword bytes 94 94 complete the 5-baud init with the KWP2000
+ * header (C0 33 F1); the protocol stays ISO9141 until KWP2000 is
+ * supported.
+ ******************************************************************/
+void test_ISO9141_5BaudInit_KwpKeyBytes(void)
+{
+    uint8_t protocol = 0xFFu;
+
+    setUpLine();
+
+    /* Same timing as test_ISO9141_5BaudInit_000, only the keyword bytes differ */
+    lineTimer.timeNow = 300U + 2000U + ISO9141_W1_TIME_MIN;
+    UART_WriteByte(&lineUart, 0x55u);
+    lineTimer.timeNow += ISO9141_W2_TIME_MIN;
+    UART_WriteByte(&lineUart, 0x94u);
+    lineTimer.timeNow += ISO9141_W3_TIME_MIN;
+    UART_WriteByte(&lineUart, 0x94u);
+    lineTimer.timeNow += 3*ISO9141_W4_TIME_MIN;
+    UART_WriteByte(&lineUart, (uint8_t)(~0x33u));
+    lineTimer.timeNow = 0u;
+
+    obd_status_t status = ISO9141_5BaudInit(&lineLink, &protocol);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
+    TEST_ASSERT_EQUAL_UINT8(ISO9141, protocol);
+    TEST_ASSERT_EQUAL_HEX8(0xC0u, lineProto.header.fmt);
+    TEST_ASSERT_EQUAL_HEX8(0x33u, lineProto.header.trgAddr);
+    TEST_ASSERT_EQUAL_HEX8(0x94u, lineProto.kb1);
+}
+
+/******************************************************************
+ * Connect_Verify fails when no header was stored in the context,
+ * and passes once one is there.
+ ******************************************************************/
+void test_ISO9141_Connect_Verify_NoHeader(void)
+{
+    setUpLine();
+    lineProto.header = (header_t){0};
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_PROTOCOL_NOT_FOUND, ISO9141_Connect_Verify(&lineLink).response);
+
+    lineProto.header = header_tester;
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, ISO9141_Connect_Verify(&lineLink).response);
 }

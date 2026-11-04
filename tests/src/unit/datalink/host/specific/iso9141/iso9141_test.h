@@ -16,6 +16,8 @@ void test_ISO9141_Api_NullArgs(void);
 void test_ISO9141_RecvResponse_NegativeResponse(void);
 void test_ISO9141_RecvResponse_EmptyFrame(void);
 void test_ISO9141_RecvResponse_NoChecksum(void);
+void test_ISO9141_5BaudInit_KwpKeyBytes(void);
+void test_ISO9141_Connect_Verify_NoHeader(void);
 
 #endif /* ISO9141_TEST_H */
 
