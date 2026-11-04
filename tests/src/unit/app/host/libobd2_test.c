@@ -353,3 +353,24 @@ void test_LIBOBD2_RequestService_CoolantTemp_000(void)
     // TEST_ASSERT_EQUAL_size_t(1, responseLen);
     TEST_ASSERT_EQUAL_UINT8(83u, response[0]);
 }
+
+/******************************************************************
+ * The ECU announces more VIN messages than the response buffer holds.
+ *   1. Tester: 68 6A F1 09 01 CS      ECU: 48 6B 12 49 01 FF CS
+ *   2. The request stops with OBD_ERR_APP_TOO_MANY_MSGS before reading
+ *      any message, and returns no data
+ ******************************************************************/
+void test_LIBOBD2_RequestService_TooManyMsgs(void)
+{
+    const uint8_t cntResp[] = { SID_REQUEST_VEHICLE_INFO + 0x40u, PID_09_VIN_MESSAGE_COUNT, 0xFFu };
+    uint8_t response[RESPONSE_BUF_LEN] = {0};
+    size_t responseLen = 0;
+
+    setUpLine();
+    (void)ecuQueueFrame(REQ_DURATION(2u), cntResp, sizeof(cntResp));
+
+    obd_status_t status = LibOBD2_RequestService(&ctx, OBD_GET_VIN, response, &responseLen);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_APP_TOO_MANY_MSGS, status.response);
+    TEST_ASSERT_EQUAL_size_t(0, responseLen);
+}

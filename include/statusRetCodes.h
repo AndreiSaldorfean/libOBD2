@@ -57,6 +57,10 @@
 #define SRV_STATUS_TIMER                   (0x05)
 #define OBD_ERR_TMR_START_FAILED           (OBD_MAKE_ERROR(SRV_STATUS_TIMER, (uint16_t)0x1U))
 #define OBD_ERR_TMR_STOP_FAILED            (OBD_MAKE_ERROR(SRV_STATUS_TIMER, (uint16_t)0x2U))
+
+// App status codes
+#define SRV_STATUS_APP                     (0x06)
+#define OBD_ERR_APP_TOO_MANY_MSGS          (OBD_MAKE_ERROR(SRV_STATUS_APP, (uint16_t)0x1U))
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
 {

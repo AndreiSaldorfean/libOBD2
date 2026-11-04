@@ -87,6 +87,7 @@ void targetRunTests()
     RUN_TEST(test_LIBOBD2_RequestService_VIN_000);
     RUN_TEST(test_LIBOBD2_RequestService_CALID_000);
     RUN_TEST(test_LIBOBD2_RequestService_CoolantTemp_000);
+    RUN_TEST(test_LIBOBD2_RequestService_TooManyMsgs);
     /* ---- APP TESTS ---- */
     /*================= SANITY TESTS =================*/
 

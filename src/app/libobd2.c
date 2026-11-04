@@ -14,6 +14,8 @@
 #include <stdio.h>
 
 /* ================================================= MACROS ================================================ */
+#define LIBOBD2_RESP_BUF_MSGS  (20U) /* ECU messages one request can collect */
+
 /* ============================================ LOCAL VARIABLES ============================================ */
 OBD2_STATIC libobd2_service_t libobd2Services[OBD2_MAX_NUM_SERVICES] = {OBD_SUPPORTED_SERVICES};
 
@@ -73,6 +75,11 @@ static obd_status_t LibOBD2_DispatchSid(obd_ctx_t* ctx, libobd2_service_t *libob
                 msg_cnt = resp.param[1];
             break;
             case TP_MSGS:
+                // The ECU announced the count; refuse more messages than the buffer holds
+                status.response = OBD_ERR_APP_TOO_MANY_MSGS;
+                OBD2_IF_COND_GOTO_EXIT(msg_cnt > (LIBOBD2_RESP_BUF_MSGS - respIdx));
+                status.response = OBD_STATUS_OK;
+
                 for (size_t i = 0; i < msg_cnt; i++)
                 {
                     status = DL_RecvResponse(pDataLink, &resp, &len);
@@ -184,7 +191,7 @@ obd_status_t LibOBD2_RequestService(
 {
     libobd2_service_t *service = &libobd2Services[obdSid];
     obd_status_t status = {0};
-    libobd2_data_t responseBuffer[20] = {0};
+    libobd2_data_t responseBuffer[LIBOBD2_RESP_BUF_MSGS] = {0};
     size_t respBufLen = 0;
 
     (void)service;
