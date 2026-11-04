@@ -69,7 +69,7 @@ timerCtx_t tmrCtxRx =
     .timeout_user_data   = NULL,
     .timeout_start_ms    = 0,
     /* TIM1 is 16-bit (wraps every ~65 ms) and cannot track P2/P3 timeouts.
-     * Share TIM2's 32-bit free-running counter; LIBOBD2_TMR_Init skips HW
+     * Share TIM2's 32-bit free-running counter; TMR_Init skips HW
      * re-init when TIM2 is already running so the counter is not reset. */
     .timerClk            = RCC_TIM2,
     .rstTimer            = RST_TIM2,
@@ -81,22 +81,22 @@ timerCtx_t tmrCtxRx =
 
 obd_timing_ops_t timerOpsTx =
 {
-        .timer_init         = LIBOBD2_TMR_Init,
-        .delay_ms           = LIBOBD2_TMR_DelayMs,
-        .get_time_ms        = LIBOBD2_TMR_GetTimeMs,
-        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
-        .start_timeout      = LIBOBD2_TMR_StartTimeout,
-        .stop_timeout       = LIBOBD2_TMR_StopTimeout,
+        .timer_init         = TMR_Init,
+        .delay_ms           = TMR_DelayMs,
+        .get_time_ms        = TMR_GetTimeMs,
+        .is_timeout_expired = TMR_IsTimeoutExpired,
+        .start_timeout      = TMR_StartTimeout,
+        .stop_timeout       = TMR_StopTimeout,
 };
 
 obd_timing_ops_t timerOpsRx =
 {
-        .timer_init         = LIBOBD2_TMR_Init,
-        .delay_ms           = LIBOBD2_TMR_DelayMs,
-        .get_time_ms        = LIBOBD2_TMR_GetTimeMs,
-        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
-        .start_timeout      = LIBOBD2_TMR_StartTimeout,
-        .stop_timeout       = LIBOBD2_TMR_StopTimeout,
+        .timer_init         = TMR_Init,
+        .delay_ms           = TMR_DelayMs,
+        .get_time_ms        = TMR_GetTimeMs,
+        .is_timeout_expired = TMR_IsTimeoutExpired,
+        .start_timeout      = TMR_StartTimeout,
+        .stop_timeout       = TMR_StopTimeout,
 };
 
 uart_ctx_t uartCtxTx =
@@ -139,12 +139,12 @@ uart_ctx_t uartCtxRx =
 
 obd_uart_ops_t transportOps =
 {
-    .init        = LIBOBD2_UART_Init,
-    .send_byte   = LIBOBD2_UART_WriteByte,
-    .recv_byte   = LIBOBD2_UART_RecvByte,
-    .send_pulse  = LIBOBD2_UART_SendPulse,
-    .switch_mode = LIBOBD2_UART_SwitchMode,
-    .flush_rx    = LIBOBD2_UART_FlushRx,
+    .init        = UART_Init,
+    .send_byte   = UART_WriteByte,
+    .recv_byte   = UART_RecvByte,
+    .send_pulse  = UART_SendPulse,
+    .switch_mode = UART_SwitchMode,
+    .flush_rx    = UART_FlushRx,
 };
 
 l2_iso9141_ctx_t iso9141CtxTx =

@@ -93,11 +93,11 @@ static void startSession(void)
 }
 
 /* Maps a virtual timer value to trace time. The first timestamp of a session lands on the session start,
- * long idle gaps are shortened, and a timer that went backwards (reset without LIBOBD2_UART_Init) opens
+ * long idle gaps are shortened, and a timer that went backwards (reset without UART_Init) opens
  * a new session. */
 static vcdTime_t traceTime(uint32_t timeMs)
 {
-    /* LIBOBD2_UART_Init() ran before UART_TRACE_Begin(): open the first session here, otherwise the first
+    /* UART_Init() ran before UART_TRACE_Begin(): open the first session here, otherwise the first
      * edge lands at time 0 on top of the idle level and is lost */
     if (g_session == 0u)
     {

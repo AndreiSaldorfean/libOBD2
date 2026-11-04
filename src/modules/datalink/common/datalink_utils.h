@@ -14,21 +14,21 @@
 #endif /* SPT_TRACING */
 
 /* ================================================= MACROS ================================================ */
-#define LIBOBD_SetTimeSample(handle, val)    (handle->timeSample = val)
-#define LIBOBD_GetTimeSample(handle)         (handle->timeSample)
-#define LIBOBD_TimingInit(handle)            (handle->pTimingOps->timer_init(handle->pTimingHandle))
-#define LIBOBD_GetTimeMs(handle)             (handle->pTimingOps->get_time_ms(handle->pTimingHandle))
-#define LIBOBD_Delay(handle, delay)          (handle->pTimingOps->delay_ms(handle->pTimingHandle, delay))
-#define LIBOBD_StartTimeout(handle, timeout) (handle->pTimingOps->start_timeout(handle->pTimingHandle, timeout, NULL, NULL))
-#define LIBOBD_StopTimeout(handle)           (handle->pTimingOps->stop_timeout(handle->pTimingHandle))
-#define LIBOBD_IsTimeoutExpired(handle)      (handle->pTimingOps->is_timeout_expired(handle->pTimingHandle))
+#define LIBOBD2_TMR_SetTimeSample(handle, val)      (handle->timeSample = val)
+#define LIBOBD2_TMR_GetTimeSample(handle)           (handle->timeSample)
+#define LIBOBD2_TMR_Init(handle)                    (handle->pTimingOps->timer_init(handle->pTimingHandle))
+#define LIBOBD2_TMR_GetTimeMs(handle)               (handle->pTimingOps->get_time_ms(handle->pTimingHandle))
+#define LIBOBD2_TMR_Delay(handle, delay)            (handle->pTimingOps->delay_ms(handle->pTimingHandle, delay))
+#define LIBOBD2_TMR_StartTimeout(handle, timeout)   (handle->pTimingOps->start_timeout(handle->pTimingHandle, timeout, NULL, NULL))
+#define LIBOBD2_TMR_StopTimeout(handle)             (handle->pTimingOps->stop_timeout(handle->pTimingHandle))
+#define LIBOBD2_TMR_IsTimeoutExpired(handle)        (handle->pTimingOps->is_timeout_expired(handle->pTimingHandle))
 
-#define LIBOBD_TransportInit(handle)      (handle->pUartOps->init(handle->pTransportHandle))
-#define LIBOBD_SendByte(handle, byte)     (handle->pUartOps->send_byte(handle->pTransportHandle, byte))
-#define LIBOBD_ReceiveByte(handle, byte)  (handle->pUartOps->recv_byte(handle->pTransportHandle, byte))
-#define LIBOBD_SendPulse(handle, pulse)   (handle->pUartOps->send_pulse(handle->pTransportHandle, pulse))
-#define LIBOBD_FlushRx(handle)            do { if (NULL != handle->pUartOps->flush_rx) { handle->pUartOps->flush_rx(handle->pTransportHandle); } } while (0)
-#define LIBOBD_SwitchMode(handle, mode)   (handle->pUartOps->switch_mode(handle->pTransportHandle, mode))
+#define LIBOBD2_UART_Init(handle)                   (handle->pUartOps->init(handle->pTransportHandle))
+#define LIBOBD2_UART_SendByte(handle, byte)         (handle->pUartOps->send_byte(handle->pTransportHandle, byte))
+#define LIBOBD2_UART_ReceiveByte(handle, byte)      (handle->pUartOps->recv_byte(handle->pTransportHandle, byte))
+#define LIBOBD2_UART_SendPulse(handle, pulse)       (handle->pUartOps->send_pulse(handle->pTransportHandle, pulse))
+#define LIBOBD2_UART_FlushRx(handle)                do { if (NULL != handle->pUartOps->flush_rx) { handle->pUartOps->flush_rx(handle->pTransportHandle); } } while (0)
+#define LIBOBD2_UART_SwitchMode(handle, mode)       (handle->pUartOps->switch_mode(handle->pTransportHandle, mode))
 
 #define PULSE_HIGH (1U)
 #define PULSE_LOW (0U)
@@ -65,26 +65,26 @@ static inline void DL_SendByteBitBanged(dataLink_if_t *self, uint8_t byte, uint8
     const uint16_t delay = (1000 / baudRate);
 
     // Set line HIGH (idle) and switch to bit-bang mode for 5 baud
-    LIBOBD_SwitchMode(self, DIGITAL_MODE_BEGIN);
+    LIBOBD2_UART_SwitchMode(self, DIGITAL_MODE_BEGIN);
 
     // Start bit (LOW)
-    LIBOBD_SendPulse(self, PULSE_LOW);
-    LIBOBD_Delay(self, delay);
+    LIBOBD2_UART_SendPulse(self, PULSE_LOW);
+    LIBOBD2_TMR_Delay(self, delay);
 
     // Byte
     for (uint8_t i = 0; i < 8; i++)
     {
         uint8_t bit = (byte >> i) & 0x01;
-        LIBOBD_SendPulse(self, bit ? PULSE_HIGH : PULSE_LOW);
-        LIBOBD_Delay(self, delay);
+        LIBOBD2_UART_SendPulse(self, bit ? PULSE_HIGH : PULSE_LOW);
+        LIBOBD2_TMR_Delay(self, delay);
     }
 
     // Stop bit (HIGH)
-    LIBOBD_SendPulse(self, PULSE_HIGH);
-    LIBOBD_Delay(self, delay);
+    LIBOBD2_UART_SendPulse(self, PULSE_HIGH);
+    LIBOBD2_TMR_Delay(self, delay);
 
     // Switch to 10400 baud for response
-    LIBOBD_SwitchMode(self, DIGITAL_MODE_END);
+    LIBOBD2_UART_SwitchMode(self, DIGITAL_MODE_END);
 }
 
 
@@ -104,17 +104,17 @@ static inline obd_status_t DL_ReadByteInTimeframe(dataLink_if_t *self, uint32_t 
     #if defined(SPT_TRACING)
     TRACE_TIMER_LOG(TRACE_TAG_TMR_START, timeMax);
     #endif /* SPT_TRACING */
-    timeStart = LIBOBD_GetTimeMs(self);
+    timeStart = LIBOBD2_TMR_GetTimeMs(self);
 
     status.response = OBD_ERR_TMR_START_FAILED;
-    OBD2_IF_COND_GOTO_EXIT(OBD_TMR_OK != LIBOBD_StartTimeout(self, timeMax));
+    OBD2_IF_COND_GOTO_EXIT(OBD_TMR_OK != LIBOBD2_TMR_StartTimeout(self, timeMax));
     status.response = OBD_STATUS_OK;
 
-    rxStatus = LIBOBD_ReceiveByte(self, byte);
+    rxStatus = LIBOBD2_UART_ReceiveByte(self, byte);
     while (OBD_UART_RX_NO_DATA == rxStatus)
     {
         status.timeout = OBD_ERR_TIMEOUT_MAX;
-        if (LIBOBD_IsTimeoutExpired(self))
+        if (LIBOBD2_TMR_IsTimeoutExpired(self))
         {
             #if defined(SPT_TRACING)
             TRACE_TIMER_LOG(TRACE_TAG_TMR_EXP_MAX, timeMax);
@@ -122,11 +122,11 @@ static inline obd_status_t DL_ReadByteInTimeframe(dataLink_if_t *self, uint32_t 
             lTimeElapsed = timeEnd - timeStart;
             goto exit;
         }
-        rxStatus = LIBOBD_ReceiveByte(self, byte);
+        rxStatus = LIBOBD2_UART_ReceiveByte(self, byte);
     }
     status.timeout = OBD_STATUS_OK;
 
-    timeEnd = LIBOBD_GetTimeMs(self);
+    timeEnd = LIBOBD2_TMR_GetTimeMs(self);
     lTimeElapsed = timeEnd - timeStart;
 
     // The byte arrived but was corrupted on the line
@@ -156,16 +156,16 @@ static inline bool DL_RecvByteBlocking(dataLink_if_t *self, uint8_t *byte)
 {
     obd_uart_rx_status_t rxStatus = OBD_UART_RX_NO_DATA;
 
-    OBD2_IF_COND_GOTO_EXIT(OBD_TMR_OK != LIBOBD_StartTimeout(self, MAX_BLOCKING_RECV_TIME));
+    OBD2_IF_COND_GOTO_EXIT(OBD_TMR_OK != LIBOBD2_TMR_StartTimeout(self, MAX_BLOCKING_RECV_TIME));
 
     while (OBD_UART_RX_NO_DATA == rxStatus)
     {
-        if (LIBOBD_IsTimeoutExpired(self))
+        if (LIBOBD2_TMR_IsTimeoutExpired(self))
         {
             goto exit;
         }
 
-        rxStatus = LIBOBD_ReceiveByte(self, byte);
+        rxStatus = LIBOBD2_UART_ReceiveByte(self, byte);
     }
 
 exit:
@@ -179,8 +179,8 @@ static inline bool DL_IsTimeoutMinDone(dataLink_if_t *self, uint32_t minTimeout)
 {
     uint32_t p2TimeElapsed = 0;
 
-    p2TimeElapsed = LIBOBD_GetTimeMs(self);
-    p2TimeElapsed -= LIBOBD_GetTimeSample(self);
+    p2TimeElapsed = LIBOBD2_TMR_GetTimeMs(self);
+    p2TimeElapsed -= LIBOBD2_TMR_GetTimeSample(self);
 
     return p2TimeElapsed >= minTimeout;
 }
@@ -194,9 +194,9 @@ static inline obd_status_t DL_StartTimeout(dataLink_if_t *self, uint32_t timeout
 {
     obd_status_t status = {0};
 
-    LIBOBD_SetTimeSample(self, LIBOBD_GetTimeMs(self));
+    LIBOBD2_TMR_SetTimeSample(self, LIBOBD2_TMR_GetTimeMs(self));
 
-    if (OBD_TMR_OK != LIBOBD_StartTimeout(self, timeout))
+    if (OBD_TMR_OK != LIBOBD2_TMR_StartTimeout(self, timeout))
     {
         status.response = OBD_ERR_TMR_START_FAILED;
     }

@@ -56,7 +56,7 @@ static obd_uart_rx_status_t UART_RxErrorFromStatus(uint32_t sr)
 
 /******************************************
 * title: UART_Init_Validate
-* brief: Checks the arguments of LIBOBD2_UART_Init.
+* brief: Checks the arguments of UART_Init.
 ******************************************/
 static bool UART_Init_Validate(const uart_ctx_t *ctx)
 {
@@ -100,10 +100,10 @@ static void UART_Init_Execute(const uart_ctx_t *ctx)
 
 /* ================================================ MODULE API ============================================= */
 /******************************************
-* title: LIBOBD2_UART_Init
+* title: UART_Init
 * brief: Sets up the USART and its pins for K-line communication.
 ******************************************/
-bool LIBOBD2_UART_Init(void* handle)
+bool UART_Init(void* handle)
 {
     uart_ctx_t *ctx = (uart_ctx_t *)handle;
     bool ok = false;
@@ -117,11 +117,11 @@ exit:
 }
 
 /******************************************
-* title: LIBOBD2_UART_WriteByte
+* title: UART_WriteByte
 * brief: Sends one byte and waits until it has left the shift register,
 *        yielding while it does.
 ******************************************/
-void LIBOBD2_UART_WriteByte(void* handle, uint8_t data)
+void UART_WriteByte(void* handle, uint8_t data)
 {
     uart_ctx_t *ctx = (uart_ctx_t *)handle;
 
@@ -141,11 +141,11 @@ void LIBOBD2_UART_WriteByte(void* handle, uint8_t data)
 }
 
 /******************************************
-* title: LIBOBD2_UART_RecvByte
+* title: UART_RecvByte
 * brief: Reads the pending byte, if any, and reports the USART error it came
 *        with. Reading SR then DR clears the error flags.
 ******************************************/
-obd_uart_rx_status_t LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer)
+obd_uart_rx_status_t UART_RecvByte(void* handle, uint8_t *recv_buffer)
 {
     uart_ctx_t *ctx = (uart_ctx_t *)handle;
     obd_uart_rx_status_t rxStatus = OBD_UART_RX_NO_DATA;
@@ -170,11 +170,11 @@ obd_uart_rx_status_t LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer)
 }
 
 /******************************************
-* title: LIBOBD2_UART_FlushRx
+* title: UART_FlushRx
 * brief: Lets the last sent byte come back, then drops whatever is pending in
 *        the receive register.
 ******************************************/
-void LIBOBD2_UART_FlushRx(void* handle)
+void UART_FlushRx(void* handle)
 {
     uart_ctx_t *ctx = (uart_ctx_t *)handle;
 
@@ -196,10 +196,10 @@ void LIBOBD2_UART_FlushRx(void* handle)
 }
 
 /******************************************
-* title: LIBOBD2_UART_SendPulse
+* title: UART_SendPulse
 * brief: Drives the TX pin high or low while it is in a bit-bang mode.
 ******************************************/
-void LIBOBD2_UART_SendPulse(void* handle, bool pulse)
+void UART_SendPulse(void* handle, bool pulse)
 {
     uart_ctx_t *ctx = (uart_ctx_t *)handle;
 
@@ -218,11 +218,11 @@ void LIBOBD2_UART_SendPulse(void* handle, bool pulse)
 }
 
 /******************************************
-* title: LIBOBD2_UART_SwitchMode
+* title: UART_SwitchMode
 * brief: Hands the TX pin to GPIO for bit-banging (*_BEGIN / *_START) or
 *        back to the USART (*_END).
 ******************************************/
-void LIBOBD2_UART_SwitchMode(void* handle, uint8_t mode)
+void UART_SwitchMode(void* handle, uint8_t mode)
 {
     uart_ctx_t *ctx = (uart_ctx_t *)handle;
 

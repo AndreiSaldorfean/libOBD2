@@ -27,16 +27,16 @@ static inline bool isTimeoutMinDone(dataLink_if_t *self, uint32_t minTimeout)
 {
     uint32_t p2TimeElapsed = 0;
 
-    p2TimeElapsed = LIBOBD_GetTimeMs(self);
-    p2TimeElapsed -= LIBOBD_GetTimeSample(self);
+    p2TimeElapsed = LIBOBD2_TMR_GetTimeMs(self);
+    p2TimeElapsed -= LIBOBD2_TMR_GetTimeSample(self);
 
     return p2TimeElapsed >= minTimeout;
 }
 
 static inline void startTimeout(dataLink_if_t *self, uint32_t timeout)
 {
-    LIBOBD_SetTimeSample(self, LIBOBD_GetTimeMs(self));
-    LIBOBD_StartTimeout(self, timeout);
+    LIBOBD2_TMR_SetTimeSample(self, LIBOBD2_TMR_GetTimeMs(self));
+    LIBOBD2_TMR_StartTimeout(self, timeout);
 }
 
 OBD2_STATIC uint8_t ECU_L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t len)
@@ -90,16 +90,16 @@ OBD2_STATIC obd_status_t ECU_L2_ISO9141_SendMessage(dataLink_if_t *self, uint8_t
 {
     obd_status_t status = {0};
 
-    LIBOBD_Delay(self, 26);
+    LIBOBD2_TMR_Delay(self, 26);
 
     for (size_t idx = 0; idx < len; idx++)
     {
-        LIBOBD_SendByte(self, msg[idx]);
-        LIBOBD_Delay(self, P1_TIME_MIN);
+        LIBOBD2_UART_SendByte(self, msg[idx]);
+        LIBOBD2_TMR_Delay(self, P1_TIME_MIN);
     }
 
     // Clear echo
-    LIBOBD_FlushRx(self);
+    LIBOBD2_UART_FlushRx(self);
 
     memset(&status, 0, sizeof(obd_status_t));
     return status;
@@ -168,21 +168,21 @@ OBD2_STATIC obd_status_t ECU_L2_ISO9141_5BaudInit(dataLink_if_t *self)
     }
 
     OBD2_ASSERT_EQUAL_OR_EXIT(0x33, syncByte);
-    LIBOBD_Delay(self, ISO9141_W1_TIME_MIN);
+    LIBOBD2_TMR_Delay(self, ISO9141_W1_TIME_MIN);
 
     // Send sync byte
-    LIBOBD_SendByte(self, 0x55);
-    LIBOBD_FlushRx(self);
+    LIBOBD2_UART_SendByte(self, 0x55);
+    LIBOBD2_UART_FlushRx(self);
 
     // Send KB1
     YIELD;
-    LIBOBD_Delay(self, ISO9141_W2_TIME_MIN);
-    LIBOBD_SendByte(self, 0x08);
-    LIBOBD_FlushRx(self);
+    LIBOBD2_TMR_Delay(self, ISO9141_W2_TIME_MIN);
+    LIBOBD2_UART_SendByte(self, 0x08);
+    LIBOBD2_UART_FlushRx(self);
 
     // Send KB2
-    LIBOBD_SendByte(self, 0x08);
-    LIBOBD_FlushRx(self);
+    LIBOBD2_UART_SendByte(self, 0x08);
+    LIBOBD2_UART_FlushRx(self);
 
     // Receive kb2 inverted
     status = DL_ReadByteInTimeframe(self, NULL, &kb2Inverted, 0, ISO9141_W4_TIME_MAX);
@@ -190,8 +190,8 @@ OBD2_STATIC obd_status_t ECU_L2_ISO9141_5BaudInit(dataLink_if_t *self)
 
     // Send inverted address
     YIELD;
-    LIBOBD_Delay(self, ISO9141_W4_TIME_MIN);
-    LIBOBD_SendByte(self, ~0x33);
+    LIBOBD2_TMR_Delay(self, ISO9141_W4_TIME_MIN);
+    LIBOBD2_UART_SendByte(self, ~0x33);
 
     ctx->header.fmt = 0x48;
     ctx->header.trgAddr = 0x6B;

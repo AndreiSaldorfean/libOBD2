@@ -56,21 +56,21 @@ static bool keepLine(void *handle);
 static obd_timing_ops_t tmrOps =
 {
     .timer_init         = keepTimer,
-    .delay_ms           = LIBOBD2_TMR_DelayMs,
-    .get_time_ms        = LIBOBD2_TMR_GetTimeMs,
-    .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
-    .start_timeout      = LIBOBD2_TMR_StartTimeout,
-    .stop_timeout       = LIBOBD2_TMR_StopTimeout,
+    .delay_ms           = TMR_DelayMs,
+    .get_time_ms        = TMR_GetTimeMs,
+    .is_timeout_expired = TMR_IsTimeoutExpired,
+    .start_timeout      = TMR_StartTimeout,
+    .stop_timeout       = TMR_StopTimeout,
 };
 
 static obd_uart_ops_t uartOps =
 {
     .init        = keepLine,
-    .send_byte   = LIBOBD2_UART_WriteByte,
-    .recv_byte   = LIBOBD2_UART_RecvByte,
-    .send_pulse  = LIBOBD2_UART_SendPulse,
-    .switch_mode = LIBOBD2_UART_SwitchMode,
-    .flush_rx    = LIBOBD2_UART_FlushRx,
+    .send_byte   = UART_WriteByte,
+    .recv_byte   = UART_RecvByte,
+    .send_pulse  = UART_SendPulse,
+    .switch_mode = UART_SwitchMode,
+    .flush_rx    = UART_FlushRx,
 };
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
@@ -95,7 +95,7 @@ static void setUpLine(void)
     timer = (virtTmrCtx_t){ .timeStep = TIME_STEP };
     uartCtx.tmrHandle       = &timer;
     uartCtx.faults          = (virtUartFaultHooks_t){0};
-    TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&uartCtx));
+    TEST_ASSERT_TRUE(UART_Init(&uartCtx));
 
     protoCtx = (l2_iso9141_ctx_t){ .header = header_tester, .kb1 = 0x08u, .kb2 = 0x08u };
 
@@ -141,7 +141,7 @@ static uint32_t ecuQueueFrame(uint32_t reqEnd, const uint8_t *data, size_t dataL
     for (size_t idx = 0; idx < frameLen; idx++)
     {
         timer.timeNow = firstByteTime + (uint32_t)idx * ECU_BYTE_GAP;
-        LIBOBD2_UART_WriteByte(&uartCtx, frame[idx]);
+        UART_WriteByte(&uartCtx, frame[idx]);
     }
     timer.timeNow = 0u;
 
@@ -212,13 +212,13 @@ void test_LIBOBD2_Init_000(void)
 
     /* Same ECU timing as test_ISO9141_5BaudInit_000: W5 + 10 bits at 5 baud, then W1..W4 */
     timer.timeNow = ISO9141_W5_TIME_MIN + 2000u + ISO9141_W1_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, 0x55u);
+    UART_WriteByte(&uartCtx, 0x55u);
     timer.timeNow += ISO9141_W2_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, 0x08u);
+    UART_WriteByte(&uartCtx, 0x08u);
     timer.timeNow += ISO9141_W3_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, 0x08u);
+    UART_WriteByte(&uartCtx, 0x08u);
     timer.timeNow += 3u * ISO9141_W4_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, (uint8_t)(~0x33u));
+    UART_WriteByte(&uartCtx, (uint8_t)(~0x33u));
     timer.timeNow = 0u;
 
     UART_TRACE_Begin("test_LIBOBD2_Init_000.vcd");

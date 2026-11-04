@@ -43,12 +43,12 @@ void test_ISO9141_SendRecvMessage_000(void)
     TEST_ASSERT_EQUAL_size_t(6, wireLen);
 
     /* The vectors are static: start every run from a clean clock and an empty line.
-     * Not LIBOBD2_TMR_Init(): it zeroes the whole timer, including timeStep. */
+     * Not TMR_Init(): it zeroes the whole timer, including timeStep. */
     tmr_ctx_tester.timeNow        = 0u;
     tmr_ctx_tester.timeoutTime    = 0u;
     tmr_ctx_tester.timeoutStarted = false;
     UART_TRACE_Begin("test_ISO9141_SendRecvMessage_000.vcd");
-    TEST_ASSERT_TRUE(LIBOBD_TransportInit(self));
+    TEST_ASSERT_TRUE(LIBOBD2_UART_Init(self));
 
     /* 1. Write */
     obd_status_t status = L2_ISO9141_SendMessage(self, aSentMsg, wireLen);
@@ -56,7 +56,7 @@ void test_ISO9141_SendRecvMessage_000(void)
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
 
     /* 2. The response may not start before P2 min (counted from the end of the request) */
-    LIBOBD_Delay(self, P2_TIME_MIN);
+    LIBOBD2_TMR_Delay(self, P2_TIME_MIN);
 
     /* 3. Read */
     message_t recvdMsg = {0};
@@ -99,7 +99,7 @@ void test_ISO9141_5BaudInit_000(void)
     };
     uint8_t protocol = 0u;
 
-    TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&uartCtx));
+    TEST_ASSERT_TRUE(UART_Init(&uartCtx));
 
 
     /* ECU responses in the order expected by the ISO9141-2 5-baud connect sequence:
@@ -107,13 +107,13 @@ void test_ISO9141_5BaudInit_000(void)
      * its wake-up address on the same virtual loopback queue, so we preload the ECU
      * replies ahead of the self-generated 0x33 response to keep the reads ordered. */
     timer.timeNow = 300U + 2000U + ISO9141_W1_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, 0x55u);
+    UART_WriteByte(&uartCtx, 0x55u);
     timer.timeNow += ISO9141_W2_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, 0x08u);
+    UART_WriteByte(&uartCtx, 0x08u);
     timer.timeNow += ISO9141_W3_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, 0x08u);
+    UART_WriteByte(&uartCtx, 0x08u);
     timer.timeNow += 3*ISO9141_W4_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, (uint8_t)(~0x33u));
+    UART_WriteByte(&uartCtx, (uint8_t)(~0x33u));
 
     // reset the time
     timer.timeNow = 0u;
@@ -165,11 +165,11 @@ void test_ISO9141_RecvMessage_TargetByteTimeout(void)
     message_t recvdMsg = {0};
     size_t recvdLen = 0;
 
-    TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&uartCtx));
+    TEST_ASSERT_TRUE(UART_Init(&uartCtx));
 
     /* 1. Only the format byte is on the line, after P2 min */
     timer.timeNow = P2_TIME_MIN + timer.timeStep;
-    LIBOBD2_UART_WriteByte(&uartCtx, 0x48u);
+    UART_WriteByte(&uartCtx, 0x48u);
 
     /* P2 starts at the end of the (virtual) request */
     timer.timeNow = 0u;
@@ -228,17 +228,17 @@ void test_ISO9141_5BaudInit_WrongKeyBytes(void)
     };
     uint8_t protocol = 0xFFu;
 
-    TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&uartCtx));
+    TEST_ASSERT_TRUE(UART_Init(&uartCtx));
 
     /* Same timing as test_ISO9141_5BaudInit_000, only the keyword bytes differ */
     timer.timeNow = 300U + 2000U + ISO9141_W1_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, 0x55u);
+    UART_WriteByte(&uartCtx, 0x55u);
     timer.timeNow += ISO9141_W2_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, 0x12u);
+    UART_WriteByte(&uartCtx, 0x12u);
     timer.timeNow += ISO9141_W3_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, 0x34u);
+    UART_WriteByte(&uartCtx, 0x34u);
     timer.timeNow += 3*ISO9141_W4_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, (uint8_t)(~0x33u));
+    UART_WriteByte(&uartCtx, (uint8_t)(~0x33u));
 
     timer.timeNow = 0u;
     obd_status_t status = L2_ISO9141_5BaudInit(&self, &protocol);

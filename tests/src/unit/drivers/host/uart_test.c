@@ -14,12 +14,12 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-extern bool LIBOBD2_UART_Init(void* handle);
-extern obd_uart_rx_status_t LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer);
-extern void LIBOBD2_UART_WriteByte(void* handle, uint8_t data);
-extern void LIBOBD2_UART_FlushRx(void* handle);
-extern void LIBOBD2_UART_SendPulse(void* handle, bool pulse);
-extern void LIBOBD2_UART_SwitchMode(void* handle, uint8_t mode);
+extern bool UART_Init(void* handle);
+extern obd_uart_rx_status_t UART_RecvByte(void* handle, uint8_t *recv_buffer);
+extern void UART_WriteByte(void* handle, uint8_t data);
+extern void UART_FlushRx(void* handle);
+extern void UART_SendPulse(void* handle, bool pulse);
+extern void UART_SwitchMode(void* handle, uint8_t mode);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */
@@ -37,14 +37,14 @@ void test_UART_WriteByte_0(void)
     UART_TRACE_Begin("./test_UART_WriteByte_0.vcd");
     UART_TRACE_Note("ceva");
 
-    LIBOBD2_UART_Init(&ctx);
-    LIBOBD2_UART_WriteByte(&ctx, 0x49);   /* recorded at timeNow=0 */
+    UART_Init(&ctx);
+    UART_WriteByte(&ctx, 0x49);   /* recorded at timeNow=0 */
     /* do NOT advance the timer — timeNow still equals the event timestamp */
 
     timer.timeNow = 1;
 
     uint8_t received = 0u;
-    bool got_byte = (OBD_UART_RX_OK == LIBOBD2_UART_RecvByte(&ctx, &received));
+    bool got_byte = (OBD_UART_RX_OK == UART_RecvByte(&ctx, &received));
 
     TEST_ASSERT_EQUAL_UINT32(0x49,received);
     UART_TRACE_End();
@@ -63,46 +63,46 @@ void test_UART_WriteByte_1(void)
 
     UART_TRACE_Begin("./test_UART_WriteByte_1.vcd");
 
-    LIBOBD2_UART_Init(&ctx);
+    UART_Init(&ctx);
 
     uint8_t byte = 0x55;
     /* 5 baud: 200 ms per bit. The virtual timer counts whole ms, so 10400 baud (0.096 ms) can't be bit-banged */
     const uint16_t delay = (1000 / 5);
 
     // Set line HIGH (idle) and switch to bit-bang mode for 5 baud
-    LIBOBD2_UART_SwitchMode(&ctx, DIGITAL_MODE_BEGIN);
+    UART_SwitchMode(&ctx, DIGITAL_MODE_BEGIN);
 
-    LIBOBD2_UART_SendPulse(&ctx, PULSE_LOW);
-    LIBOBD2_TMR_DelayMs(&timer, 200);
-    LIBOBD2_UART_SendPulse(&ctx, PULSE_HIGH);
+    UART_SendPulse(&ctx, PULSE_LOW);
+    TMR_DelayMs(&timer, 200);
+    UART_SendPulse(&ctx, PULSE_HIGH);
 
     // Start bit (LOW)
-    LIBOBD2_UART_SendPulse(&ctx, PULSE_LOW);
-    LIBOBD2_TMR_DelayMs(&timer, delay);
+    UART_SendPulse(&ctx, PULSE_LOW);
+    TMR_DelayMs(&timer, delay);
 
     // Byte
     for (uint8_t i = 0; i < 8; i++)
     {
         uint8_t bit = (byte >> i) & 0x01;
-        LIBOBD2_UART_SendPulse(&ctx, bit ? PULSE_HIGH : PULSE_LOW);
-        LIBOBD2_TMR_DelayMs(&timer, delay);
+        UART_SendPulse(&ctx, bit ? PULSE_HIGH : PULSE_LOW);
+        TMR_DelayMs(&timer, delay);
     }
 
     // Stop bit (HIGH)
-    LIBOBD2_UART_SendPulse(&ctx, PULSE_HIGH);
-    LIBOBD2_TMR_DelayMs(&timer, delay);
+    UART_SendPulse(&ctx, PULSE_HIGH);
+    TMR_DelayMs(&timer, delay);
 
     // Switch to 10400 baud for response
-    LIBOBD2_UART_SwitchMode(&ctx, DIGITAL_MODE_END);
+    UART_SwitchMode(&ctx, DIGITAL_MODE_END);
 
-    LIBOBD2_TMR_DelayMs(&timer, 100);
-    LIBOBD2_UART_WriteByte(&ctx, 0x69);
+    TMR_DelayMs(&timer, 100);
+    UART_WriteByte(&ctx, 0x69);
 
-    LIBOBD2_TMR_DelayMs(&timer, 300);
-    LIBOBD2_UART_WriteByte(&ctx, 0x96);
+    TMR_DelayMs(&timer, 300);
+    UART_WriteByte(&ctx, 0x96);
 
-    LIBOBD2_TMR_DelayMs(&timer, 300);
-    LIBOBD2_UART_WriteByte(&ctx, 0x42);
+    TMR_DelayMs(&timer, 300);
+    UART_WriteByte(&ctx, 0x42);
 
     UART_TRACE_End();
 }
@@ -120,22 +120,22 @@ void test_UART_BitBang_000(void)
     virtUartLinkCtx_t ctx = { .tmrHandle = &timer };
     uint8_t received = 0u;
 
-    TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&ctx));
+    TEST_ASSERT_TRUE(UART_Init(&ctx));
 
     /* 1. */
-    LIBOBD2_UART_SwitchMode(&ctx, DIGITAL_MODE_BEGIN);
-    LIBOBD2_UART_SendPulse(&ctx, false);
+    UART_SwitchMode(&ctx, DIGITAL_MODE_BEGIN);
+    UART_SendPulse(&ctx, false);
     for (uint8_t bit = 0u; bit < 8u; bit++)
     {
-        LIBOBD2_UART_SendPulse(&ctx, (0u != ((addr >> bit) & 0x01u)));
+        UART_SendPulse(&ctx, (0u != ((addr >> bit) & 0x01u)));
     }
-    LIBOBD2_UART_SendPulse(&ctx, true);
+    UART_SendPulse(&ctx, true);
 
     /* 2. */
-    LIBOBD2_UART_SwitchMode(&ctx, DIGITAL_MODE_END);
+    UART_SwitchMode(&ctx, DIGITAL_MODE_END);
 
     /* 3. */
     timer.timeNow = 1u;
-    TEST_ASSERT_EQUAL(OBD_UART_RX_OK, LIBOBD2_UART_RecvByte(&ctx, &received));
+    TEST_ASSERT_EQUAL(OBD_UART_RX_OK, UART_RecvByte(&ctx, &received));
     TEST_ASSERT_EQUAL_HEX8(addr, received);
 }

@@ -220,21 +220,21 @@ static enum theft_trial_res prop_send_then_recv_roundtrip(struct theft *t, void 
         .tmrHandle      = &timer,
     };
 
-    LIBOBD2_UART_Init(&uartCtx);
+    UART_Init(&uartCtx);
 
     for (size_t idx = 0; idx < wireLen; idx++)
     {
-        LIBOBD2_UART_WriteByte(&uartCtx, aSentMsg[idx]);
+        UART_WriteByte(&uartCtx, aSentMsg[idx]);
     }
 
-    obd_uart_ops_t uartOps = { .recv_byte = LIBOBD2_UART_RecvByte };
+    obd_uart_ops_t uartOps = { .recv_byte = UART_RecvByte };
     obd_timing_ops_t timingOps =
     {
-        .get_time_ms       = LIBOBD2_TMR_GetTimeMs,
-        .delay_ms          = LIBOBD2_TMR_DelayMs,
-        .start_timeout     = LIBOBD2_TMR_StartTimeout,
-        .stop_timeout      = LIBOBD2_TMR_StopTimeout,
-        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
+        .get_time_ms       = TMR_GetTimeMs,
+        .delay_ms          = TMR_DelayMs,
+        .start_timeout     = TMR_StartTimeout,
+        .stop_timeout      = TMR_StopTimeout,
+        .is_timeout_expired = TMR_IsTimeoutExpired,
     };
     dataLink_if_t linkCtx =
     {
@@ -250,9 +250,9 @@ static enum theft_trial_res prop_send_then_recv_roundtrip(struct theft *t, void 
 
     /* Mirrors what a prior send (L2_ISO9141_SendMessage) leaves behind:
      * a time sample and a running P2 timeout for the upcoming response. */
-    LIBOBD_SetTimeSample(self, LIBOBD_GetTimeMs(self));
-    LIBOBD_StartTimeout(self, P2_TIME_MAX);
-    LIBOBD_Delay(self, P2_TIME_MIN);
+    LIBOBD2_TMR_SetTimeSample(self, LIBOBD2_TMR_GetTimeMs(self));
+    LIBOBD2_TMR_StartTimeout(self, P2_TIME_MAX);
+    LIBOBD2_TMR_Delay(self, P2_TIME_MIN);
 
     message_t recvdMsg = {0};
     size_t recvdLen = 0;
@@ -292,13 +292,13 @@ static enum theft_trial_res prop_inc_time_on_byte_read(struct theft *t, void *ar
         .tmrHandle      = &timer,
     };
 
-    LIBOBD2_UART_Init(&ctx);
+    UART_Init(&ctx);
 
-    LIBOBD2_UART_WriteByte(&ctx, byte_to_write);   /* recorded at timeNow=0 */
+    UART_WriteByte(&ctx, byte_to_write);   /* recorded at timeNow=0 */
     /* do NOT advance the timer — timeNow still equals the event timestamp */
 
     uint8_t received = 0u;
-    bool got_byte = (OBD_UART_RX_OK == LIBOBD2_UART_RecvByte(&ctx, &received));
+    bool got_byte = (OBD_UART_RX_OK == UART_RecvByte(&ctx, &received));
 
     /* isByteReady uses strict '>': byte must NOT be ready at the same timestamp */
     if (timer.timeNow != timer.timeStep) { return THEFT_TRIAL_FAIL; }
@@ -319,14 +319,14 @@ static enum theft_trial_res prop_byte_not_ready_at_same_timestamp(struct theft *
         .tmrHandle = &timer, /* Sync uart events with correct timing */
     };
 
-    LIBOBD2_TMR_Init(&timer);
-    LIBOBD2_UART_Init(&ctx);
+    TMR_Init(&timer);
+    UART_Init(&ctx);
 
-    LIBOBD2_UART_WriteByte(&ctx, byte_to_write);   /* recorded at timeNow=0 */
+    UART_WriteByte(&ctx, byte_to_write);   /* recorded at timeNow=0 */
     /* do NOT advance the timer — timeNow still equals the event timestamp */
 
     uint8_t received = 0u;
-    bool got_byte = (OBD_UART_RX_OK == LIBOBD2_UART_RecvByte(&ctx, &received));
+    bool got_byte = (OBD_UART_RX_OK == UART_RecvByte(&ctx, &received));
 
     /* isByteReady uses strict '>': byte must NOT be ready at the same timestamp */
     if (got_byte) { return THEFT_TRIAL_FAIL; }

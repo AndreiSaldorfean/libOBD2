@@ -98,14 +98,14 @@ static enum theft_trial_res prop_ReadByteInTimeframe_returns_byte_within_window(
     {
         .tmrHandle      = &timer,
     };
-    obd_uart_ops_t uartOps = { .recv_byte = LIBOBD2_UART_RecvByte };
+    obd_uart_ops_t uartOps = { .recv_byte = UART_RecvByte };
     obd_timing_ops_t timingOps =
     {
-        .get_time_ms       = LIBOBD2_TMR_GetTimeMs,
-        .delay_ms          = LIBOBD2_TMR_DelayMs,
-        .start_timeout     = LIBOBD2_TMR_StartTimeout,
-        .stop_timeout      = LIBOBD2_TMR_StopTimeout,
-        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
+        .get_time_ms       = TMR_GetTimeMs,
+        .delay_ms          = TMR_DelayMs,
+        .start_timeout     = TMR_StartTimeout,
+        .stop_timeout      = TMR_StopTimeout,
+        .is_timeout_expired = TMR_IsTimeoutExpired,
     };
     dataLink_if_t self =
     {
@@ -115,8 +115,8 @@ static enum theft_trial_res prop_ReadByteInTimeframe_returns_byte_within_window(
         .pTimingHandle    = &timer,
     };
 
-    LIBOBD2_UART_Init(&uartCtx);
-    LIBOBD2_UART_WriteByte(&uartCtx, testCase.byte);
+    UART_Init(&uartCtx);
+    UART_WriteByte(&uartCtx, testCase.byte);
 
     uint8_t received = (uint8_t)~testCase.byte;
     obd_status_t status = DL_ReadByteInTimeframe(&self, NULL, &received, 0u, timeMax);
@@ -147,16 +147,16 @@ static enum theft_trial_res prop_ReadByteInTimeframe_times_out_without_byte(stru
         .tmrHandle      = &timer,
     };
 
-    LIBOBD2_UART_Init(&uartCtx);
+    UART_Init(&uartCtx);
 
-    obd_uart_ops_t uartOps = { .recv_byte = LIBOBD2_UART_RecvByte };
+    obd_uart_ops_t uartOps = { .recv_byte = UART_RecvByte };
     obd_timing_ops_t timingOps =
     {
-        .get_time_ms       = LIBOBD2_TMR_GetTimeMs,
-        .delay_ms          = LIBOBD2_TMR_DelayMs,
-        .start_timeout     = LIBOBD2_TMR_StartTimeout,
-        .stop_timeout      = LIBOBD2_TMR_StopTimeout,
-        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
+        .get_time_ms       = TMR_GetTimeMs,
+        .delay_ms          = TMR_DelayMs,
+        .start_timeout     = TMR_StartTimeout,
+        .stop_timeout      = TMR_StopTimeout,
+        .is_timeout_expired = TMR_IsTimeoutExpired,
     };
     dataLink_if_t self =
     {
@@ -190,16 +190,16 @@ static enum theft_trial_res prop_RecvByteBlocking_returns_pushed_byte(struct the
         .tmrHandle = &timer, /* Sync uart events with correct timing */
     };
 
-    LIBOBD2_UART_Init(&uartCtx);
+    UART_Init(&uartCtx);
 
-    obd_uart_ops_t uartOps = { .recv_byte = LIBOBD2_UART_RecvByte };
+    obd_uart_ops_t uartOps = { .recv_byte = UART_RecvByte };
     obd_timing_ops_t timingOps =
     {
-        .get_time_ms       = LIBOBD2_TMR_GetTimeMs,
-        .delay_ms          = LIBOBD2_TMR_DelayMs,
-        .start_timeout     = LIBOBD2_TMR_StartTimeout,
-        .stop_timeout      = LIBOBD2_TMR_StopTimeout,
-        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
+        .get_time_ms       = TMR_GetTimeMs,
+        .delay_ms          = TMR_DelayMs,
+        .start_timeout     = TMR_StartTimeout,
+        .stop_timeout      = TMR_StopTimeout,
+        .is_timeout_expired = TMR_IsTimeoutExpired,
     };
     dataLink_if_t self =
     {
@@ -209,7 +209,7 @@ static enum theft_trial_res prop_RecvByteBlocking_returns_pushed_byte(struct the
         .pTimingHandle    = &timer,
     };
 
-    LIBOBD2_UART_WriteByte(&uartCtx, testCase.byte);
+    UART_WriteByte(&uartCtx, testCase.byte);
 
     uint8_t received = (uint8_t)~testCase.byte;
     bool got = DL_RecvByteBlocking(&self, &received);

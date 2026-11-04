@@ -29,34 +29,34 @@ static void gpio_setup(void)
     rcc_periph_clock_enable(RCC_GPIOB);
     gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GREEN_LED | RED_LED);
     gpio_clear(GPIOB, GREEN_LED | RED_LED);
-    LIBOBD_Delay(pDataLinkTx, 100);
+    LIBOBD2_TMR_Delay(pDataLinkTx, 100);
 
     gpio_set(GPIOB, GREEN_LED);
-    LIBOBD_Delay(pDataLinkTx, 100);
+    LIBOBD2_TMR_Delay(pDataLinkTx, 100);
 
     gpio_clear(GPIOB, GREEN_LED | RED_LED);
-    LIBOBD_Delay(pDataLinkTx, 100);
+    LIBOBD2_TMR_Delay(pDataLinkTx, 100);
 
     gpio_set(GPIOB, RED_LED);
-    LIBOBD_Delay(pDataLinkTx, 100);
+    LIBOBD2_TMR_Delay(pDataLinkTx, 100);
 
     gpio_clear(GPIOB, GREEN_LED | RED_LED);
-    LIBOBD_Delay(pDataLinkTx, 100);
+    LIBOBD2_TMR_Delay(pDataLinkTx, 100);
 
     gpio_set(GPIOB, GREEN_LED| RED_LED);
-    LIBOBD_Delay(pDataLinkTx, 100);
+    LIBOBD2_TMR_Delay(pDataLinkTx, 100);
 
     gpio_clear(GPIOB, GREEN_LED | RED_LED);
-    LIBOBD_Delay(pDataLinkTx, 100);
+    LIBOBD2_TMR_Delay(pDataLinkTx, 100);
 
     gpio_set(GPIOB, GREEN_LED| RED_LED);
-    LIBOBD_Delay(pDataLinkTx, 100);
+    LIBOBD2_TMR_Delay(pDataLinkTx, 100);
 
     gpio_clear(GPIOB, GREEN_LED | RED_LED);
-    LIBOBD_Delay(pDataLinkTx, 100);
+    LIBOBD2_TMR_Delay(pDataLinkTx, 100);
 
     gpio_set(GPIOB, GREEN_LED| RED_LED);
-    LIBOBD_Delay(pDataLinkTx, 100);
+    LIBOBD2_TMR_Delay(pDataLinkTx, 100);
     gpio_clear(GPIOB, GREEN_LED | RED_LED);
     #endif
 }
@@ -68,10 +68,10 @@ void targetSetUp()
     dataLink_if_t *pDataLinkTx = &dataLink_tx;
 
     // Added so no test starts untill serial is attached
-    LIBOBD_SendByte(pDataLinkRx, 0x42);
+    LIBOBD2_UART_SendByte(pDataLinkRx, 0x42);
 
-    LIBOBD_FlushRx(pDataLinkTx);
-    LIBOBD_FlushRx(pDataLinkRx);
+    LIBOBD2_UART_FlushRx(pDataLinkTx);
+    LIBOBD2_UART_FlushRx(pDataLinkRx);
 }
 
 void targetTearDown()
@@ -79,18 +79,18 @@ void targetTearDown()
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
     dataLink_if_t *pDataLinkTx = &dataLink_tx;
 
-    LIBOBD_FlushRx(pDataLinkTx);
-    LIBOBD_FlushRx(pDataLinkRx);
+    LIBOBD2_UART_FlushRx(pDataLinkTx);
+    LIBOBD2_UART_FlushRx(pDataLinkRx);
     if (Unity.CurrentTestFailed)
     {
         gpio_set(GPIOB, RED_LED);
-        LIBOBD_Delay(pDataLinkTx, 2000);
+        LIBOBD2_TMR_Delay(pDataLinkTx, 2000);
         gpio_clear(GPIOB, RED_LED | GREEN_LED);
     }
     else
     {
         gpio_set(GPIOB, GREEN_LED);
-        LIBOBD_Delay(pDataLinkTx, 2000);
+        LIBOBD2_TMR_Delay(pDataLinkTx, 2000);
         gpio_clear(GPIOB, RED_LED | GREEN_LED);
     }
 }
@@ -99,10 +99,10 @@ void targetPreTestsInit()
 {
     sysInit();
 
-    LIBOBD2_UART_Init(&uartCtxTx);
-    LIBOBD2_UART_Init(&uartCtxRx);
-    LIBOBD2_TMR_Init(&tmrCtxTx);
-    LIBOBD2_TMR_Init(&tmrCtxRx);
+    UART_Init(&uartCtxTx);
+    UART_Init(&uartCtxRx);
+    TMR_Init(&tmrCtxTx);
+    TMR_Init(&tmrCtxRx);
 
     gpio_setup();
 }

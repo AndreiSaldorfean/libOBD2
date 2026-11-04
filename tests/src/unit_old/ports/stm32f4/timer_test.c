@@ -29,9 +29,9 @@ static void test_TIMER_2_Sender(void* param)
 
     UnitySetTestFile(__FILE__);
 
-    timeElapsed1 = LIBOBD2_TMR_GetTimeMs(tmr);
-    LIBOBD2_TMR_DelayMs(tmr, 10);
-    timeElapsed2 = LIBOBD2_TMR_GetTimeMs(tmr);
+    timeElapsed1 = TMR_GetTimeMs(tmr);
+    TMR_DelayMs(tmr, 10);
+    timeElapsed2 = TMR_GetTimeMs(tmr);
     YIELD;
     TEST_ASSERT_EQUAL_MESSAGE(10, timeElapsed2 - timeElapsed1, "tx 10ms delay");
 
@@ -46,9 +46,9 @@ static void test_TIMER_2_Receiver(void *param)
 
     UnitySetTestFile(__FILE__);
 
-    timeStart = LIBOBD2_TMR_GetTimeMs(tmr);
+    timeStart = TMR_GetTimeMs(tmr);
     YIELD;
-    timeEnd = LIBOBD2_TMR_GetTimeMs(tmr);
+    timeEnd = TMR_GetTimeMs(tmr);
     TEST_ASSERT_EQUAL_MESSAGE(10, timeEnd - timeStart, "rx 10ms delay");
 
     g_receiver_done = pdTRUE;
@@ -64,28 +64,28 @@ void test_TIMER_0(void)
 
     UnitySetTestFile(__FILE__);
 
-    timeElapsed1 = LIBOBD2_TMR_GetTimeMs(&tmrCtxTx);
+    timeElapsed1 = TMR_GetTimeMs(&tmrCtxTx);
 
-    LIBOBD2_TMR_DelayMs(&tmrCtxTx, 10);
+    TMR_DelayMs(&tmrCtxTx, 10);
 
-    timeElapsed2 = LIBOBD2_TMR_GetTimeMs(&tmrCtxTx);
+    timeElapsed2 = TMR_GetTimeMs(&tmrCtxTx);
 
     TEST_ASSERT_EQUAL_MESSAGE(10, timeElapsed2 - timeElapsed1, "10ms delay");
 
-    LIBOBD2_TMR_StartTimeout(&tmrCtxTx, 9, NULL, NULL);
+    TMR_StartTimeout(&tmrCtxTx, 9, NULL, NULL);
 
-    LIBOBD2_TMR_DelayMs(&tmrCtxTx, 10);
+    TMR_DelayMs(&tmrCtxTx, 10);
 
-    timeoutExpired = LIBOBD2_TMR_IsTimeoutExpired(&tmrCtxTx);
+    timeoutExpired = TMR_IsTimeoutExpired(&tmrCtxTx);
     TEST_ASSERT_TRUE_MESSAGE(timeoutExpired, "tmr expired");
 
-    LIBOBD2_TMR_StartTimeout(&tmrCtxTx, 9, NULL, NULL);
+    TMR_StartTimeout(&tmrCtxTx, 9, NULL, NULL);
 
-    LIBOBD2_TMR_StopTimeout(&tmrCtxTx);
+    TMR_StopTimeout(&tmrCtxTx);
 
-    LIBOBD2_TMR_DelayMs(&tmrCtxTx, 10);
+    TMR_DelayMs(&tmrCtxTx, 10);
 
-    timeoutExpired = LIBOBD2_TMR_IsTimeoutExpired(&tmrCtxTx);
+    timeoutExpired = TMR_IsTimeoutExpired(&tmrCtxTx);
     TEST_ASSERT_FALSE_MESSAGE(timeoutExpired, "tmr not expired");
 }
 
@@ -98,28 +98,28 @@ void test_TIMER_1(void)
 
     UnitySetTestFile(__FILE__);
 
-    timeElapsed1 = LIBOBD2_TMR_GetTimeMs(&tmrCtxRx);
+    timeElapsed1 = TMR_GetTimeMs(&tmrCtxRx);
 
-    LIBOBD2_TMR_DelayMs(&tmrCtxRx, 10);
+    TMR_DelayMs(&tmrCtxRx, 10);
 
-    timeElapsed2 = LIBOBD2_TMR_GetTimeMs(&tmrCtxRx);
+    timeElapsed2 = TMR_GetTimeMs(&tmrCtxRx);
 
     TEST_ASSERT_EQUAL_MESSAGE(10, timeElapsed2 - timeElapsed1, "10ms delay");
 
-    LIBOBD2_TMR_StartTimeout(&tmrCtxRx, 9, NULL, NULL);
+    TMR_StartTimeout(&tmrCtxRx, 9, NULL, NULL);
 
-    LIBOBD2_TMR_DelayMs(&tmrCtxRx, 10);
+    TMR_DelayMs(&tmrCtxRx, 10);
 
-    timeoutExpired = LIBOBD2_TMR_IsTimeoutExpired(&tmrCtxRx);
+    timeoutExpired = TMR_IsTimeoutExpired(&tmrCtxRx);
     TEST_ASSERT_TRUE_MESSAGE(timeoutExpired, "tmr expired");
 
-    LIBOBD2_TMR_StartTimeout(&tmrCtxRx, 9, NULL, NULL);
+    TMR_StartTimeout(&tmrCtxRx, 9, NULL, NULL);
 
-    LIBOBD2_TMR_StopTimeout(&tmrCtxRx);
+    TMR_StopTimeout(&tmrCtxRx);
 
-    LIBOBD2_TMR_DelayMs(&tmrCtxRx, 10);
+    TMR_DelayMs(&tmrCtxRx, 10);
 
-    timeoutExpired = LIBOBD2_TMR_IsTimeoutExpired(&tmrCtxRx);
+    timeoutExpired = TMR_IsTimeoutExpired(&tmrCtxRx);
     TEST_ASSERT_FALSE_MESSAGE(timeoutExpired, "tmr not expired");
 }
 
@@ -172,13 +172,13 @@ void test_TIMER_3(void)
 
     UnitySetTestFile(__FILE__);
 
-    timeElapsed1 = LIBOBD2_TMR_GetTimeMs(&tmrCtxRx);
+    timeElapsed1 = TMR_GetTimeMs(&tmrCtxRx);
 
-    LIBOBD2_TMR_StartTimeout(&tmrCtxRx, 9, NULL, NULL);
+    TMR_StartTimeout(&tmrCtxRx, 9, NULL, NULL);
 
-    while(!LIBOBD2_TMR_IsTimeoutExpired(&tmrCtxRx));
+    while(!TMR_IsTimeoutExpired(&tmrCtxRx));
 
-    timeElapsed2 = LIBOBD2_TMR_GetTimeMs(&tmrCtxRx);
+    timeElapsed2 = TMR_GetTimeMs(&tmrCtxRx);
 
     TEST_ASSERT_EQUAL_MESSAGE(9, timeElapsed2 - timeElapsed1, "9ms delay");
 }

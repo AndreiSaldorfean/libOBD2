@@ -41,7 +41,7 @@ typedef struct
     virtTmrCtx_t *tmrHandle;
     virtUartFaultHooks_t faults;
 
-    /* Line mode and 5-baud bit-bang state, reset by LIBOBD2_UART_Init */
+    /* Line mode and 5-baud bit-bang state, reset by UART_Init */
     uint8_t mode;
     uint16_t bitbangedByte;
     uint16_t bitbangIdx;
@@ -50,11 +50,11 @@ typedef struct
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-bool LIBOBD2_UART_Init(void* handle);
-obd_uart_rx_status_t LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer);
-void LIBOBD2_UART_WriteByte(void* handle, uint8_t data);
-void LIBOBD2_UART_FlushRx(void* handle);
-void LIBOBD2_UART_SendPulse(void* handle, bool pulse);
-void LIBOBD2_UART_SwitchMode(void* handle, uint8_t mode);
+bool UART_Init(void* handle);
+obd_uart_rx_status_t UART_RecvByte(void* handle, uint8_t *recv_buffer);
+void UART_WriteByte(void* handle, uint8_t data);
+void UART_FlushRx(void* handle);
+void UART_SendPulse(void* handle, bool pulse);
+void UART_SwitchMode(void* handle, uint8_t mode);
 
 #endif /* UART_TRANSPORT_PORT_H */

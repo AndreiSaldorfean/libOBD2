@@ -70,7 +70,7 @@ static void UART_PutOnLine(virtUartLinkCtx_t *ctx, uartEvent_t *event)
 
 /******************************************
 * title: UART_Init_Validate
-* brief: Checks the arguments of LIBOBD2_UART_Init.
+* brief: Checks the arguments of UART_Init.
 ******************************************/
 static bool UART_Init_Validate(const virtUartLinkCtx_t *ctx)
 {
@@ -114,10 +114,10 @@ exit:
 
 /* ================================================ MODULE API ============================================= */
 /******************************************
-* title: LIBOBD2_UART_Init
+* title: UART_Init
 * brief: Opens the virtual K-line for a link context, with an empty line.
 ******************************************/
-bool LIBOBD2_UART_Init(void* handle)
+bool UART_Init(void* handle)
 {
     virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t *)handle;
     bool ok = false;
@@ -134,11 +134,11 @@ exit:
 }
 
 /******************************************
-* title: LIBOBD2_UART_WriteByte
+* title: UART_WriteByte
 * brief: Puts a byte on the line at the current virtual time. The onWrite
 *        fault hook may corrupt it first.
 ******************************************/
-void LIBOBD2_UART_WriteByte(void* handle, uint8_t data)
+void UART_WriteByte(void* handle, uint8_t data)
 {
     virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t *)handle;
     uartEvent_t event = {0};
@@ -153,11 +153,11 @@ void LIBOBD2_UART_WriteByte(void* handle, uint8_t data)
 }
 
 /******************************************
-* title: LIBOBD2_UART_RecvByte
+* title: UART_RecvByte
 * brief: Takes the oldest byte off the line if it is visible yet, then moves
 *        the clock one step. The onRead fault hook may set its error.
 ******************************************/
-obd_uart_rx_status_t LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer)
+obd_uart_rx_status_t UART_RecvByte(void* handle, uint8_t *recv_buffer)
 {
     virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t *)handle;
     obd_uart_rx_status_t rxStatus = OBD_UART_RX_NO_DATA;
@@ -187,10 +187,10 @@ obd_uart_rx_status_t LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer)
 }
 
 /******************************************
-* title: LIBOBD2_UART_FlushRx
+* title: UART_FlushRx
 * brief: Not implemented: the virtual line has no echo to drop yet.
 ******************************************/
-void LIBOBD2_UART_FlushRx(void* handle)
+void UART_FlushRx(void* handle)
 {
     // TODO: Try to simulate this case. It might be needed only
     // when 5Baud init is in progress because then maybe the KLINE
@@ -200,11 +200,11 @@ void LIBOBD2_UART_FlushRx(void* handle)
 }
 
 /******************************************
-* title: LIBOBD2_UART_SendPulse
+* title: UART_SendPulse
 * brief: Records one bit-banged bit (start, data LSB first, stop) while the
 *        line is in DIGITAL_MODE_BEGIN; other modes ignore it.
 ******************************************/
-void LIBOBD2_UART_SendPulse(void* handle, bool pulse)
+void UART_SendPulse(void* handle, bool pulse)
 {
     virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t *)handle;
 
@@ -220,11 +220,11 @@ void LIBOBD2_UART_SendPulse(void* handle, bool pulse)
 }
 
 /******************************************
-* title: LIBOBD2_UART_SwitchMode
+* title: UART_SwitchMode
 * brief: Sets the line mode. DIGITAL_MODE_BEGIN starts a new bit-banged byte;
 *        DIGITAL_MODE_END puts the complete byte on the line.
 ******************************************/
-void LIBOBD2_UART_SwitchMode(void* handle, uint8_t mode)
+void UART_SwitchMode(void* handle, uint8_t mode)
 {
     virtUartLinkCtx_t *ctx = (virtUartLinkCtx_t *)handle;
     uartEvent_t event = {0};

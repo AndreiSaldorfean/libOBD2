@@ -49,22 +49,22 @@ static void recordMode(void *handle, uint8_t mode);
 static obd_timing_ops_t tmrOps =
 {
     .timer_init         = keepTimer,
-    .delay_ms           = LIBOBD2_TMR_DelayMs,
-    .get_time_ms        = LIBOBD2_TMR_GetTimeMs,
-    .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
-    .start_timeout      = LIBOBD2_TMR_StartTimeout,
-    .stop_timeout       = LIBOBD2_TMR_StopTimeout,
+    .delay_ms           = TMR_DelayMs,
+    .get_time_ms        = TMR_GetTimeMs,
+    .is_timeout_expired = TMR_IsTimeoutExpired,
+    .start_timeout      = TMR_StartTimeout,
+    .stop_timeout       = TMR_StopTimeout,
 };
 
 /* The host port with the bit-bang calls recorded on the way through */
 static obd_uart_ops_t uartOps =
 {
     .init        = keepLine,
-    .send_byte   = LIBOBD2_UART_WriteByte,
-    .recv_byte   = LIBOBD2_UART_RecvByte,
+    .send_byte   = UART_WriteByte,
+    .recv_byte   = UART_RecvByte,
     .send_pulse  = recordPulse,
     .switch_mode = recordMode,
-    .flush_rx    = LIBOBD2_UART_FlushRx,
+    .flush_rx    = UART_FlushRx,
 };
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
@@ -88,7 +88,7 @@ static void recordPulse(void *handle, bool pulse)
         pulseTime[pulseCnt]  = timer.timeNow;
         pulseCnt++;
     }
-    LIBOBD2_UART_SendPulse(handle, pulse);
+    UART_SendPulse(handle, pulse);
 }
 
 static void recordMode(void *handle, uint8_t mode)
@@ -97,7 +97,7 @@ static void recordMode(void *handle, uint8_t mode)
     {
         modeSeq[modeCnt++] = mode;
     }
-    LIBOBD2_UART_SwitchMode(handle, mode);
+    UART_SwitchMode(handle, mode);
 }
 
 /******************************************************************
@@ -109,7 +109,7 @@ static void setUpLine(void)
     timer = (virtTmrCtx_t){ .timeStep = TIME_STEP };
     uartCtx.tmrHandle       = &timer;
     uartCtx.faults          = (virtUartFaultHooks_t){0};
-    TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&uartCtx));
+    TEST_ASSERT_TRUE(UART_Init(&uartCtx));
 
     protoCtx = (l2_iso9141_ctx_t){ .header = header_tester, .kb1 = 0x08u, .kb2 = 0x08u };
     pulseCnt = 0u;
@@ -159,7 +159,7 @@ static void lineWriteAt(uint32_t time, uint8_t byte)
     uint32_t now = timer.timeNow;
 
     timer.timeNow = time;
-    LIBOBD2_UART_WriteByte(&uartCtx, byte);
+    UART_WriteByte(&uartCtx, byte);
     timer.timeNow = now;
 }
 
@@ -345,7 +345,7 @@ void test_DL_SendRecv_000(void)
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
 
-    LIBOBD_Delay((&dataLink), P2_TIME_MIN);
+    LIBOBD2_TMR_Delay((&dataLink), P2_TIME_MIN);
 
     status = DL_RecvResponse(&dataLink, &resp, &respLen);
     UART_TRACE_End();
@@ -453,7 +453,7 @@ void test_DL_SendRequest_FlushesRx(void)
     uartOps.flush_rx = countFlush;
 
     obd_status_t status = DL_SendRequest(&dataLink, &request, 2u);
-    uartOps.flush_rx = LIBOBD2_UART_FlushRx;
+    uartOps.flush_rx = UART_FlushRx;
 
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_size_t(1u, flushCnt);
@@ -470,7 +470,7 @@ void test_DL_TimeSample_PerLink(void)
     other = dataLink;
 
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, DL_StartTimeout(&dataLink, P2_TIME_MAX).response);
-    LIBOBD2_TMR_DelayMs(&timer, 100u);
+    TMR_DelayMs(&timer, 100u);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, DL_StartTimeout(&other, P2_TIME_MAX).response);
 
     TEST_ASSERT_EQUAL_UINT32(0u, dataLink.timeSample);

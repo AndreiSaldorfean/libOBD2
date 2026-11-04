@@ -56,14 +56,14 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
     obd_uart_rx_status_t rxStatus = OBD_UART_RX_NO_DATA;
 
     // Format byte
-    rxStatus = LIBOBD_ReceiveByte(self, buffer);
+    rxStatus = LIBOBD2_UART_ReceiveByte(self, buffer);
     while (OBD_UART_RX_NO_DATA == rxStatus)
     {
         // Check for P2 Timeout from Tester to ECU
         status.response = OBD_ERR_COMM_FMT_BYTE_NOT_RECVD;
         status.timeout = OBD_ERR_COMM_P2_TIMEOUT_MAX_TESTER_ECU;
-        OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD_IsTimeoutExpired(self));
-        rxStatus = LIBOBD_ReceiveByte(self, buffer);
+        OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD2_TMR_IsTimeoutExpired(self));
+        rxStatus = LIBOBD2_UART_ReceiveByte(self, buffer);
     }
     status.timeout = OBD_STATUS_OK;
 
@@ -71,8 +71,8 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
     status.response = DL_UartRxStatusToResponse(rxStatus);
     OBD2_IF_COND_GOTO_EXIT(OBD_STATUS_OK != status.response);
 
-    p2TimeElapsed = LIBOBD_GetTimeMs(self);
-    p2TimeElapsed -= LIBOBD_GetTimeSample(self);
+    p2TimeElapsed = LIBOBD2_TMR_GetTimeMs(self);
+    p2TimeElapsed -= LIBOBD2_TMR_GetTimeSample(self);
 
     status.timeout = OBD_ERR_COMM_P2_TIMEOUT_MIN_TESTER_ECU;
     OBD2_IF_COND_GOTO_EXIT(p2TimeElapsed < P2_TIME_MIN);
@@ -109,20 +109,20 @@ OBD2_STATIC obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, s
     uint32_t timingSample  = 0;
     obd_status_t status    = {0};
 
-    LIBOBD_Delay(self, P3_TIME_MIN);
+    LIBOBD2_TMR_Delay(self, P3_TIME_MIN);
 
     for (size_t idx = 0; idx < len; idx++)
     {
-        LIBOBD_SendByte(self, msg[idx]);
-        LIBOBD_Delay(self, P4_TIME_MIN);
+        LIBOBD2_UART_SendByte(self, msg[idx]);
+        LIBOBD2_TMR_Delay(self, P4_TIME_MIN);
     }
 
-    timingSample = LIBOBD_GetTimeMs(self);
-    LIBOBD_SetTimeSample(self, timingSample);
-    LIBOBD_StartTimeout(self, P2_TIME_MAX);
+    timingSample = LIBOBD2_TMR_GetTimeMs(self);
+    LIBOBD2_TMR_SetTimeSample(self, timingSample);
+    LIBOBD2_TMR_StartTimeout(self, P2_TIME_MAX);
 
     // Clear echo
-    LIBOBD_FlushRx(self);
+    LIBOBD2_UART_FlushRx(self);
 
     memset(&status, 0, sizeof(obd_status_t));
     return status;
@@ -158,7 +158,7 @@ OBD2_STATIC obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recv
     OBD2_ASSERT_OK(status);
 
     // P2 Timeout from ECU to ECU
-    LIBOBD_StartTimeout(self, P2_TIME_MAX);
+    LIBOBD2_TMR_StartTimeout(self, P2_TIME_MAX);
 
     memset(&status, 0, sizeof(obd_status_t));
 exit:
@@ -171,12 +171,12 @@ OBD2_STATIC void L2_KWP_IdleBasedOnConnStatus(dataLink_if_t *self)
 
     if (!ctx->conStatus.bits.POR)
     {
-        LIBOBD_Delay(self, 300);
+        LIBOBD2_TMR_Delay(self, 300);
         ctx->conStatus.bits.POR = 1;
     }
     else if (ctx->conStatus.bits.STOP_COMM)
     {
-        LIBOBD_Delay(self, 55);
+        LIBOBD2_TMR_Delay(self, 55);
         ctx->conStatus.bits.STOP_COMM = 0;
     }
 }
@@ -314,17 +314,17 @@ OBD2_STATIC obd_status_t L2_KWP_FastInit(dataLink_if_t *self)
 
     L2_KWP_IdleBasedOnConnStatus(self);
 
-    LIBOBD_SwitchMode(self, FAST_INIT_WAKEUP_START);
+    LIBOBD2_UART_SwitchMode(self, FAST_INIT_WAKEUP_START);
 
     // ISO 14230 Fast Init: LOW for 25ms (TiniL)
-    LIBOBD_SendPulse(self, PULSE_LOW);
-    LIBOBD_Delay(self, 25);
+    LIBOBD2_UART_SendPulse(self, PULSE_LOW);
+    LIBOBD2_TMR_Delay(self, 25);
 
     // ISO 14230 Fast Init: HIGH for 25ms (TiniH)
-    LIBOBD_SendPulse(self, PULSE_HIGH);
-    LIBOBD_Delay(self, 25);
+    LIBOBD2_UART_SendPulse(self, PULSE_HIGH);
+    LIBOBD2_TMR_Delay(self, 25);
 
-    LIBOBD_SwitchMode(self, FAST_INIT_WAKEUP_END);
+    LIBOBD2_UART_SwitchMode(self, FAST_INIT_WAKEUP_END);
 
     // For keeping the size of the function small the L2_KWP_SRV_StartCommunication
     // will do more than just sending the service
@@ -341,9 +341,9 @@ obd_status_t l2_kwp_connect(dataLink_if_t *self, uint8_t* protocol)
     memset(ctx, 0, sizeof(l2_kwp_ctx_t));
 
     status.response = OBD_ERR_CONN_TIMER_INIT_FAILED;
-    if(OBD_TMR_OK != LIBOBD_TimingInit(self)) goto exit;
+    if(OBD_TMR_OK != LIBOBD2_TMR_Init(self)) goto exit;
     status.response = OBD_ERR_CONN_TRANS_INIT_FAILED;
-    if(!LIBOBD_TransportInit(self)) goto exit;
+    if(!LIBOBD2_UART_Init(self)) goto exit;
 
     status = L2_KWP_FastInit(self);
     OBD2_ASSERT_OK(status);
@@ -379,7 +379,7 @@ obd_status_t l2_kwp_send_request(dataLink_if_t *self, const obd_data_t *serviceR
     OBD2_ASSERT_OK(status);
 
     // Clear echo
-    LIBOBD_FlushRx(self);
+    LIBOBD2_UART_FlushRx(self);
 
     memset(&status, 0, sizeof(obd_status_t));
 exit:

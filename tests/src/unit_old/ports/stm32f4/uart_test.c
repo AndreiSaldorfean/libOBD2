@@ -18,17 +18,17 @@ void test_UART_000(void)
     void *tmrHandle = (void*)&tmrCtxTx;
     uint8_t byte = 0;
 
-    LIBOBD2_UART_WriteByte(handleTester, 0x1);
-    LIBOBD2_TMR_DelayMs(tmrHandle, 1);
-    LIBOBD2_UART_RecvByte(handleTester, &byte);
+    UART_WriteByte(handleTester, 0x1);
+    TMR_DelayMs(tmrHandle, 1);
+    UART_RecvByte(handleTester, &byte);
     TEST_ASSERT_EQUAL_HEX8(1, byte);
-    LIBOBD2_UART_RecvByte(handleEcu, &byte);
+    UART_RecvByte(handleEcu, &byte);
     TEST_ASSERT_EQUAL_HEX8(1, byte);
 
-    LIBOBD2_UART_WriteByte(handleEcu, 0x42);
-    LIBOBD2_TMR_DelayMs(tmrHandle, 1);
-    LIBOBD2_UART_RecvByte(handleTester, &byte);
+    UART_WriteByte(handleEcu, 0x42);
+    TMR_DelayMs(tmrHandle, 1);
+    UART_RecvByte(handleTester, &byte);
     TEST_ASSERT_EQUAL_HEX8(0x42, byte);
-    LIBOBD2_UART_RecvByte(handleEcu, &byte);
+    UART_RecvByte(handleEcu, &byte);
     TEST_ASSERT_EQUAL_HEX8(0x42, byte);
 }

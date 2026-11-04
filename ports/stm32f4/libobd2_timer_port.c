@@ -47,7 +47,7 @@ static inline uint32_t TMR_GetTimeUs(const timerCtx_t *ctx)
 
 /******************************************
 * title: TMR_Init_Validate
-* brief: Checks the arguments of LIBOBD2_TMR_Init.
+* brief: Checks the arguments of TMR_Init.
 ******************************************/
 static bool TMR_Init_Validate(const timerCtx_t *ctx)
 {
@@ -130,10 +130,10 @@ void KWP_TMR_Resume(void)
 }
 
 /******************************************
-* title: LIBOBD2_TMR_Init
+* title: TMR_Init
 * brief: Starts the microsecond counter (once) and clears the timeout.
 ******************************************/
-obd_tmr_status_t LIBOBD2_TMR_Init(void *pHandle)
+obd_tmr_status_t TMR_Init(void *pHandle)
 {
     timerCtx_t *ctx = (timerCtx_t *)pHandle;
     obd_tmr_status_t tmrStatus = OBD_TMR_ERR_INVALID_ARG;
@@ -147,10 +147,10 @@ exit:
 }
 
 /******************************************
-* title: LIBOBD2_TMR_GetTimeMs
+* title: TMR_GetTimeMs
 * brief: Current time in milliseconds.
 ******************************************/
-uint32_t LIBOBD2_TMR_GetTimeMs(void *pHandle)
+uint32_t TMR_GetTimeMs(void *pHandle)
 {
     timerCtx_t *ctx = (timerCtx_t *)pHandle;
 
@@ -160,11 +160,11 @@ uint32_t LIBOBD2_TMR_GetTimeMs(void *pHandle)
 }
 
 /******************************************
-* title: LIBOBD2_TMR_DelayMs
+* title: TMR_DelayMs
 * brief: Waits delay_ms, busy-polling the hardware counter for exact ms
 *        timing (the vTaskDelay variant is kept behind #else).
 ******************************************/
-void LIBOBD2_TMR_DelayMs(void *pHandle, uint32_t delay_ms)
+void TMR_DelayMs(void *pHandle, uint32_t delay_ms)
 {
 #if 1 // Add special handling for testing
     timerCtx_t *ctx = (timerCtx_t *)pHandle;
@@ -191,11 +191,11 @@ void LIBOBD2_TMR_DelayMs(void *pHandle, uint32_t delay_ms)
 }
 
 /******************************************
-* title: LIBOBD2_TMR_StartTimeout
+* title: TMR_StartTimeout
 * brief: Arms the timeout timeout_ms from now; callback runs when
-*        LIBOBD2_TMR_IsTimeoutExpired sees it expire.
+*        TMR_IsTimeoutExpired sees it expire.
 ******************************************/
-obd_tmr_status_t LIBOBD2_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t callback, void *pUserData)
+obd_tmr_status_t TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t callback, void *pUserData)
 {
     timerCtx_t *ctx = (timerCtx_t *)pHandle;
 
@@ -216,10 +216,10 @@ obd_tmr_status_t LIBOBD2_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, ti
 }
 
 /******************************************
-* title: LIBOBD2_TMR_StopTimeout
+* title: TMR_StopTimeout
 * brief: Disarms the timeout; a stopped timeout never reports expired.
 ******************************************/
-obd_tmr_status_t LIBOBD2_TMR_StopTimeout(void *pHandle)
+obd_tmr_status_t TMR_StopTimeout(void *pHandle)
 {
     timerCtx_t *ctx = (timerCtx_t *)pHandle;
 
@@ -232,11 +232,11 @@ obd_tmr_status_t LIBOBD2_TMR_StopTimeout(void *pHandle)
 }
 
 /******************************************
-* title: LIBOBD2_TMR_IsTimeoutExpired
+* title: TMR_IsTimeoutExpired
 * brief: True once the armed timeout has run out (wrap-around safe); runs the
 *        callback the first time it sees it expire.
 ******************************************/
-bool LIBOBD2_TMR_IsTimeoutExpired(void *pHandle)
+bool TMR_IsTimeoutExpired(void *pHandle)
 {
     timerCtx_t *ctx = (timerCtx_t *)pHandle;
     uint32_t elapsed = 0;

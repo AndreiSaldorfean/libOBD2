@@ -9,10 +9,10 @@
  *
  *   kline.line        the wire: every written byte as a UART frame (UART_TRACE_BAUD, 8N1) plus the
  *                     5-baud bit-banged pulses
- *   kline.rx_data     every byte LIBOBD2_UART_RecvByte() returned, as a UART frame (UART_TRACE_BAUD,
+ *   kline.rx_data     every byte UART_RecvByte() returned, as a UART frame (UART_TRACE_BAUD,
  *                     8N1) starting at the time of the read; reads faster than one frame queue up
  *   kline.rx_waiting  1 while reads come back empty, 0 once a byte is read
- *   kline.session     short pulse at each LIBOBD2_UART_Init(), i.e. at every PBT trial
+ *   kline.session     short pulse at each UART_Init(), i.e. at every PBT trial
  *   kline.uart_error  high during a frame that carries an error from the onWrite fault hook
  *
  * PulseView: Import -> Value Change Dump, then add a UART decoder with RX = line and TX = rx_data at

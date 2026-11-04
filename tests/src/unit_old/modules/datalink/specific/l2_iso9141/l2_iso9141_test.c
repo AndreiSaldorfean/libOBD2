@@ -69,32 +69,32 @@ static const message_t iso9141_msg_02 =
 
 static obd_timing_ops_t iso9141_timerOpsTx =
 {
-        .timer_init         = LIBOBD2_TMR_Init,
-        .delay_ms           = LIBOBD2_TMR_DelayMs,
-        .get_time_ms        = LIBOBD2_TMR_GetTimeMs,
-        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
-        .start_timeout      = LIBOBD2_TMR_StartTimeout,
-        .stop_timeout       = LIBOBD2_TMR_StopTimeout,
+        .timer_init         = TMR_Init,
+        .delay_ms           = TMR_DelayMs,
+        .get_time_ms        = TMR_GetTimeMs,
+        .is_timeout_expired = TMR_IsTimeoutExpired,
+        .start_timeout      = TMR_StartTimeout,
+        .stop_timeout       = TMR_StopTimeout,
 };
 
 static obd_timing_ops_t iso9141_timerOpsRx =
 {
-        .timer_init         = LIBOBD2_TMR_Init,
-        .delay_ms           = LIBOBD2_TMR_DelayMs,
-        .get_time_ms        = LIBOBD2_TMR_GetTimeMs,
-        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
-        .start_timeout      = LIBOBD2_TMR_StartTimeout,
-        .stop_timeout       = LIBOBD2_TMR_StopTimeout,
+        .timer_init         = TMR_Init,
+        .delay_ms           = TMR_DelayMs,
+        .get_time_ms        = TMR_GetTimeMs,
+        .is_timeout_expired = TMR_IsTimeoutExpired,
+        .start_timeout      = TMR_StartTimeout,
+        .stop_timeout       = TMR_StopTimeout,
 };
 
 static obd_uart_ops_t iso9141_transportOps =
 {
-    .init        = LIBOBD2_UART_Init,
-    .send_byte   = LIBOBD2_UART_WriteByte,
-    .recv_byte   = LIBOBD2_UART_RecvByte,
-    .send_pulse  = LIBOBD2_UART_SendPulse,
-    .switch_mode = LIBOBD2_UART_SwitchMode,
-    .flush_rx    = LIBOBD2_UART_FlushRx,
+    .init        = UART_Init,
+    .send_byte   = UART_WriteByte,
+    .recv_byte   = UART_RecvByte,
+    .send_pulse  = UART_SendPulse,
+    .switch_mode = UART_SwitchMode,
+    .flush_rx    = UART_FlushRx,
 };
 
 static l2_iso9141_ctx_t testeriso9141Ctx =
@@ -198,13 +198,13 @@ static void test_L2_ISO9141_RecvMessage_000_Sender(void *param)
 
     for (size_t i = 0; i < len; i++)
     {
-        LIBOBD_SendByte(pDataLinkTx, aSentMsg[i]);
-        LIBOBD_Delay(pDataLinkTx, P1_TIME_MIN);
+        LIBOBD2_UART_SendByte(pDataLinkTx, aSentMsg[i]);
+        LIBOBD2_TMR_Delay(pDataLinkTx, P1_TIME_MIN);
     }
 
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 
-    LIBOBD_FlushRx(pDataLinkTx);
+    LIBOBD2_UART_FlushRx(pDataLinkTx);
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
@@ -222,17 +222,17 @@ static void test_L2_ISO9141_RecvMessage_000_Receiver(void *param)
     (void)param;
     (void)dataLink_00;
 
-    timeSample = LIBOBD_GetTimeMs(pDataLinkRx);
-    LIBOBD_SetTimeSample(pDataLinkRx , timeSample);
+    timeSample = LIBOBD2_TMR_GetTimeMs(pDataLinkRx);
+    LIBOBD2_TMR_SetTimeSample(pDataLinkRx , timeSample);
 
     /* Leave a full P2 max window after the forced P2 min delay below. */
-    LIBOBD_StartTimeout(pDataLinkRx, P2_TIME_MAX);
-    LIBOBD_Delay(pDataLinkRx, P2_TIME_MIN);
+    LIBOBD2_TMR_StartTimeout(pDataLinkRx, P2_TIME_MAX);
+    LIBOBD2_TMR_Delay(pDataLinkRx, P2_TIME_MIN);
 
     actual = L2_ISO9141_RecvMessage(pDataLinkRx, &response, &len);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 
-    LIBOBD_FlushRx(pDataLinkRx);
+    LIBOBD2_UART_FlushRx(pDataLinkRx);
 
     g_receiver_done = pdTRUE;
     vTaskDelete(NULL);
@@ -276,11 +276,11 @@ static void test_L2_ISO9141_ReadHeader_000_Sender(void *param)
     (void)param;
 
     // Send 3 header bytes with 5ms inter-byte gaps (within P1_TIME_MAX=20ms)
-    LIBOBD_SendByte(pDataLinkTx, iso9141_header_00.fmt);
-    LIBOBD_Delay(pDataLinkTx, P1_TIME_MIN);
-    LIBOBD_SendByte(pDataLinkTx, iso9141_header_00.trgAddr);
-    LIBOBD_Delay(pDataLinkTx, P1_TIME_MIN);
-    LIBOBD_SendByte(pDataLinkTx, iso9141_header_00.srcAddr);
+    LIBOBD2_UART_SendByte(pDataLinkTx, iso9141_header_00.fmt);
+    LIBOBD2_TMR_Delay(pDataLinkTx, P1_TIME_MIN);
+    LIBOBD2_UART_SendByte(pDataLinkTx, iso9141_header_00.trgAddr);
+    LIBOBD2_TMR_Delay(pDataLinkTx, P1_TIME_MIN);
+    LIBOBD2_UART_SendByte(pDataLinkTx, iso9141_header_00.srcAddr);
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
@@ -300,11 +300,11 @@ static void test_L2_ISO9141_ReadHeader_000_Receiver(void *param)
     // Mirror the pattern used by test_L2_KWP_RecvMessage_000:
     //   set timeSample = now, start 50ms timeout, busy-wait 25ms so the
     //   P2_MIN elapsed-time check inside L2_KWP_ReadHeader always passes.
-    timeSample = LIBOBD_GetTimeMs(pDataLinkRx);
-    LIBOBD_SetTimeSample(pDataLinkRx, timeSample);
+    timeSample = LIBOBD2_TMR_GetTimeMs(pDataLinkRx);
+    LIBOBD2_TMR_SetTimeSample(pDataLinkRx, timeSample);
     /* Leave a full P2 max window after the forced P2 min delay below. */
-    LIBOBD_StartTimeout(pDataLinkRx, P2_TIME_MAX);
-    LIBOBD_Delay(pDataLinkRx, P2_TIME_MIN);
+    LIBOBD2_TMR_StartTimeout(pDataLinkRx, P2_TIME_MAX);
+    LIBOBD2_TMR_Delay(pDataLinkRx, P2_TIME_MIN);
 
     actual = L2_ISO9141_ReadHeader(pDataLinkRx, &header);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "L2_KWP_ReadHeader return");
@@ -355,13 +355,13 @@ static void test_l2_ISO9141_send_request_000_Sender(void *param)
 
     (void)param;
 
-    timeSample = LIBOBD_GetTimeMs(pDataLinkTx);
-    LIBOBD_SetTimeSample(pDataLinkTx, timeSample);
-    LIBOBD_StartTimeout(pDataLinkTx, P3_TIME_MAX);
-    LIBOBD_Delay(pDataLinkTx, P3_TIME_MIN);
+    timeSample = LIBOBD2_TMR_GetTimeMs(pDataLinkTx);
+    LIBOBD2_TMR_SetTimeSample(pDataLinkTx, timeSample);
+    LIBOBD2_TMR_StartTimeout(pDataLinkTx, P3_TIME_MAX);
+    LIBOBD2_TMR_Delay(pDataLinkTx, P3_TIME_MIN);
 
     actual = l2_iso9141_send_request(pDataLinkTx, &iso9141_obd_data_00, 1);
-    LIBOBD_StopTimeout(pDataLinkTx);
+    LIBOBD2_TMR_StopTimeout(pDataLinkTx);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_send_request");
 
     g_sender_done = pdTRUE;
@@ -416,9 +416,9 @@ static void test_l2_ISO9141_recv_response_000_Receiver(void *param)
 
     (void)param;
 
-    timeSample = LIBOBD_GetTimeMs(pDataLinkRx);
-    LIBOBD_SetTimeSample(pDataLinkRx, timeSample);
-    LIBOBD_StartTimeout(pDataLinkRx, P2_TIME_MAX);
+    timeSample = LIBOBD2_TMR_GetTimeMs(pDataLinkRx);
+    LIBOBD2_TMR_SetTimeSample(pDataLinkRx, timeSample);
+    LIBOBD2_TMR_StartTimeout(pDataLinkRx, P2_TIME_MAX);
 
     actual = l2_iso9141_recv_response(pDataLinkRx, &resp, &len);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_recv_response return");
@@ -468,16 +468,16 @@ void test_L2_ISO9141_SendMessage_000(void)
 
     (void)iso9141_msg_00;
 
-    timeSample = LIBOBD_GetTimeMs(pDataLink);
-    LIBOBD_SetTimeSample(pDataLink, timeSample);
-    LIBOBD_StartTimeout(pDataLink, P3_TIME_MAX);
-    LIBOBD_Delay(pDataLink, P3_TIME_MIN);
+    timeSample = LIBOBD2_TMR_GetTimeMs(pDataLink);
+    LIBOBD2_TMR_SetTimeSample(pDataLink, timeSample);
+    LIBOBD2_TMR_StartTimeout(pDataLink, P3_TIME_MAX);
+    LIBOBD2_TMR_Delay(pDataLink, P3_TIME_MIN);
 
     L2_ISO9141_PrepareMessage(&msg, buffer, 0x2, NULL);
 
     actual = L2_ISO9141_SendMessage(pDataLink, buffer, MSG_00_SIZE);
 
-    LIBOBD_StopTimeout(pDataLink);
+    LIBOBD2_TMR_StopTimeout(pDataLink);
 
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 }

@@ -28,13 +28,13 @@ OBD2_STATIC obd_status_t L2_ISO9141_WaitForResponseStart(dataLink_if_t *self, ui
     obd_uart_rx_status_t rxStatus = OBD_UART_RX_NO_DATA;
 
     // Format byte
-    rxStatus = LIBOBD_ReceiveByte(self, respByte);
+    rxStatus = LIBOBD2_UART_ReceiveByte(self, respByte);
     while (OBD_UART_RX_NO_DATA == rxStatus)
     {
         // Check for P2 Timeout from Tester to ECU
         status.timeout = OBD_ERR_COMM_P2_TIMEOUT_MAX_TESTER_ECU;
-        OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD_IsTimeoutExpired(self));
-        rxStatus = LIBOBD_ReceiveByte(self, respByte);
+        OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD2_TMR_IsTimeoutExpired(self));
+        rxStatus = LIBOBD2_UART_ReceiveByte(self, respByte);
     }
     status.timeout = OBD_STATUS_OK;
 
@@ -47,7 +47,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_WaitForResponseStart(dataLink_if_t *self, ui
     status.timeout = OBD_STATUS_OK;
 
     status.response = OBD_ERR_TMR_STOP_FAILED;
-    OBD2_IF_COND_GOTO_EXIT(OBD_TMR_OK != LIBOBD_StopTimeout(self));
+    OBD2_IF_COND_GOTO_EXIT(OBD_TMR_OK != LIBOBD2_TMR_StopTimeout(self));
 
     memset(&status, 0, sizeof(obd_status_t));
 exit:

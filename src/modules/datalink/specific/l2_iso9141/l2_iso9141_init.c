@@ -69,7 +69,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t *prot
 
     OBD2_DEBUG_ASSERT((NULL != self) && (NULL != protocol));
 
-    LIBOBD_Delay(self, ISO9141_W5_TIME_MIN);
+    LIBOBD2_TMR_Delay(self, ISO9141_W5_TIME_MIN);
 
     // Send address byte at 5 baud rate
     DL_SendByteBitBanged(self, ISO9141_INIT_TARGET_ADDR, ISO9141_INIT_BAUD_RATE);
@@ -90,11 +90,11 @@ OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t *prot
 
     YIELD;
     // Wait W4 (25-50ms) then send inverted KB2
-    LIBOBD_Delay(self, ISO9141_W4_TIME_MIN);
-    LIBOBD_SendByte(self, ~kb2);
+    LIBOBD2_TMR_Delay(self, ISO9141_W4_TIME_MIN);
+    LIBOBD2_UART_SendByte(self, ~kb2);
 
     // Clear echo
-    LIBOBD_FlushRx(self);
+    LIBOBD2_UART_FlushRx(self);
 
     // Receive inverted address from ECU (W4 timing: 25-50ms)
     status = DL_ReadByteInTimeframe(self, NULL, &invAddr, ISO9141_W4_TIME_MIN, ISO9141_W4_TIME_MAX);

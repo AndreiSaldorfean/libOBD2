@@ -30,7 +30,7 @@ static inline void TMR_InjectFault(virtTmrCtx_t *ctx, virtTmrEvent_t *event)
 
 /******************************************
 * title: TMR_Init_Validate
-* brief: Checks the arguments of LIBOBD2_TMR_Init.
+* brief: Checks the arguments of TMR_Init.
 ******************************************/
 static bool TMR_Init_Validate(const virtTmrCtx_t *ctx)
 {
@@ -51,11 +51,11 @@ static void TMR_Init_Execute(virtTmrCtx_t *ctx)
 
 /* ================================================ MODULE API ============================================= */
 /******************************************
-* title: LIBOBD2_TMR_Init
+* title: TMR_Init
 * brief: Puts the virtual clock back to time 0 with no timeout running,
 *        unless the onOp fault hook makes it fail.
 ******************************************/
-obd_tmr_status_t LIBOBD2_TMR_Init(void *pHandle)
+obd_tmr_status_t TMR_Init(void *pHandle)
 {
     virtTmrCtx_t *ctx = (virtTmrCtx_t *)pHandle;
     virtTmrEvent_t event = { .op = VIRT_TMR_OP_INIT, .status = OBD_TMR_OK };
@@ -73,10 +73,10 @@ exit:
 }
 
 /******************************************
-* title: LIBOBD2_TMR_GetTimeMs
+* title: TMR_GetTimeMs
 * brief: Returns the virtual time without moving the clock.
 ******************************************/
-uint32_t LIBOBD2_TMR_GetTimeMs(void *pHandle)
+uint32_t TMR_GetTimeMs(void *pHandle)
 {
     virtTmrCtx_t *ctx = (virtTmrCtx_t *)pHandle;
     virtTmrEvent_t event = { .op = VIRT_TMR_OP_GET_TIME };
@@ -90,10 +90,10 @@ uint32_t LIBOBD2_TMR_GetTimeMs(void *pHandle)
 }
 
 /******************************************
-* title: LIBOBD2_TMR_DelayMs
+* title: TMR_DelayMs
 * brief: Moves the virtual clock forward by delay_ms.
 ******************************************/
-void LIBOBD2_TMR_DelayMs(void *pHandle, uint32_t delay_ms)
+void TMR_DelayMs(void *pHandle, uint32_t delay_ms)
 {
     virtTmrCtx_t *ctx = (virtTmrCtx_t *)pHandle;
     virtTmrEvent_t event = { .op = VIRT_TMR_OP_DELAY };
@@ -108,11 +108,11 @@ void LIBOBD2_TMR_DelayMs(void *pHandle, uint32_t delay_ms)
 }
 
 /******************************************
-* title: LIBOBD2_TMR_StartTimeout
+* title: TMR_StartTimeout
 * brief: Arms the timeout timeout_ms after the current time. The callback is
-*        not supported; poll LIBOBD2_TMR_IsTimeoutExpired instead.
+*        not supported; poll TMR_IsTimeoutExpired instead.
 ******************************************/
-obd_tmr_status_t LIBOBD2_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t callback, void *pUserData)
+obd_tmr_status_t TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t callback, void *pUserData)
 {
     virtTmrCtx_t *ctx = (virtTmrCtx_t *)pHandle;
     virtTmrEvent_t event = { .op = VIRT_TMR_OP_START_TIMEOUT, .status = OBD_TMR_OK };
@@ -134,10 +134,10 @@ obd_tmr_status_t LIBOBD2_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, ti
 }
 
 /******************************************
-* title: LIBOBD2_TMR_StopTimeout
+* title: TMR_StopTimeout
 * brief: Disarms the timeout.
 ******************************************/
-obd_tmr_status_t LIBOBD2_TMR_StopTimeout(void *pHandle)
+obd_tmr_status_t TMR_StopTimeout(void *pHandle)
 {
     virtTmrCtx_t *ctx = (virtTmrCtx_t *)pHandle;
     virtTmrEvent_t event = { .op = VIRT_TMR_OP_STOP_TIMEOUT, .status = OBD_TMR_OK };
@@ -155,11 +155,11 @@ obd_tmr_status_t LIBOBD2_TMR_StopTimeout(void *pHandle)
 }
 
 /******************************************
-* title: LIBOBD2_TMR_IsTimeoutExpired
+* title: TMR_IsTimeoutExpired
 * brief: True once the virtual time is past the deadline of a started
 *        timeout; a stopped timeout never reports expired.
 ******************************************/
-bool LIBOBD2_TMR_IsTimeoutExpired(void *pHandle)
+bool TMR_IsTimeoutExpired(void *pHandle)
 {
     virtTmrCtx_t *ctx = (virtTmrCtx_t *)pHandle;
     virtTmrEvent_t event = { .op = VIRT_TMR_OP_IS_TIMEOUT_EXPIRED };

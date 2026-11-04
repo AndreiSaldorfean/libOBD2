@@ -76,7 +76,7 @@ static void test_L2_KWP_RecvMessage_000_Sender(void *param)
     // ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 
-    LIBOBD_FlushRx(pDataLinkTx);
+    LIBOBD2_UART_FlushRx(pDataLinkTx);
 
     g_receiver_done = pdTRUE;
     vTaskDelete(NULL);
@@ -94,16 +94,16 @@ static void test_L2_KWP_RecvMessage_000_Receiver(void *param)
     (void)param;
     (void)dataLink_00;
 
-    timeSample = LIBOBD_GetTimeMs(pDataLinkRx);
-    LIBOBD_SetTimeSample(pDataLinkRx , timeSample);
+    timeSample = LIBOBD2_TMR_GetTimeMs(pDataLinkRx);
+    LIBOBD2_TMR_SetTimeSample(pDataLinkRx , timeSample);
 
-    LIBOBD_StartTimeout(pDataLinkRx, P2_TIME_MAX);
-    LIBOBD_Delay(pDataLinkRx, P2_TIME_MIN);
+    LIBOBD2_TMR_StartTimeout(pDataLinkRx, P2_TIME_MAX);
+    LIBOBD2_TMR_Delay(pDataLinkRx, P2_TIME_MIN);
 
     actual = L2_KWP_RecvMessage(pDataLinkRx, &response);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 
-    LIBOBD_FlushRx(pDataLinkRx);
+    LIBOBD2_UART_FlushRx(pDataLinkRx);
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
@@ -139,10 +139,10 @@ static void test_L2_KWP_ReadHeader_000_Receiver(void *param)
     // Mirror the pattern used by test_L2_KWP_RecvMessage_000:
     //   set timeSample = now, start 50ms timeout, busy-wait 25ms so the
     //   P2_MIN elapsed-time check inside L2_KWP_ReadHeader always passes.
-    timeSample = LIBOBD_GetTimeMs(pDataLinkRx);
-    LIBOBD_SetTimeSample(pDataLinkRx, timeSample);
-    LIBOBD_StartTimeout(pDataLinkRx, P2_TIME_MAX);
-    LIBOBD_Delay(pDataLinkRx, P2_TIME_MIN);
+    timeSample = LIBOBD2_TMR_GetTimeMs(pDataLinkRx);
+    LIBOBD2_TMR_SetTimeSample(pDataLinkRx, timeSample);
+    LIBOBD2_TMR_StartTimeout(pDataLinkRx, P2_TIME_MAX);
+    LIBOBD2_TMR_Delay(pDataLinkRx, P2_TIME_MIN);
 
     actual = L2_KWP_ReadHeader(pDataLinkRx, &header, &headerLen);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "L2_KWP_ReadHeader return");
@@ -194,13 +194,13 @@ static void test_l2_kwp_send_request_000_Sender(void *param)
 
     (void)param;
 
-    timeSample = LIBOBD_GetTimeMs(pDataLinkTx);
-    LIBOBD_SetTimeSample(pDataLinkTx, timeSample);
-    LIBOBD_StartTimeout(pDataLinkTx, P3_TIME_MAX);
-    LIBOBD_Delay(pDataLinkTx, P3_TIME_MIN);
+    timeSample = LIBOBD2_TMR_GetTimeMs(pDataLinkTx);
+    LIBOBD2_TMR_SetTimeSample(pDataLinkTx, timeSample);
+    LIBOBD2_TMR_StartTimeout(pDataLinkTx, P3_TIME_MAX);
+    LIBOBD2_TMR_Delay(pDataLinkTx, P3_TIME_MIN);
 
     actual = l2_kwp_send_request(pDataLinkTx, &request_00, 1);
-    LIBOBD_StopTimeout(pDataLinkTx);
+    LIBOBD2_TMR_StopTimeout(pDataLinkTx);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_send_request");
 
     g_sender_done = pdTRUE;
@@ -262,10 +262,10 @@ static void test_l2_kwp_recv_response_000_Receiver(void *param)
 
     (void)param;
 
-    timeSample = LIBOBD_GetTimeMs(pDataLinkRx);
-    LIBOBD_SetTimeSample(pDataLinkRx, timeSample);
-    LIBOBD_StartTimeout(pDataLinkRx, P2_TIME_MAX);
-    LIBOBD_Delay(pDataLinkRx, P2_TIME_MIN);
+    timeSample = LIBOBD2_TMR_GetTimeMs(pDataLinkRx);
+    LIBOBD2_TMR_SetTimeSample(pDataLinkRx, timeSample);
+    LIBOBD2_TMR_StartTimeout(pDataLinkRx, P2_TIME_MAX);
+    LIBOBD2_TMR_Delay(pDataLinkRx, P2_TIME_MIN);
 
     actual = l2_kwp_recv_response(pDataLinkRx, &resp, &len);
     TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_recv_response return");
@@ -317,16 +317,16 @@ void test_L2_KWP_SendMessage_000(void)
     (void)msg_00;
     (void)dataLink_00;
 
-    timeSample = LIBOBD_GetTimeMs(pDataLink);
-    LIBOBD_SetTimeSample(pDataLink, timeSample);
-    LIBOBD_StartTimeout(pDataLink, P3_TIME_MAX);
-    LIBOBD_Delay(pDataLink, P3_TIME_MIN);
+    timeSample = LIBOBD2_TMR_GetTimeMs(pDataLink);
+    LIBOBD2_TMR_SetTimeSample(pDataLink, timeSample);
+    LIBOBD2_TMR_StartTimeout(pDataLink, P3_TIME_MAX);
+    LIBOBD2_TMR_Delay(pDataLink, P3_TIME_MIN);
 
     L2_KWP2000_PrepareMessage(&msg, buffer, dataLen, NULL);
 
     actual = L2_KWP_SendMessage(pDataLink, buffer, MSG_00_SIZE);
 
-    LIBOBD_StopTimeout(pDataLink);
+    LIBOBD2_TMR_StopTimeout(pDataLink);
 
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 }
@@ -351,28 +351,28 @@ void test_L2_KWP_SendMessage_001(void)
     (void)dataLink_00;
 
     {
-        timeSample = LIBOBD_GetTimeMs(pDataLink);
-        LIBOBD_SetTimeSample(pDataLink, timeSample);
-        LIBOBD_StartTimeout(pDataLink, P3_TIME_MAX);
-        LIBOBD_Delay(pDataLink, P3_TIME_MAX);
+        timeSample = LIBOBD2_TMR_GetTimeMs(pDataLink);
+        LIBOBD2_TMR_SetTimeSample(pDataLink, timeSample);
+        LIBOBD2_TMR_StartTimeout(pDataLink, P3_TIME_MAX);
+        LIBOBD2_TMR_Delay(pDataLink, P3_TIME_MAX);
 
         actual = L2_KWP_SendMessage(pDataLink, (uint8_t*)&msg_00, MSG_00_SIZE);
 
-        LIBOBD_StopTimeout(pDataLink);
+        LIBOBD2_TMR_StopTimeout(pDataLink);
 
         expected.timeout = OBD_ERR_COMM_P3_TIMEOUT_MAX_ECU_TESTER;
         TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
     }
 
     {
-        timeSample = LIBOBD_GetTimeMs(pDataLink);
-        LIBOBD_SetTimeSample(pDataLink, timeSample);
-        LIBOBD_StartTimeout(pDataLink, P3_TIME_MAX);
-        LIBOBD_Delay(pDataLink, P3_TIME_MAX + 1);
+        timeSample = LIBOBD2_TMR_GetTimeMs(pDataLink);
+        LIBOBD2_TMR_SetTimeSample(pDataLink, timeSample);
+        LIBOBD2_TMR_StartTimeout(pDataLink, P3_TIME_MAX);
+        LIBOBD2_TMR_Delay(pDataLink, P3_TIME_MAX + 1);
 
         actual = L2_KWP_SendMessage(pDataLink, (uint8_t*)&msg_00, MSG_00_SIZE);
 
-        LIBOBD_StopTimeout(pDataLink);
+        LIBOBD2_TMR_StopTimeout(pDataLink);
 
         expected.timeout = OBD_ERR_COMM_P3_TIMEOUT_MAX_ECU_TESTER;
         TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
@@ -398,27 +398,27 @@ void test_L2_KWP_SendMessage_002(void)
     (void)dataLink_00;
 
     {
-        timeSample = LIBOBD_GetTimeMs(pDataLink);
-        LIBOBD_SetTimeSample(pDataLink, timeSample);
-        LIBOBD_StartTimeout(pDataLink, P3_TIME_MAX);
-        LIBOBD_Delay(pDataLink, P3_TIME_MIN - 1);
+        timeSample = LIBOBD2_TMR_GetTimeMs(pDataLink);
+        LIBOBD2_TMR_SetTimeSample(pDataLink, timeSample);
+        LIBOBD2_TMR_StartTimeout(pDataLink, P3_TIME_MAX);
+        LIBOBD2_TMR_Delay(pDataLink, P3_TIME_MIN - 1);
 
         actual = L2_KWP_SendMessage(pDataLink, (uint8_t*)&msg_00, MSG_00_SIZE);
 
-        LIBOBD_StopTimeout(pDataLink);
+        LIBOBD2_TMR_StopTimeout(pDataLink);
 
         expected.timeout = OBD_ERR_COMM_P3_TIMEOUT_MIN_ECU_TESTER;
         TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
     }
 
     {
-        timeSample = LIBOBD_GetTimeMs(pDataLink);
-        LIBOBD_SetTimeSample(pDataLink, timeSample);
-        LIBOBD_StartTimeout(pDataLink, P3_TIME_MAX);
+        timeSample = LIBOBD2_TMR_GetTimeMs(pDataLink);
+        LIBOBD2_TMR_SetTimeSample(pDataLink, timeSample);
+        LIBOBD2_TMR_StartTimeout(pDataLink, P3_TIME_MAX);
 
         actual = L2_KWP_SendMessage(pDataLink, (uint8_t*)&msg_00, MSG_00_SIZE);
 
-        LIBOBD_StopTimeout(pDataLink);
+        LIBOBD2_TMR_StopTimeout(pDataLink);
 
         expected.timeout = OBD_ERR_COMM_P3_TIMEOUT_MIN_ECU_TESTER;
         TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);

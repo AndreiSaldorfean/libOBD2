@@ -35,22 +35,22 @@ static void test_ReadByteInTimeframe_000_Sender(void* param)
 
     (void)param;
 
-    LIBOBD_Delay(pDataLinkTx, P2_STAR_TIME_MIN);
-    LIBOBD_SendByte(pDataLinkTx, 0x66);
+    LIBOBD2_TMR_Delay(pDataLinkTx, P2_STAR_TIME_MIN);
+    LIBOBD2_UART_SendByte(pDataLinkTx, 0x66);
 
-    LIBOBD_Delay(pDataLinkTx, P2_TIME_MIN);
-    LIBOBD_SendByte(pDataLinkTx, 0x66);
+    LIBOBD2_TMR_Delay(pDataLinkTx, P2_TIME_MIN);
+    LIBOBD2_UART_SendByte(pDataLinkTx, 0x66);
 
-    LIBOBD_Delay(pDataLinkTx, P1_TIME_MIN);
-    LIBOBD_SendByte(pDataLinkTx, 0x66);
+    LIBOBD2_TMR_Delay(pDataLinkTx, P1_TIME_MIN);
+    LIBOBD2_UART_SendByte(pDataLinkTx, 0x66);
 
-    LIBOBD_Delay(pDataLinkTx, P3_TIME_MIN);
-    LIBOBD_SendByte(pDataLinkTx, 0x66);
+    LIBOBD2_TMR_Delay(pDataLinkTx, P3_TIME_MIN);
+    LIBOBD2_UART_SendByte(pDataLinkTx, 0x66);
 
-    LIBOBD_SendByte(pDataLinkTx, 0x66);
+    LIBOBD2_UART_SendByte(pDataLinkTx, 0x66);
 
-    LIBOBD_Delay(pDataLinkTx, P1_TIME_MAX);
-    LIBOBD_SendByte(pDataLinkTx, 0x66);
+    LIBOBD2_TMR_Delay(pDataLinkTx, P1_TIME_MAX);
+    LIBOBD2_UART_SendByte(pDataLinkTx, 0x66);
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
@@ -141,7 +141,7 @@ void test_RecvByteBlocking_000(void)
     uint8_t expected = 0x66U;
     uint8_t actual = 0;
 
-    LIBOBD_SendByte(pDataLinkTx, 0x66);
+    LIBOBD2_UART_SendByte(pDataLinkTx, 0x66);
 
     DL_RecvByteBlocking(pDataLinkRx, &byte);
 

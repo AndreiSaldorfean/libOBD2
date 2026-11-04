@@ -77,19 +77,19 @@ OBD2_STATIC obd_status_t L2_ISO9141_SendMessage(dataLink_if_t *self, const uint8
     OBD2_DEBUG_ASSERT((NULL != self) && (NULL != frame));
     OBD2_DEBUG_ASSERT((0U < frameLen) && (frameLen <= ISO9141_MAX_FRAME_LEN));
 
-    LIBOBD_Delay(self, P3_TIME_MIN);
+    LIBOBD2_TMR_Delay(self, P3_TIME_MIN);
 
     for (size_t idx = 0; idx < frameLen; idx++)
     {
-        LIBOBD_SendByte(self, frame[idx]);
-        LIBOBD_Delay(self, P4_TIME_MIN);
+        LIBOBD2_UART_SendByte(self, frame[idx]);
+        LIBOBD2_TMR_Delay(self, P4_TIME_MIN);
     }
 
     status = DL_StartTimeout(self, P2_TIME_MAX);
 
     // Clear echo
     // TODO: compare the echo with the frame instead of dropping it
-    LIBOBD_FlushRx(self);
+    LIBOBD2_UART_FlushRx(self);
 
     return status;
 }

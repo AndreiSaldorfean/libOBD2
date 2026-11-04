@@ -55,8 +55,8 @@ obd_status_t ECU_DL_Connect(dataLink_if_t *pDataLink)
 {
     obd_status_t status = {0};
     uint8_t protocolIdx = PROTOCOL_NOT_FOUND;
-    LIBOBD_TransportInit(pDataLink);
-    LIBOBD_TimingInit(pDataLink);
+    LIBOBD2_UART_Init(pDataLink);
+    LIBOBD2_TMR_Init(pDataLink);
 
     status.response = OBD_ERR_PROTOCOL_NOT_FOUND;
     protocolIdx = DL_IdentifyProtocol(pDataLink);
