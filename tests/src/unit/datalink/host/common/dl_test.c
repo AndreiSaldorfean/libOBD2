@@ -476,3 +476,30 @@ void test_DL_TimeSample_PerLink(void)
     TEST_ASSERT_EQUAL_UINT32(0u, dataLink.timeSample);
     TEST_ASSERT_EQUAL_UINT32(100u, other.timeSample);
 }
+
+/******************************************************************
+ * A link missing any of its driver pointers is rejected by every DL
+ * entry point with OBD_ERR_NULL_PTR, before anything goes on the line.
+ ******************************************************************/
+void test_DL_Api_IncompleteLink(void)
+{
+    obd_data_t data = { .sid = 0x01u };
+    size_t len = 0u;
+
+    for (uint8_t missing = 0u; missing < 4u; missing++)
+    {
+        setUpLine();
+        switch (missing)
+        {
+            case 0u: dataLink.pUartOps         = NULL; break;
+            case 1u: dataLink.pTransportHandle = NULL; break;
+            case 2u: dataLink.pTimingOps       = NULL; break;
+            default: dataLink.pTimingHandle    = NULL; break;
+        }
+
+        TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_Connect(&dataLink).response);
+        TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_SendRequest(&dataLink, &data, 2u).response);
+        TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_RecvResponse(&dataLink, &data, &len).response);
+        TEST_ASSERT_EQUAL_UINT32(0u, timer.timeNow);
+    }
+}

@@ -12,6 +12,10 @@ void test_ISO9141_5BaudInit_000(void);
 void test_ISO9141_RecvMessage_TargetByteTimeout(void);
 void test_ISO9141_SendRequest_InvalidDataLen(void);
 void test_ISO9141_5BaudInit_WrongKeyBytes(void);
+void test_ISO9141_Api_NullArgs(void);
+void test_ISO9141_RecvResponse_NegativeResponse(void);
+void test_ISO9141_RecvResponse_EmptyFrame(void);
+void test_ISO9141_RecvResponse_NoChecksum(void);
 
 #endif /* ISO9141_TEST_H */
 
