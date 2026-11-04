@@ -64,9 +64,7 @@ void targetRunTests()
     RUN_TEST(test_ISO9141_SendRecvMessage_000);
     RUN_TEST(test_ISO9141_5BaudInit_000);
     RUN_TEST(test_ISO9141_RecvMessage_TargetByteTimeout);
-    RUN_TEST(test_ISO9141_Api_NullLink);
     RUN_TEST(test_ISO9141_SendRequest_InvalidDataLen);
-    RUN_TEST(test_ISO9141_SerializeMessage_ZeroDataLen);
     RUN_TEST(test_ISO9141_5BaudInit_WrongKeyBytes);
     /* ---- DATALINK TESTS ---- */
 

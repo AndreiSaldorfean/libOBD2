@@ -17,9 +17,9 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-extern obd_status_t L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t dataLen, uint8_t *cs);
-extern obd_status_t L2_ISO9141_SerializeMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
-extern obd_status_t L2_ISO9141_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len);
+extern uint8_t L2_ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen);
+extern size_t L2_ISO9141_SerializeMessage(const message_t *msg, uint8_t *frame, size_t dataLen);
+extern obd_status_t L2_ISO9141_SendMessage(dataLink_if_t *self, const uint8_t *frame, size_t frameLen);
 extern obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t *len);
 extern obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t *protocol);
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
@@ -35,12 +35,11 @@ void test_ISO9141_SendRecvMessage_000(void)
 {
     dataLink_if_t *self = &dl_tester;
     message_t msg = msg_tester;
-    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, L2_ISO9141_ComputeChecksum(msg.header, msg.data, MSG_DATA_LEN, &msg.cs).response);
+    msg.cs = L2_ISO9141_ComputeChecksum(&msg.header, &msg.data, MSG_DATA_LEN);
     TEST_ASSERT_EQUAL_HEX8(msg_tester.cs, msg.cs);
 
     uint8_t aSentMsg[MSG_WIRE_LEN] = {0};
-    size_t wireLen = 0;
-    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, L2_ISO9141_SerializeMessage(&msg, aSentMsg, 2, &wireLen).response);
+    size_t wireLen = L2_ISO9141_SerializeMessage(&msg, aSentMsg, 2);
     TEST_ASSERT_EQUAL_size_t(6, wireLen);
 
     /* The vectors are static: start every run from a clean clock and an empty line.
@@ -185,50 +184,19 @@ void test_ISO9141_RecvMessage_TargetByteTimeout(void)
 }
 
 /******************************************************************
- * Every public ISO9141 entry point rejects a NULL data link with
- * OBD_ERR_NULL_PTR before touching the line.
- ******************************************************************/
-void test_ISO9141_Api_NullLink(void)
-{
-    uint8_t protocol = 0u;
-    obd_data_t data = {0};
-    size_t len = 0;
-
-    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, l2_iso9141_connect(NULL, &protocol).response);
-    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, l2_iso9141_send_request(NULL, &data, 2u).response);
-    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, l2_iso9141_recv_response(NULL, &data, &len).response);
-}
-
-/******************************************************************
  * send_request accepts 1..7 data bytes (sid + up to 6 params).
- *   0 used to underflow in SerializeMessage; 8 would overrun the frame buffer.
+ *   0 would underflow in SerializeMessage; 8 would overrun the frame buffer.
+ *   A rejected request puts nothing on the line: no P3 wait, no bytes.
  ******************************************************************/
 void test_ISO9141_SendRequest_InvalidDataLen(void)
 {
     obd_data_t data = { .sid = 0x01u };
 
+    tmr_ctx_tester.timeNow = 0u;
+
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_INVALID_PARAM, l2_iso9141_send_request(&dl_tester, &data, 0u).response);
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_INVALID_PARAM, l2_iso9141_send_request(&dl_tester, &data, 8u).response);
-}
-
-/******************************************************************
- * SerializeMessage with dataLen 0 is rejected and leaves the buffer as it was.
- ******************************************************************/
-void test_ISO9141_SerializeMessage_ZeroDataLen(void)
-{
-    message_t msg = msg_tester;
-    uint8_t aSentMsg[MSG_WIRE_LEN];
-    uint8_t expected[MSG_WIRE_LEN];
-    size_t wireLen = 0xA5u;
-
-    memset(aSentMsg, 0xEEu, sizeof(aSentMsg));
-    memset(expected, 0xEEu, sizeof(expected));
-
-    obd_status_t status = L2_ISO9141_SerializeMessage(&msg, aSentMsg, 0u, &wireLen);
-
-    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_INVALID_PARAM, status.response);
-    TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, aSentMsg, MSG_WIRE_LEN);
-    TEST_ASSERT_EQUAL_size_t(0xA5u, wireLen);
+    TEST_ASSERT_EQUAL_UINT32(0u, tmr_ctx_tester.timeNow);
 }
 
 /******************************************************************

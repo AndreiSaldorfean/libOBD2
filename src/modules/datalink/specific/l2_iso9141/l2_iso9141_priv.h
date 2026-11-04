@@ -24,42 +24,6 @@
 #define DL_KWP2000_HEADR         ((header_t){.fmt = 0xC0, .trgAddr = 0x33, .srcAddr = 0xF1})
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 /* ============================================ INLINE FUNCTIONS =========================================== */
-/******************************************
-* title: L2_ISO9141_ValidateLink
-* brief: Checks the UART and timer ops and handles every ISO9141 function needs.
-*        The protocol context is checked by the functions that use it.
-******************************************/
-static inline obd_status_t L2_ISO9141_ValidateLink(const dataLink_if_t *self)
-{
-    obd_status_t status = {0};
-
-    if ((NULL == self)
-     || (NULL == self->pUartOps)
-     || (NULL == self->pTransportHandle)
-     || (NULL == self->pTimingOps)
-     || (NULL == self->pTimingHandle))
-    {
-        status.response = OBD_ERR_NULL_PTR;
-    }
-
-    return status;
-}
-
-/******************************************
-* title: L2_ISO9141_ValidateLinkWithCtx
-* brief: Same as L2_ISO9141_ValidateLink, and also checks the protocol context.
-******************************************/
-static inline obd_status_t L2_ISO9141_ValidateLinkWithCtx(const dataLink_if_t *self)
-{
-    obd_status_t status = L2_ISO9141_ValidateLink(self);
-
-    if ((OBD_STATUS_OK == status.response) && (NULL == self->pProtocolCtx))
-    {
-        status.response = OBD_ERR_NULL_PTR;
-    }
-
-    return status;
-}
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 

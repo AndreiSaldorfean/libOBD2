@@ -46,7 +46,7 @@ static const header_t header_tester =
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-extern obd_status_t L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t dataLen, uint8_t *cs);
+extern uint8_t L2_ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen);
 
 static bool keepTimer(void *pHandle);
 static bool keepLine(void *handle);
@@ -129,7 +129,6 @@ static uint32_t ecuQueueFrame(uint32_t reqEnd, const uint8_t *data, size_t dataL
     uint8_t frame[ISO9141_HDR_LEN + sizeof(obd_data_t) + 1u] = {0};
     obd_data_t obdData = {0};
     size_t frameLen = 0;
-    uint8_t cs = 0;
     uint32_t firstByteTime = reqEnd + P2_TIME_MIN;
 
     memcpy(&obdData, data, dataLen);
@@ -138,8 +137,7 @@ static uint32_t ecuQueueFrame(uint32_t reqEnd, const uint8_t *data, size_t dataL
     frame[frameLen++] = header_ecu.srcAddr;
     memcpy(&frame[frameLen], data, dataLen);
     frameLen += dataLen;
-    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, L2_ISO9141_ComputeChecksum(header_ecu, obdData, dataLen, &cs).response);
-    frame[frameLen++] = cs;
+    frame[frameLen++] = L2_ISO9141_ComputeChecksum(&header_ecu, &obdData, dataLen);
 
     for (size_t idx = 0; idx < frameLen; idx++)
     {
