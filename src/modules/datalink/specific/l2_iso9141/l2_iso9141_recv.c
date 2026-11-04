@@ -52,7 +52,7 @@ exit:
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Validate(dataLink_if_t *self, message_t *recvdMsg, size_t* len)
 {
-    obd_status_t status = L2_ISO9141_ValidateLink(self);
+    obd_status_t status = L2_ISO9141_ValidateLinkWithCtx(self);
     OBD2_ASSERT_OK(status);
 
     if ((NULL == recvdMsg) || (NULL == len))
@@ -166,7 +166,7 @@ exit:
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Validate(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
 {
-    obd_status_t status = L2_ISO9141_ValidateLink(self);
+    obd_status_t status = L2_ISO9141_ValidateLinkWithCtx(self);
     OBD2_ASSERT_OK(status);
 
     if ((NULL == resp) || (NULL == dataLen))
