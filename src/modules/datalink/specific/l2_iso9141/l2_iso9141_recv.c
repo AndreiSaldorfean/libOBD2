@@ -72,7 +72,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *
     pMsg[byteReadIdx++] = byteRead;
 
     // Only KWP2000 frames with no length in the format byte carry a length byte
-    hasLenByte = (KWP2000 == ctx->protocol) && (0U == (recvdMsg->header.fmt & 0x3FU));
+    hasLenByte = (KWP2000 == ctx->protocol) && (0U == (recvdMsg->header.fmt & ISO9141_FMT_LEN_MASK));
 
     // Bound by the message_t layout (header slot incl. len + data), not the wire length,
     // since byteReadIdx skips header.len when the frame has no length byte
@@ -99,7 +99,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *
         runningCheckSum += byteRead;
 
         // Frames without a length byte leave the header.len slot empty
-        if ((3U == byteReadIdx) && !hasLenByte)
+        if ((ISO9141_HDR_LEN_IDX == byteReadIdx) && !hasLenByte)
         {
             byteReadIdx++;
         }
@@ -157,7 +157,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Verify(const obd_data_t *resp)
 {
     obd_status_t status = {0};
 
-    if (resp->sid == 0x7F)
+    if (ISO9141_NEGATIVE_RESP_SID == resp->sid)
     {
         status.response = OBD_ERR_COMM_ECU_RESPONSE_7F;
     }

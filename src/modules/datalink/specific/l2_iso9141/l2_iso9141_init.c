@@ -29,13 +29,13 @@ OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol(dataLink_if_t *sel
 
     // ISO9141-2
     // If 0x08 then 0x68 0x6A 0xF1 header is used always with 7 bytes of data max
-    if (kb1 == 0x08 && kb2 == 0x08)
+    if ((ISO9141_KB_ISO9141 == kb1) && (ISO9141_KB_ISO9141 == kb2))
     {
         ctx->header = DL_ISO9141_HEADR;
         *protocol   = ISO9141;
     }
     // Can use KWP2000
-    else if (kb1 == 0x94 && kb2 == 0x94)
+    else if ((ISO9141_KB_KWP2000 == kb1) && (ISO9141_KB_KWP2000 == kb2))
     {
         // Functional addr
         // Can use kwp2000 header and len
@@ -66,21 +66,20 @@ OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t *prot
     uint8_t kb1 = 0;
     uint8_t kb2 = 0;
     uint8_t invAddr = 0;
-    const uint8_t targetAddr = 0x33;
 
     OBD2_DEBUG_ASSERT((NULL != self) && (NULL != protocol));
 
     LIBOBD_Delay(self, ISO9141_W5_TIME_MIN);
 
     // Send address byte at 5 baud rate
-    DL_SendByteBitBanged(self, targetAddr, 5);
+    DL_SendByteBitBanged(self, ISO9141_INIT_TARGET_ADDR, ISO9141_INIT_BAUD_RATE);
 
     // Read Sync byte
     status = DL_ReadByteInTimeframe(self, NULL, &syncByte, ISO9141_W1_TIME_MIN, ISO9141_W1_TIME_MAX);
     status.response = OBD_ERR_5BAUD_SYNC_NOT_RECVD;
     OBD2_ASSERT_NO_TIMEOUT(status);
     status.response = OBD_ERR_5BAUD_WRONG_SYNC_BYTE;
-    OBD2_ASSERT_EQUAL_OR_EXIT(0x55, syncByte);
+    OBD2_ASSERT_EQUAL_OR_EXIT(ISO9141_SYNC_BYTE, syncByte);
 
     // Receive KB1 (W2 timing: 5-20ms)
     status = DL_ReadByteInTimeframe(self, NULL, &kb1, ISO9141_W2_TIME_MIN, ISO9141_W2_TIME_MAX);
@@ -105,7 +104,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t *prot
     status.response = OBD_ERR_5BAUD_INV_ADDR_NOT_RECVD;
     OBD2_ASSERT_NO_TIMEOUT(status);
     status.response = OBD_ERR_5BAUD_WRONG_INV_ADDR;
-    OBD2_ASSERT_EQUAL_OR_EXIT((uint8_t)(~targetAddr), invAddr);
+    OBD2_ASSERT_EQUAL_OR_EXIT((uint8_t)(~ISO9141_INIT_TARGET_ADDR), invAddr);
 
     status = L2_ISO9141_StoreKwbAndSelectProtocol(self, protocol, kb1, kb2);
     OBD2_ASSERT_OK(status);
