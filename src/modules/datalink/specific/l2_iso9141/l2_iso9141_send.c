@@ -223,7 +223,7 @@ exit:
 * brief: Checks the inputs of L2_ISO9141_SendMessage.
 * input: self - data link
 *        msg  - bytes to send
-*        len  - number of bytes, 1..ISO9141_MAX_WIRE_LEN
+*        len  - number of bytes, 1..ISO9141_MAX_FRAME_LEN
 * output: obd_status_t - OK, OBD_ERR_NULL_PTR or OBD_ERR_INVALID_PARAM
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_SendMessage_Validate(dataLink_if_t *self, uint8_t *msg, size_t len)
@@ -235,7 +235,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_SendMessage_Validate(dataLink_if_t *self, ui
     {
         status.response = OBD_ERR_NULL_PTR;
     }
-    else if ((0U == len) || (len > ISO9141_MAX_WIRE_LEN))
+    else if ((0U == len) || (len > ISO9141_MAX_FRAME_LEN))
     {
         status.response = OBD_ERR_INVALID_PARAM;
     }
@@ -293,7 +293,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_SendMessage_Verify(dataLink_if_t *self)
 * brief: Sends a serialized frame on the K-line with ISO9141 timing.
 * input: self - data link
 *        msg  - bytes to send
-*        len  - number of bytes, 1..ISO9141_MAX_WIRE_LEN
+*        len  - number of bytes, 1..ISO9141_MAX_FRAME_LEN
 * output: obd_status_t - OK, OBD_ERR_NULL_PTR or OBD_ERR_INVALID_PARAM
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len)
@@ -347,26 +347,19 @@ exit:
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_SendRequest_Execute(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
 {
-    l2_iso9141_ctx_t ctx = *(l2_iso9141_ctx_t *)(self->pProtocolCtx);
-    uint8_t aSentMsg[ISO9141_MAX_WIRE_LEN] = {0};
+    const l2_iso9141_ctx_t ctx = *(l2_iso9141_ctx_t *)(self->pProtocolCtx);
+    message_t msg = { .header = ctx.header, .data = *serviceRequests };
+    uint8_t serializedMsg[ISO9141_MAX_FRAME_LEN] = {0};
+    size_t serializedMsgLen = 0;
     obd_status_t status;
-    size_t len = 0;
-    message_t msg = {0};
-    obd_data_t data = *serviceRequests;
 
-    // Construct the message
-    msg.header.fmt = ctx.header.fmt;
-    msg.header.trgAddr = ctx.header.trgAddr;
-    msg.header.srcAddr = ctx.header.srcAddr;
-
-    msg.data = data;
-    status = L2_ISO9141_ComputeChecksum(msg.header, data, dataLen, &msg.cs);
+    status = L2_ISO9141_ComputeChecksum(msg.header, *serviceRequests, dataLen, &msg.cs);
     OBD2_ASSERT_OK(status);
 
-    status = L2_ISO9141_SerializeMessage(&msg, aSentMsg, dataLen, &len);
+    status = L2_ISO9141_SerializeMessage(&msg, serializedMsg, dataLen, &serializedMsgLen);
     OBD2_ASSERT_OK(status);
 
-    status = L2_ISO9141_SendMessage(self, aSentMsg, len);
+    status = L2_ISO9141_SendMessage(self, serializedMsg, serializedMsgLen);
     OBD2_ASSERT_OK(status);
 
     memset(&status, 0, sizeof(obd_status_t));

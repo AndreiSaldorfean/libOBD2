@@ -167,7 +167,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Execute(dataLink_if_t *self, mes
                     + recvdMsg->header.trgAddr
                     + recvdMsg->header.srcAddr;
 
-    while (ISO9141_MAX_DATA_FIELD > idx)
+    while (ISO9141_MAX_DATA_FIELD_LEN > idx)
     {
         status = DL_ReadByteInTimeframe(self, &elapsedTime , &byte, P1_TIME_MIN, P1_TIME_MAX);
         status.response = OBD_ERR_COMM_DATA_BYTE_NOT_RECVD;
@@ -203,7 +203,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage_Verify(size_t* len)
 {
     obd_status_t status = {0};
 
-    if ((0U == *len) || (*len > ISO9141_MAX_DATA_FIELD))
+    if ((0U == *len) || (*len > ISO9141_MAX_DATA_FIELD_LEN))
     {
         status.response = OBD_ERR_COMM_RECV_MSG_FAILED;
     }
