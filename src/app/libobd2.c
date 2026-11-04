@@ -45,7 +45,7 @@ static obd_status_t LibOBD2_DispatchSid(obd_ctx_t* ctx, libobd2_service_t *libob
         OBD2_ASSERT_OK(status);
 
         response->data = resp;
-        response->dataLen = 1;
+        response->dataLen = len;
         *respLen = 1;
         goto exit;
     }
