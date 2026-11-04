@@ -26,11 +26,8 @@
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /******************************************
 * title: L2_ISO9141_ValidateLink
-* brief: Checks that the data link has the UART and timer ops and handles
-*        every ISO9141 function needs. The protocol context is not checked
-*        here; functions that use it check it themselves.
-* input: self - data link to check
-* output: obd_status_t - OK, or OBD_ERR_NULL_PTR if any of them is NULL
+* brief: Checks the UART and timer ops and handles every ISO9141 function needs.
+*        The protocol context is checked by the functions that use it.
 ******************************************/
 static inline obd_status_t L2_ISO9141_ValidateLink(const dataLink_if_t *self)
 {
@@ -51,8 +48,6 @@ static inline obd_status_t L2_ISO9141_ValidateLink(const dataLink_if_t *self)
 /******************************************
 * title: L2_ISO9141_ValidateLinkWithCtx
 * brief: Same as L2_ISO9141_ValidateLink, and also checks the protocol context.
-* input: self - data link to check
-* output: obd_status_t - OK, or OBD_ERR_NULL_PTR
 ******************************************/
 static inline obd_status_t L2_ISO9141_ValidateLinkWithCtx(const dataLink_if_t *self)
 {

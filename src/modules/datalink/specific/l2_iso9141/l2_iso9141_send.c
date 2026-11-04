@@ -28,9 +28,6 @@ OBD2_STATIC obd_status_t L2_ISO9141_SendRequest_Verify(dataLink_if_t *self);
 /******************************************
 * title: L2_ISO9141_ComputeChecksum_Validate
 * brief: Checks the inputs of L2_ISO9141_ComputeChecksum.
-* input: dataLen - number of data bytes to sum, at most sizeof(obd_data_t)
-*        cs      - output for the checksum
-* output: obd_status_t - OK, OBD_ERR_NULL_PTR or OBD_ERR_INVALID_PARAM
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_ComputeChecksum_Validate(size_t dataLen, uint8_t *cs)
 {
@@ -51,11 +48,6 @@ OBD2_STATIC obd_status_t L2_ISO9141_ComputeChecksum_Validate(size_t dataLen, uin
 /******************************************
 * title: L2_ISO9141_ComputeChecksum_Execute
 * brief: Sums the 3 header bytes and dataLen data bytes, modulo 256.
-* input: header  - message header
-*        data    - sid followed by the params
-*        dataLen - number of data bytes to sum
-*        cs      - output for the checksum
-* output: obd_status_t - always OK
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_ComputeChecksum_Execute(header_t header, obd_data_t data, size_t dataLen, uint8_t *cs)
 {
@@ -82,8 +74,6 @@ OBD2_STATIC obd_status_t L2_ISO9141_ComputeChecksum_Execute(header_t header, obd
 /******************************************
 * title: L2_ISO9141_ComputeChecksum_Verify
 * brief: No extra check. Any 8-bit value is a valid checksum.
-* input: cs - computed checksum (unused)
-* output: obd_status_t - always OK
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_ComputeChecksum_Verify(uint8_t *cs)
 {
@@ -96,11 +86,6 @@ OBD2_STATIC obd_status_t L2_ISO9141_ComputeChecksum_Verify(uint8_t *cs)
 * title: L2_ISO9141_ComputeChecksum
 * brief: Computes the ISO9141 checksum of a message: the sum of the header
 *        and data bytes, modulo 256.
-* input: header  - message header
-*        data    - sid followed by the params
-*        dataLen - number of data bytes to sum, at most sizeof(obd_data_t)
-*        cs      - output for the checksum
-* output: obd_status_t - OK, OBD_ERR_NULL_PTR or OBD_ERR_INVALID_PARAM
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t dataLen, uint8_t *cs)
 {
@@ -119,11 +104,6 @@ exit:
 /******************************************
 * title: L2_ISO9141_SerializeMessage_Validate
 * brief: Checks the inputs of L2_ISO9141_SerializeMessage.
-* input: sentMsg  - message to serialize
-*        aSentMsg - output buffer
-*        dataLen  - sid + params count, 1..ISO9141_MAX_REQ_DATA_LEN
-*        len      - output for the number of bytes written
-* output: obd_status_t - OK, OBD_ERR_NULL_PTR or OBD_ERR_INVALID_PARAM
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage_Validate(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len)
 {
@@ -144,11 +124,6 @@ OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage_Validate(message_t *sentMsg
 /******************************************
 * title: L2_ISO9141_SerializeMessage_Execute
 * brief: Writes header, sid, params and checksum into the wire buffer.
-* input: sentMsg  - message to serialize
-*        aSentMsg - output buffer, at least dataLen + ISO9141_WIRE_OVERHEAD bytes
-*        dataLen  - sid + params count
-*        len      - output for the number of bytes written
-* output: obd_status_t - always OK
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage_Execute(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len)
 {
@@ -177,9 +152,6 @@ OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage_Execute(message_t *sentMsg,
 /******************************************
 * title: L2_ISO9141_SerializeMessage_Verify
 * brief: Checks that the frame has exactly header + data + checksum bytes.
-* input: dataLen - sid + params count
-*        len     - number of bytes written
-* output: obd_status_t - OK, or OBD_ERR_COMM_SEND_MSG_FAILED
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage_Verify(size_t dataLen, size_t *len)
 {
@@ -197,12 +169,6 @@ OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage_Verify(size_t dataLen, size
 * title: L2_ISO9141_SerializeMessage
 * brief: Serializes a message_t into the ISO9141 wire layout
 *        (header, sid, params, checksum).
-* input: sentMsg  - message to serialize
-*        aSentMsg - output buffer, at least dataLen + ISO9141_WIRE_OVERHEAD bytes
-*        dataLen  - sid + params count, 1..ISO9141_MAX_REQ_DATA_LEN
-*        len      - output for the number of bytes written
-* output: obd_status_t - OK, OBD_ERR_NULL_PTR, OBD_ERR_INVALID_PARAM
-*         or OBD_ERR_COMM_SEND_MSG_FAILED
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_SerializeMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len)
 {
@@ -221,10 +187,6 @@ exit:
 /******************************************
 * title: L2_ISO9141_SendMessage_Validate
 * brief: Checks the inputs of L2_ISO9141_SendMessage.
-* input: self - data link
-*        msg  - bytes to send
-*        len  - number of bytes, 1..ISO9141_MAX_FRAME_LEN
-* output: obd_status_t - OK, OBD_ERR_NULL_PTR or OBD_ERR_INVALID_PARAM
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_SendMessage_Validate(dataLink_if_t *self, uint8_t *msg, size_t len)
 {
@@ -248,10 +210,6 @@ exit:
 * title: L2_ISO9141_SendMessage_Execute
 * brief: Waits P3, sends the bytes with P4 between them, then starts the
 *        P2 timeout for the ECU response.
-* input: self - data link
-*        msg  - bytes to send
-*        len  - number of bytes
-* output: obd_status_t - always OK
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_SendMessage_Execute(dataLink_if_t *self, uint8_t *msg, size_t len)
 {
@@ -278,8 +236,6 @@ OBD2_STATIC obd_status_t L2_ISO9141_SendMessage_Execute(dataLink_if_t *self, uin
 * title: L2_ISO9141_SendMessage_Verify
 * brief: No extra check yet. Checking the echo needs LIBOBD_FlushRx, which
 *        is still a stub.
-* input: self - data link (unused)
-* output: obd_status_t - always OK
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_SendMessage_Verify(dataLink_if_t *self)
 {
@@ -291,10 +247,6 @@ OBD2_STATIC obd_status_t L2_ISO9141_SendMessage_Verify(dataLink_if_t *self)
 /******************************************
 * title: L2_ISO9141_SendMessage
 * brief: Sends a serialized frame on the K-line with ISO9141 timing.
-* input: self - data link
-*        msg  - bytes to send
-*        len  - number of bytes, 1..ISO9141_MAX_FRAME_LEN
-* output: obd_status_t - OK, OBD_ERR_NULL_PTR or OBD_ERR_INVALID_PARAM
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len)
 {
@@ -313,10 +265,6 @@ exit:
 /******************************************
 * title: L2_ISO9141_SendRequest_Validate
 * brief: Checks the inputs of l2_iso9141_send_request.
-* input: self            - data link, must have a protocol context
-*        serviceRequests - sid and params to send
-*        dataLen         - sid + params count, 1..ISO9141_MAX_REQ_DATA_LEN
-* output: obd_status_t - OK, OBD_ERR_NULL_PTR or OBD_ERR_INVALID_PARAM
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_SendRequest_Validate(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
 {
@@ -340,10 +288,6 @@ exit:
 * title: L2_ISO9141_SendRequest_Execute
 * brief: Builds the request with the header from the context, adds the
 *        checksum, serializes it and sends it.
-* input: self            - data link
-*        serviceRequests - sid and params to send
-*        dataLen         - sid + params count
-* output: obd_status_t - OK, or the error of the failed step
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_SendRequest_Execute(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
 {
@@ -370,8 +314,6 @@ exit:
 /******************************************
 * title: L2_ISO9141_SendRequest_Verify
 * brief: No extra check. L2_ISO9141_SendMessage already verified the send.
-* input: self - data link (unused)
-* output: obd_status_t - always OK
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_SendRequest_Verify(dataLink_if_t *self)
 {
@@ -384,11 +326,6 @@ OBD2_STATIC obd_status_t L2_ISO9141_SendRequest_Verify(dataLink_if_t *self)
 /******************************************
 * title: l2_iso9141_send_request
 * brief: Sends an OBD service request to the ECU over ISO9141-2.
-* input: self            - connected data link, must have a protocol context
-*        serviceRequests - sid and params to send
-*        dataLen         - sid + params count, 1..ISO9141_MAX_REQ_DATA_LEN
-* output: obd_status_t - OK, OBD_ERR_NULL_PTR, OBD_ERR_INVALID_PARAM,
-*         or the error of the failed send step
 ******************************************/
 obd_status_t l2_iso9141_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
 {
