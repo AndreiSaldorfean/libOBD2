@@ -2,8 +2,9 @@
 #include "libobd2_test.h"
 #include "datalink.h"
 #include "iso15031_5.h"
-#include "l2_iso9141.h"
+#include "iso9141.h"
 #include "libobd2.h"
+#include "libobd2_services.h"
 #include "libobd2_timer_port.h"
 #include "libobd2_uart_port.h"
 #include "statusRetCodes.h"
@@ -26,7 +27,7 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 static virtTmrCtx_t timer;
 static virtUartLinkCtx_t uartCtx;
-static l2_iso9141_ctx_t protoCtx;
+static iso9141_ctx_t protoCtx;
 static dataLink_if_t dataLink;
 static obd_ctx_t ctx;
 
@@ -46,9 +47,11 @@ static const header_t header_tester =
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-extern uint8_t L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t dataLen);
+extern uint8_t ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen);
+extern const libobd2_service_t libobd2Services[OBD2_MAX_NUM_SERVICES];
+extern obd_status_t LibOBD2_DispatchSid(obd_ctx_t* ctx, const libobd2_service_t *libobd2Service, libobd2_data_t* response, size_t respCap, size_t * respLen);
 
-static bool keepTimer(void *pHandle);
+static obd_tmr_status_t keepTimer(void *pHandle);
 static bool keepLine(void *handle);
 
 /* DL_Connect() re-initialises the timer and the transport. On the virtual line that would zero timeStep and
@@ -56,28 +59,28 @@ static bool keepLine(void *handle);
 static obd_timing_ops_t tmrOps =
 {
     .timer_init         = keepTimer,
-    .delay_ms           = LIBOBD2_TMR_DelayMs,
-    .get_time_ms        = LIBOBD2_TMR_GetTimeMs,
-    .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
-    .start_timeout      = LIBOBD2_TMR_StartTimeout,
-    .stop_timeout       = LIBOBD2_TMR_StopTimeout,
+    .delay_ms           = TMR_DelayMs,
+    .get_time_ms        = TMR_GetTimeMs,
+    .is_timeout_expired = TMR_IsTimeoutExpired,
+    .start_timeout      = TMR_StartTimeout,
+    .stop_timeout       = TMR_StopTimeout,
 };
 
 static obd_uart_ops_t uartOps =
 {
     .init        = keepLine,
-    .send_byte   = LIBOBD2_UART_WriteByte,
-    .recv_byte   = LIBOBD2_UART_RecvByte,
-    .send_pulse  = LIBOBD2_UART_SendPulse,
-    .switch_mode = LIBOBD2_UART_SwitchMode,
-    .flush_rx    = LIBOBD2_UART_FlushRx,
+    .send_byte   = UART_WriteByte,
+    .recv_byte   = UART_RecvByte,
+    .send_pulse  = UART_SendPulse,
+    .switch_mode = UART_SwitchMode,
+    .flush_rx    = UART_FlushRx,
 };
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-static bool keepTimer(void *pHandle)
+static obd_tmr_status_t keepTimer(void *pHandle)
 {
     (void)pHandle;
-    return true;
+    return OBD_TMR_OK;
 }
 
 static bool keepLine(void *handle)
@@ -94,11 +97,10 @@ static void setUpLine(void)
 {
     timer = (virtTmrCtx_t){ .timeStep = TIME_STEP };
     uartCtx.tmrHandle       = &timer;
-    uartCtx.erorr_generator = NULL;
-    TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&uartCtx));
+    uartCtx.faults          = (virtUartFaultHooks_t){0};
+    TEST_ASSERT_TRUE(UART_Init(&uartCtx));
 
-    protoCtx = (l2_iso9141_ctx_t){ .header = header_tester, .kb1 = 0x08u, .kb2 = 0x08u };
-    tmrOps.timeSample = 0u;
+    protoCtx = (iso9141_ctx_t){ .header = header_tester, .kb1 = 0x08u, .kb2 = 0x08u };
 
     dataLink = (dataLink_if_t)
     {
@@ -107,9 +109,9 @@ static void setUpLine(void)
         .pTimingHandle    = &timer,
         .pUartOps         = &uartOps,
         .pTransportHandle = &uartCtx,
-        .connect          = l2_iso9141_connect,
-        .send_request     = l2_iso9141_send_request,
-        .recv_response    = l2_iso9141_recv_response,
+        .connect          = ISO9141_Connect,
+        .send_request     = ISO9141_SendRequest,
+        .recv_response    = ISO9141_RecvResponse,
     };
 
     ctx = (obd_ctx_t){ .pDataLink = &dataLink, .connectionStatus = 0 };
@@ -137,12 +139,12 @@ static uint32_t ecuQueueFrame(uint32_t reqEnd, const uint8_t *data, size_t dataL
     frame[frameLen++] = header_ecu.srcAddr;
     memcpy(&frame[frameLen], data, dataLen);
     frameLen += dataLen;
-    frame[frameLen++] = L2_ISO9141_ComputeChecksum(header_ecu, obdData, dataLen);
+    frame[frameLen++] = ISO9141_ComputeChecksum(&header_ecu, &obdData, dataLen);
 
     for (size_t idx = 0; idx < frameLen; idx++)
     {
         timer.timeNow = firstByteTime + (uint32_t)idx * ECU_BYTE_GAP;
-        LIBOBD2_UART_WriteByte(&uartCtx, frame[idx]);
+        UART_WriteByte(&uartCtx, frame[idx]);
     }
     timer.timeNow = 0u;
 
@@ -206,20 +208,20 @@ void test_LIBOBD2_Init_000(void)
 {
     setUpLine();
     /* nothing is known about the protocol before the connect */
-    protoCtx = (l2_iso9141_ctx_t){0};
+    protoCtx = (iso9141_ctx_t){0};
     dataLink.connect       = NULL;
     dataLink.send_request  = NULL;
     dataLink.recv_response = NULL;
 
     /* Same ECU timing as test_ISO9141_5BaudInit_000: W5 + 10 bits at 5 baud, then W1..W4 */
     timer.timeNow = ISO9141_W5_TIME_MIN + 2000u + ISO9141_W1_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, 0x55u);
+    UART_WriteByte(&uartCtx, 0x55u);
     timer.timeNow += ISO9141_W2_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, 0x08u);
+    UART_WriteByte(&uartCtx, 0x08u);
     timer.timeNow += ISO9141_W3_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, 0x08u);
+    UART_WriteByte(&uartCtx, 0x08u);
     timer.timeNow += 3u * ISO9141_W4_TIME_MIN;
-    LIBOBD2_UART_WriteByte(&uartCtx, (uint8_t)(~0x33u));
+    UART_WriteByte(&uartCtx, (uint8_t)(~0x33u));
     timer.timeNow = 0u;
 
     UART_TRACE_Begin("test_LIBOBD2_Init_000.vcd");
@@ -228,9 +230,9 @@ void test_LIBOBD2_Init_000(void)
 
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
-    TEST_ASSERT_EQUAL_PTR(l2_iso9141_connect, dataLink.connect);
-    TEST_ASSERT_EQUAL_PTR(l2_iso9141_send_request, dataLink.send_request);
-    TEST_ASSERT_EQUAL_PTR(l2_iso9141_recv_response, dataLink.recv_response);
+    TEST_ASSERT_EQUAL_PTR(ISO9141_Connect, dataLink.connect);
+    TEST_ASSERT_EQUAL_PTR(ISO9141_SendRequest, dataLink.send_request);
+    TEST_ASSERT_EQUAL_PTR(ISO9141_RecvResponse, dataLink.recv_response);
     TEST_ASSERT_EQUAL_HEX8(header_tester.fmt, protoCtx.header.fmt);
     TEST_ASSERT_EQUAL_HEX8(header_tester.trgAddr, protoCtx.header.trgAddr);
     TEST_ASSERT_EQUAL_HEX8(header_tester.srcAddr, protoCtx.header.srcAddr);
@@ -351,6 +353,61 @@ void test_LIBOBD2_RequestService_CoolantTemp_000(void)
 
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
-    // TEST_ASSERT_EQUAL_size_t(1, responseLen);
+    TEST_ASSERT_EQUAL_size_t(1, responseLen);
     TEST_ASSERT_EQUAL_UINT8(83u, response[0]);
+}
+
+/******************************************************************
+ * A NULL context is rejected before anything goes on the line.
+ ******************************************************************/
+void test_LIBOBD2_RequestService_NullCtx(void)
+{
+    uint8_t response[RESPONSE_BUF_LEN] = {0};
+    size_t responseLen = 0;
+
+    obd_status_t status = LibOBD2_RequestService(NULL, OBD_GET_VIN, response, &responseLen);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, status.response);
+    TEST_ASSERT_EQUAL_size_t(0, responseLen);
+}
+
+/******************************************************************
+ * The ECU announces more VIN messages than the response buffer holds.
+ *   1. Tester: 68 6A F1 09 01 CS      ECU: 48 6B 12 49 01 FF CS
+ *   2. The request stops with OBD_ERR_APP_TOO_MANY_MSGS before reading
+ *      any message, and returns no data
+ ******************************************************************/
+void test_LIBOBD2_RequestService_TooManyMsgs(void)
+{
+    const uint8_t cntResp[] = { SID_REQUEST_VEHICLE_INFO + 0x40u, PID_09_VIN_MESSAGE_COUNT, 0xFFu };
+    uint8_t response[RESPONSE_BUF_LEN] = {0};
+    size_t responseLen = 0;
+
+    setUpLine();
+    (void)ecuQueueFrame(REQ_DURATION(2u), cntResp, sizeof(cntResp));
+
+    obd_status_t status = LibOBD2_RequestService(&ctx, OBD_GET_VIN, response, &responseLen);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_APP_TOO_MANY_MSGS, status.response);
+    TEST_ASSERT_EQUAL_size_t(0, responseLen);
+}
+
+/******************************************************************
+ * A single-message service keeps the length of the ECU message:
+ * 41 05 7B is 3 data bytes (sid + 2 params).
+ ******************************************************************/
+void test_LIBOBD2_DispatchSid_SingleMsgLen(void)
+{
+    const uint8_t ecuResp[] = { SID_SHOW_CURRENT_DATA + 0x40u, PID_01_COOLANT_TEMP, 0x7BU };
+    libobd2_data_t responseBuffer[2] = {0};
+    size_t respLen = 0;
+
+    setUpLine();
+    (void)ecuQueueFrame(REQ_DURATION(2u), ecuResp, sizeof(ecuResp));
+
+    obd_status_t status = LibOBD2_DispatchSid(&ctx, &libobd2Services[OBD_GET_COOLANT_TEMP], responseBuffer, 2u, &respLen);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
+    TEST_ASSERT_EQUAL_size_t(1, respLen);
+    TEST_ASSERT_EQUAL_size_t(sizeof(ecuResp), responseBuffer[0].dataLen);
 }

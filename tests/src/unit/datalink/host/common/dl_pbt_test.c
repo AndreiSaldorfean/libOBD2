@@ -1,5 +1,6 @@
 /* ================================================ INCLUDES =============================================== */
 #include "datalink.h"
+#include "datalink_utils.h"
 #include "dl_pbt_test.h"
 #include "libobd2_timer_port.h"
 #include "libobd2_uart_port.h"
@@ -84,7 +85,7 @@ static enum theft_alloc_res alloc_timeoutCase(struct theft *t, void *env, void *
 
 /* --------------------------------------------------------------------------
  * Property 1: a byte pushed onto the link before the read starts is always
- * delivered back by ReadByteInTimeframe, with OBD_STATUS_OK, as long as the
+ * delivered back by DL_ReadByteInTimeframe, with OBD_STATUS_OK, as long as the
  * timeout window is wider than a single virtual time step.
  * -------------------------------------------------------------------------- */
 static enum theft_trial_res prop_ReadByteInTimeframe_returns_byte_within_window(struct theft *t, void *arg)
@@ -97,14 +98,14 @@ static enum theft_trial_res prop_ReadByteInTimeframe_returns_byte_within_window(
     {
         .tmrHandle      = &timer,
     };
-    obd_uart_ops_t uartOps = { .recv_byte = LIBOBD2_UART_RecvByte };
+    obd_uart_ops_t uartOps = { .recv_byte = UART_RecvByte };
     obd_timing_ops_t timingOps =
     {
-        .get_time_ms       = LIBOBD2_TMR_GetTimeMs,
-        .delay_ms          = LIBOBD2_TMR_DelayMs,
-        .start_timeout     = LIBOBD2_TMR_StartTimeout,
-        .stop_timeout      = LIBOBD2_TMR_StopTimeout,
-        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
+        .get_time_ms       = TMR_GetTimeMs,
+        .delay_ms          = TMR_DelayMs,
+        .start_timeout     = TMR_StartTimeout,
+        .stop_timeout      = TMR_StopTimeout,
+        .is_timeout_expired = TMR_IsTimeoutExpired,
     };
     dataLink_if_t self =
     {
@@ -114,11 +115,11 @@ static enum theft_trial_res prop_ReadByteInTimeframe_returns_byte_within_window(
         .pTimingHandle    = &timer,
     };
 
-    LIBOBD2_UART_Init(&uartCtx);
-    LIBOBD2_UART_WriteByte(&uartCtx, testCase.byte);
+    UART_Init(&uartCtx);
+    UART_WriteByte(&uartCtx, testCase.byte);
 
     uint8_t received = (uint8_t)~testCase.byte;
-    obd_status_t status = ReadByteInTimeframe(&self, NULL, &received, 0u, timeMax);
+    obd_status_t status = DL_ReadByteInTimeframe(&self, NULL, &received, 0u, timeMax);
 
     if (status.response != OBD_STATUS_OK) { return THEFT_TRIAL_FAIL; }
     if (status.timeout   != OBD_STATUS_OK) { return THEFT_TRIAL_FAIL; }
@@ -128,7 +129,7 @@ static enum theft_trial_res prop_ReadByteInTimeframe_returns_byte_within_window(
 
 /* --------------------------------------------------------------------------
  * Property 2: when no byte is ever queued and the timeout window is
- * narrower than a single virtual time step, ReadByteInTimeframe must report
+ * narrower than a single virtual time step, DL_ReadByteInTimeframe must report
  * OBD_ERR_TIMEOUT_MAX and never fabricate a byte out of an empty queue slot.
  * -------------------------------------------------------------------------- */
 static enum theft_trial_res prop_ReadByteInTimeframe_times_out_without_byte(struct theft *t, void *arg)
@@ -146,16 +147,16 @@ static enum theft_trial_res prop_ReadByteInTimeframe_times_out_without_byte(stru
         .tmrHandle      = &timer,
     };
 
-    LIBOBD2_UART_Init(&uartCtx);
+    UART_Init(&uartCtx);
 
-    obd_uart_ops_t uartOps = { .recv_byte = LIBOBD2_UART_RecvByte };
+    obd_uart_ops_t uartOps = { .recv_byte = UART_RecvByte };
     obd_timing_ops_t timingOps =
     {
-        .get_time_ms       = LIBOBD2_TMR_GetTimeMs,
-        .delay_ms          = LIBOBD2_TMR_DelayMs,
-        .start_timeout     = LIBOBD2_TMR_StartTimeout,
-        .stop_timeout      = LIBOBD2_TMR_StopTimeout,
-        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
+        .get_time_ms       = TMR_GetTimeMs,
+        .delay_ms          = TMR_DelayMs,
+        .start_timeout     = TMR_StartTimeout,
+        .stop_timeout      = TMR_StopTimeout,
+        .is_timeout_expired = TMR_IsTimeoutExpired,
     };
     dataLink_if_t self =
     {
@@ -168,7 +169,7 @@ static enum theft_trial_res prop_ReadByteInTimeframe_times_out_without_byte(stru
     /* Nothing is ever written to the link: byteReceived() must not treat
      * the empty, zero-initialized queue slot as an arrived byte. */
     uint8_t received = 0xAAu;
-    obd_status_t status = ReadByteInTimeframe(&self, NULL, &received, 0u, testCase.timeMax);
+    obd_status_t status = DL_ReadByteInTimeframe(&self, NULL, &received, 0u, testCase.timeMax);
 
     if (status.timeout != OBD_ERR_TIMEOUT_MAX) { return THEFT_TRIAL_FAIL; }
     return THEFT_TRIAL_PASS;
@@ -189,16 +190,16 @@ static enum theft_trial_res prop_RecvByteBlocking_returns_pushed_byte(struct the
         .tmrHandle = &timer, /* Sync uart events with correct timing */
     };
 
-    LIBOBD2_UART_Init(&uartCtx);
+    UART_Init(&uartCtx);
 
-    obd_uart_ops_t uartOps = { .recv_byte = LIBOBD2_UART_RecvByte };
+    obd_uart_ops_t uartOps = { .recv_byte = UART_RecvByte };
     obd_timing_ops_t timingOps =
     {
-        .get_time_ms       = LIBOBD2_TMR_GetTimeMs,
-        .delay_ms          = LIBOBD2_TMR_DelayMs,
-        .start_timeout     = LIBOBD2_TMR_StartTimeout,
-        .stop_timeout      = LIBOBD2_TMR_StopTimeout,
-        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
+        .get_time_ms       = TMR_GetTimeMs,
+        .delay_ms          = TMR_DelayMs,
+        .start_timeout     = TMR_StartTimeout,
+        .stop_timeout      = TMR_StopTimeout,
+        .is_timeout_expired = TMR_IsTimeoutExpired,
     };
     dataLink_if_t self =
     {
@@ -208,10 +209,10 @@ static enum theft_trial_res prop_RecvByteBlocking_returns_pushed_byte(struct the
         .pTimingHandle    = &timer,
     };
 
-    LIBOBD2_UART_WriteByte(&uartCtx, testCase.byte);
+    UART_WriteByte(&uartCtx, testCase.byte);
 
     uint8_t received = (uint8_t)~testCase.byte;
-    bool got = RecvByteBlocking(&self, &received);
+    bool got = DL_RecvByteBlocking(&self, &received);
 
     if (!got)                      { return THEFT_TRIAL_FAIL; }
     if (received != testCase.byte) { return THEFT_TRIAL_FAIL; }
@@ -238,7 +239,7 @@ static enum theft_run_res runTraced(struct theft_run_config *cfg, const char *tr
 void test_DL_PBT_ReadByteInTimeframe_ReturnsByteWithinWindow(void)
 {
     struct theft_run_config cfg = {
-        .name      = "ReadByteInTimeframe returns a queued byte within its window",
+        .name      = "DL_ReadByteInTimeframe returns a queued byte within its window",
         .prop1     = prop_ReadByteInTimeframe_returns_byte_within_window,
         .type_info = { &readByteCase_type_info },
         .trials    = PBT_TRIALS,
@@ -249,7 +250,7 @@ void test_DL_PBT_ReadByteInTimeframe_ReturnsByteWithinWindow(void)
 void test_DL_PBT_ReadByteInTimeframe_TimesOutWhenByteNeverArrives(void)
 {
     struct theft_run_config cfg = {
-        .name      = "ReadByteInTimeframe reports OBD_ERR_TIMEOUT_MAX with no byte queued",
+        .name      = "DL_ReadByteInTimeframe reports OBD_ERR_TIMEOUT_MAX with no byte queued",
         .prop1     = prop_ReadByteInTimeframe_times_out_without_byte,
         .type_info = { &timeoutCase_type_info },
         .trials    = PBT_TRIALS,

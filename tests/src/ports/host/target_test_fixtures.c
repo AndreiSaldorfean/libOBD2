@@ -42,9 +42,13 @@ void targetRunTests()
     RUN_TEST(test_TMR_StartTimeout_001);
     RUN_TEST(test_TMR_IsTimeoutExpired_000);
     RUN_TEST(test_TMR_StopTimeout_000);
+    RUN_TEST(test_TMR_FaultHook_000);
+    RUN_TEST(test_TMR_StopTimeout_NotExpired);
+    RUN_TEST(test_TMR_FaultHook_InitFails);
 
     RUN_TEST(test_UART_WriteByte_0);
     RUN_TEST(test_UART_WriteByte_1);
+    RUN_TEST(test_UART_BitBang_000);
     /* ---- DRIVER TESTS ---- */
 
     /* ---- DATALINK TESTS ---- */
@@ -52,15 +56,24 @@ void targetRunTests()
     RUN_TEST(test_DL_ReadByteInTimeframe_000);
     RUN_TEST(test_DL_ReadByteInTimeframe_TooEarly);
     RUN_TEST(test_DL_ReadByteInTimeframe_NoByte);
+    RUN_TEST(test_DL_ReadByteInTimeframe_UartError);
+    RUN_TEST(test_DL_ReadByteInTimeframe_TimerError);
+    RUN_TEST(test_DL_SendRequest_FlushesRx);
+    RUN_TEST(test_DL_TimeSample_PerLink);
     RUN_TEST(test_DL_RecvByteBlocking_000);
     RUN_TEST(test_DL_RecvByteBlocking_NoByte);
     RUN_TEST(test_DL_SendByteBitBanged_000);
     RUN_TEST(test_DL_Connect_000);
     RUN_TEST(test_DL_SendRecv_000);
+    RUN_TEST(test_DL_Api_NullLink);
+    RUN_TEST(test_DL_Api_NotConnected);
 
     /* ISO9141 */
     RUN_TEST(test_ISO9141_SendRecvMessage_000);
     RUN_TEST(test_ISO9141_5BaudInit_000);
+    RUN_TEST(test_ISO9141_RecvMessage_TargetByteTimeout);
+    RUN_TEST(test_ISO9141_SendRequest_InvalidDataLen);
+    RUN_TEST(test_ISO9141_5BaudInit_WrongKeyBytes);
     /* ---- DATALINK TESTS ---- */
 
 
@@ -74,6 +87,9 @@ void targetRunTests()
     RUN_TEST(test_LIBOBD2_RequestService_VIN_000);
     RUN_TEST(test_LIBOBD2_RequestService_CALID_000);
     RUN_TEST(test_LIBOBD2_RequestService_CoolantTemp_000);
+    RUN_TEST(test_LIBOBD2_RequestService_NullCtx);
+    RUN_TEST(test_LIBOBD2_RequestService_TooManyMsgs);
+    RUN_TEST(test_LIBOBD2_DispatchSid_SingleMsgLen);
     /* ---- APP TESTS ---- */
     /*================= SANITY TESTS =================*/
 
@@ -87,7 +103,7 @@ void targetRunTests()
     // RUN_TEST(test_DL_PBT_RecvByteBlocking_ReturnsPushedByte);
     //
     // RUN_TEST(test_ISO9141_PBT_ComputeCheckSum);
-    // RUN_TEST(test_ISO9141_PBT_PrepareMessageSerializesCorrectly);
+    // RUN_TEST(test_ISO9141_PBT_SerializeMessageWireLayout);
     // RUN_TEST(test_ISO9141_PBT_SendThenRecvRoundtrip);
     //
     // RUN_TEST(test_LIBOBD2_PBT_VinRoundtripAcrossMultiFrameResponse);

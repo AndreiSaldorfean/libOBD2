@@ -72,13 +72,13 @@ static enum theft_trial_res prop_write_read_roundtrip(struct theft *t, void *arg
         .tmrHandle      = &timer,
     };
 
-    LIBOBD2_UART_Init(&ctx);
-    LIBOBD2_UART_WriteByte(&ctx, byte_to_write);   /* recorded at timeNow=0 */
+    UART_Init(&ctx);
+    UART_WriteByte(&ctx, byte_to_write);   /* recorded at timeNow=0 */
 
     timer.timeNow = 1u;                            /* advance past event timestamp */
 
     uint8_t received = ~byte_to_write;             /* 2. pre-fill with wrong value */
-    bool got_byte = LIBOBD2_UART_RecvByte(&ctx, &received);
+    bool got_byte = (OBD_UART_RX_OK == UART_RecvByte(&ctx, &received));
 
     if (!got_byte)                  { return THEFT_TRIAL_FAIL; }
     if (received != byte_to_write)  { return THEFT_TRIAL_FAIL; }
@@ -102,12 +102,12 @@ static enum theft_trial_res prop_inc_time_on_byte_read(struct theft *t, void *ar
         .tmrHandle      = &timer,
     };
 
-    LIBOBD2_UART_Init(&ctx);
-    LIBOBD2_UART_WriteByte(&ctx, byte_to_write);   /* recorded at timeNow=0 */
+    UART_Init(&ctx);
+    UART_WriteByte(&ctx, byte_to_write);   /* recorded at timeNow=0 */
     /* do NOT advance the timer — timeNow still equals the event timestamp */
 
     uint8_t received = 0u;
-    bool got_byte = LIBOBD2_UART_RecvByte(&ctx, &received);
+    bool got_byte = (OBD_UART_RX_OK == UART_RecvByte(&ctx, &received));
 
     /* isByteReady uses strict '>': byte must NOT be ready at the same timestamp */
     if (timer.timeNow != timer.timeStep) { return THEFT_TRIAL_FAIL; }
@@ -126,12 +126,12 @@ static enum theft_trial_res prop_byte_not_ready_at_same_timestamp(struct theft *
         .tmrHandle      = &timer,
     };
 
-    LIBOBD2_UART_Init(&ctx);
-    LIBOBD2_UART_WriteByte(&ctx, byte_to_write);   /* recorded at timeNow=0 */
+    UART_Init(&ctx);
+    UART_WriteByte(&ctx, byte_to_write);   /* recorded at timeNow=0 */
     /* do NOT advance the timer — timeNow still equals the event timestamp */
 
     uint8_t received = 0u;
-    bool got_byte = LIBOBD2_UART_RecvByte(&ctx, &received);
+    bool got_byte = (OBD_UART_RX_OK == UART_RecvByte(&ctx, &received));
 
     /* isByteReady uses strict '>': byte must NOT be ready at the same timestamp */
     if (got_byte) { return THEFT_TRIAL_FAIL; }

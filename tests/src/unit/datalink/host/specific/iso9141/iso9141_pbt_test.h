@@ -8,7 +8,7 @@
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 void test_ISO9141_PBT_ComputeCheckSum(void);
-void test_ISO9141_PBT_PrepareMessageSerializesCorrectly(void);
+void test_ISO9141_PBT_SerializeMessageWireLayout(void);
 void test_ISO9141_PBT_SendThenRecvRoundtrip(void);
 
 #endif /* ISO9141_PBT_TEST_H */

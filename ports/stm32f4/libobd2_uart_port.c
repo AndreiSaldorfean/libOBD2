@@ -1,27 +1,75 @@
 /* ================================================ INCLUDES =============================================== */
-#include "l2_kwp2000.h"
 #include "libobd2.h"
-#include <stdio.h>
 #define STM32F4
 #include "libopencm3/stm32/f4/rcc.h"
 #include "libopencm3/stm32/usart.h"
 #include "libopencm3/stm32/gpio.h"
 #include "statusRetCodes.h"
 #include "uart_if.h"
+#include "utils.h"
 #include "libobd2_uart_port.h"
 #include "init.h"
 #include "trace.h"
 
 /* ================================================= MACROS ================================================ */
+#define UART_GPIO_AF             (GPIO_AF7) /* alternate function of the USART TX/RX pins */
+#define UART_FLUSH_SETTLE_LOOPS  (1000)     /* busy loops to let the last sent byte reach RX */
+#define UART_RX_ERROR_FLAGS      (USART_SR_ORE | USART_SR_FE | USART_SR_PE | USART_SR_NE)
+
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-/* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-/* ================================================ MODULE API ============================================= */
-bool LIBOBD2_UART_Init(void* handle)
-{
-    uart_ctx_t *ctx = (uart_ctx_t*)handle;
+static obd_uart_rx_status_t UART_RxErrorFromStatus(uint32_t sr);
 
+static bool UART_Init_Validate(const uart_ctx_t *ctx);
+static void UART_Init_Execute(const uart_ctx_t *ctx);
+
+/* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
+/******************************************
+* title: UART_RxErrorFromStatus
+* brief: Maps the USART_SR error flags of a received byte to its rx status
+*        (overrun first, then framing, parity, noise).
+******************************************/
+static obd_uart_rx_status_t UART_RxErrorFromStatus(uint32_t sr)
+{
+    obd_uart_rx_status_t rxStatus = OBD_UART_RX_OK;
+
+    if (0U != (sr & USART_SR_ORE))
+    {
+        rxStatus = OBD_UART_RX_OVERRUN_ERR;
+    }
+    else if (0U != (sr & USART_SR_FE))
+    {
+        rxStatus = OBD_UART_RX_FRAMING_ERR;
+    }
+    else if (0U != (sr & USART_SR_PE))
+    {
+        rxStatus = OBD_UART_RX_PARITY_ERR;
+    }
+    else if (0U != (sr & USART_SR_NE))
+    {
+        rxStatus = OBD_UART_RX_NOISE_ERR;
+    }
+
+    return rxStatus;
+}
+
+/******************************************
+* title: UART_Init_Validate
+* brief: Checks the arguments of UART_Init.
+******************************************/
+static bool UART_Init_Validate(const uart_ctx_t *ctx)
+{
+    return (NULL != ctx);
+}
+
+/******************************************
+* title: UART_Init_Execute
+* brief: Configures the USART, then hands the TX/RX pins to it with the line
+*        already idle (high).
+******************************************/
+static void UART_Init_Execute(const uart_ctx_t *ctx)
+{
     rcc_periph_clock_enable(ctx->gpioRcc);
     rcc_periph_clock_enable(ctx->usartClk);
 
@@ -38,8 +86,8 @@ bool LIBOBD2_UART_Init(void* handle)
     gpio_set(ctx->gpio, ctx->usartTxPin);
 
     /* Set alternate function BEFORE switching mode */
-    gpio_set_af(ctx->gpio, GPIO_AF7, ctx->usartTxPin);
-    gpio_set_af(ctx->gpio, GPIO_AF7, ctx->usartRxPin);
+    gpio_set_af(ctx->gpio, UART_GPIO_AF, ctx->usartTxPin);
+    gpio_set_af(ctx->gpio, UART_GPIO_AF, ctx->usartRxPin);
 
     /* Now switch to alternate function - USART already driving HIGH */
     gpio_mode_setup(ctx->gpio, GPIO_MODE_AF, GPIO_PUPD_NONE, ctx->usartTxPin);
@@ -48,13 +96,36 @@ bool LIBOBD2_UART_Init(void* handle)
     gpio_set_output_options(ctx->gpio, ctx->gpioOutType, ctx->gpioOutSpeed ,ctx->usartTxPin);
 
     trace_init();
-
-    return 1;
 }
 
-void LIBOBD2_UART_WriteByte(void* handle, uint8_t data)
+/* ================================================ MODULE API ============================================= */
+/******************************************
+* title: UART_Init
+* brief: Sets up the USART and its pins for K-line communication.
+******************************************/
+bool UART_Init(void* handle)
 {
-    uart_ctx_t *ctx = (uart_ctx_t*)handle;
+    uart_ctx_t *ctx = (uart_ctx_t *)handle;
+    bool ok = false;
+
+    ok = UART_Init_Validate(ctx);
+    OBD2_IF_COND_GOTO_EXIT(!ok);
+    UART_Init_Execute(ctx);
+
+exit:
+    return ok;
+}
+
+/******************************************
+* title: UART_WriteByte
+* brief: Sends one byte and waits until it has left the shift register,
+*        yielding while it does.
+******************************************/
+void UART_WriteByte(void* handle, uint8_t data)
+{
+    uart_ctx_t *ctx = (uart_ctx_t *)handle;
+
+    OBD2_DEBUG_ASSERT(NULL != ctx);
 
     usart_send_blocking(ctx->usartNum, data);
     TRACE_LOG(TRACE_TAG_TX, data, ctx->usartNum);
@@ -69,54 +140,52 @@ void LIBOBD2_UART_WriteByte(void* handle, uint8_t data)
     }
 }
 
-bool LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer)
+/******************************************
+* title: UART_RecvByte
+* brief: Reads the pending byte, if any, and reports the USART error it came
+*        with. Reading SR then DR clears the error flags.
+******************************************/
+obd_uart_rx_status_t UART_RecvByte(void* handle, uint8_t *recv_buffer)
 {
-    uart_ctx_t *ctx = (uart_ctx_t*)handle;
+    uart_ctx_t *ctx = (uart_ctx_t *)handle;
+    obd_uart_rx_status_t rxStatus = OBD_UART_RX_NO_DATA;
+    uint32_t sr = 0;
 
-    if((USART_SR(ctx->usartNum) & USART_SR_RXNE))
+    OBD2_DEBUG_ASSERT((NULL != ctx) && (NULL != recv_buffer));
+
+    sr = USART_SR(ctx->usartNum);
+
+    if (0U != (sr & (USART_SR_RXNE | UART_RX_ERROR_FLAGS)))
     {
-        #if 0 /** TODO: Add error handling */
-        uint8_t byte = (uint8_t)USART1->DR;
-
-        switch (USART_SR(ctx->usartNum))
-        {
-            case USART_SR_FE:
-            case USART_SR_PE:
-            // case overrun
-            // case noise::
-                while( not error)
-                {
-                    //read again
-                    (uint8_t)USART1->DR
-                    //retry count--
-                }
-                if retry == 0;
-                    reset the board with usart erorr saved somewhere.
-
-            default:
-                continue
-        }
-        #endif /* 0 */
-
-        *recv_buffer = usart_recv(ctx->usartNum);
+        *recv_buffer = (uint8_t)usart_recv(ctx->usartNum);
+        rxStatus     = UART_RxErrorFromStatus(sr);
         TRACE_LOG(TRACE_TAG_RX, *recv_buffer, ctx->usartNum);
-        return 1;
+    }
+    else
+    {
+        YIELD;
     }
 
-    YIELD;
-    return 0;
+    return rxStatus;
 }
 
-void LIBOBD2_UART_FlushRx(void* handle)
+/******************************************
+* title: UART_FlushRx
+* brief: Lets the last sent byte come back, then drops whatever is pending in
+*        the receive register.
+******************************************/
+void UART_FlushRx(void* handle)
 {
-    uart_ctx_t *ctx = (uart_ctx_t*)handle;
+    uart_ctx_t *ctx = (uart_ctx_t *)handle;
+
+    OBD2_DEBUG_ASSERT(NULL != ctx);
 
     TRACE_LOG(TRACE_TAG_FLUSH, 0x00, ctx->usartNum);
 
     /* Wait for previous send to finish */
-    for (int i = 0; i < 1000; i++)
+    for (int i = 0; i < UART_FLUSH_SETTLE_LOOPS; i++)
     {
-        asm volatile ("nop");
+        __asm__ volatile ("nop");
     }
 
     /* STM32F4 USART has no FIFO - at most one byte can be pending in DR */
@@ -126,10 +195,15 @@ void LIBOBD2_UART_FlushRx(void* handle)
     }
 }
 
-void LIBOBD2_UART_SendPulse(void* handle, bool pulse)
+/******************************************
+* title: UART_SendPulse
+* brief: Drives the TX pin high or low while it is in a bit-bang mode.
+******************************************/
+void UART_SendPulse(void* handle, bool pulse)
 {
-    uart_ctx_t *ctx = (uart_ctx_t*)handle;
+    uart_ctx_t *ctx = (uart_ctx_t *)handle;
 
+    OBD2_DEBUG_ASSERT(NULL != ctx);
 
     if (pulse)
     {
@@ -143,9 +217,16 @@ void LIBOBD2_UART_SendPulse(void* handle, bool pulse)
     YIELD;
 }
 
-void LIBOBD2_UART_SwitchMode(void* handle, uint8_t mode)
+/******************************************
+* title: UART_SwitchMode
+* brief: Hands the TX pin to GPIO for bit-banging (*_BEGIN / *_START) or
+*        back to the USART (*_END).
+******************************************/
+void UART_SwitchMode(void* handle, uint8_t mode)
 {
-    uart_ctx_t *ctx = (uart_ctx_t*)handle;
+    uart_ctx_t *ctx = (uart_ctx_t *)handle;
+
+    OBD2_DEBUG_ASSERT(NULL != ctx);
 
     switch (mode)
     {
@@ -165,7 +246,7 @@ void LIBOBD2_UART_SwitchMode(void* handle, uint8_t mode)
         {
             // Switch TX pin back to USART alternate function
             gpio_mode_setup(ctx->gpio, GPIO_MODE_AF, GPIO_PUPD_NONE, ctx->usartTxPin);
-            gpio_set_af(ctx->gpio, GPIO_AF7, ctx->usartTxPin);
+            gpio_set_af(ctx->gpio, UART_GPIO_AF, ctx->usartTxPin);
             // Re-enable USART
             usart_enable(ctx->usartNum);
             break;
@@ -173,5 +254,4 @@ void LIBOBD2_UART_SwitchMode(void* handle, uint8_t mode)
         default:
             break;
     }
-
 }

@@ -9,6 +9,9 @@
 /* =============================================== MODULE API ============================================== */
 void test_ISO9141_SendRecvMessage_000(void);
 void test_ISO9141_5BaudInit_000(void);
+void test_ISO9141_RecvMessage_TargetByteTimeout(void);
+void test_ISO9141_SendRequest_InvalidDataLen(void);
+void test_ISO9141_5BaudInit_WrongKeyBytes(void);
 
 #endif /* ISO9141_TEST_H */
 

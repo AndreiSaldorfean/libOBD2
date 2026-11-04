@@ -1,6 +1,7 @@
 /* ================================================ INCLUDES =============================================== */
 #include "iso9141_pbt_test.h"
 #include "datalink.h"
+#include "datalink_utils.h"
 #include "libobd2_timer_port.h"
 #include "libobd2_uart_port.h"
 #include "statusRetCodes.h"
@@ -22,9 +23,9 @@
 #define MSG_QUEUE_SIZE    16u
 
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-extern uint8_t L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t dataLen);
-extern void L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
-extern obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t *len);
+extern uint8_t ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen);
+extern size_t ISO9141_SerializeMessage(const message_t *msg, uint8_t *frame, size_t dataLen);
+extern obd_status_t ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t *len);
 static enum theft_alloc_res alloc_arr(struct theft *t, void *env, void **output);
 static enum theft_alloc_res alloc_time(struct theft *t, void *env, void **output);
 static void message_print(FILE *f, const void *p, void *env);
@@ -148,36 +149,35 @@ static enum theft_trial_res prop_message_checksum(struct theft *t, void *arg)
     (void)t;
     message_t msg      = *(message_t *)arg;
     uint8_t aSentMsg[11] = {0};
-    size_t len        = 0;
     uint8_t realCs     = 0;
     uint8_t expectedCs = 0;
 
-    L2_ISO9141_PrepareMessage(&msg, aSentMsg, 7, &len);
+    (void)ISO9141_SerializeMessage(&msg, aSentMsg, 7);
 
     /* aSentMsg holds 11 bytes: 3 header + sid + 6 params + cs. The checksum
      * covers everything but the trailing cs byte itself, i.e. the first 10
      * bytes -- TESTUTIL_ComputeChecksum sums (size - 1) bytes, so size=11. */
     expectedCs = TESTUTIL_ComputeChecksum(aSentMsg, 11);
 
-    realCs     = L2_ISO9141_ComputeChecksum(msg.header, msg.data, 7);
+    realCs = ISO9141_ComputeChecksum(&msg.header, &msg.data, 7);
 
     if (realCs != expectedCs) { return THEFT_TRIAL_FAIL; }
     return THEFT_TRIAL_PASS;
 }
 
 /* --------------------------------------------------------------------------
- * Property: L2_ISO9141_PrepareMessage must serialize a message_t into the
+ * Property: ISO9141_SerializeMessage must serialize a message_t into the
  * exact wire layout the protocol defines: [fmt, trg, src, sid, param x6, cs],
  * with the reported length always equal to MSG_WIRE_LEN.
  * -------------------------------------------------------------------------- */
-static enum theft_trial_res prop_prepare_message_serializes_correctly(struct theft *t, void *arg)
+static enum theft_trial_res prop_serialize_message_wire_layout(struct theft *t, void *arg)
 {
     (void)t;
     message_t msg = *(message_t *)arg;
     uint8_t aSentMsg[MSG_WIRE_LEN] = {0};
     size_t len = 0;
 
-    L2_ISO9141_PrepareMessage(&msg, aSentMsg, MSG_DATA_LEN, &len);
+    len = ISO9141_SerializeMessage(&msg, aSentMsg, MSG_DATA_LEN);
 
     if (len != MSG_WIRE_LEN) { return THEFT_TRIAL_FAIL; }
 
@@ -197,23 +197,22 @@ static enum theft_trial_res prop_prepare_message_serializes_correctly(struct the
 }
 
 /* --------------------------------------------------------------------------
- * Property: a message serialized by L2_ISO9141_PrepareMessage and delivered
+ * Property: a message serialized by ISO9141_SerializeMessage and delivered
  * byte-by-byte over the virtual UART must come back out of
- * L2_ISO9141_RecvMessage unchanged: same header, same data, same length.
- * This exercises L2_ISO9141_ReadHeader's P1/P2 timing checks together with
+ * ISO9141_RecvMessage unchanged: same header, same data, same length.
+ * This exercises ISO9141_ReadHeader's P1/P2 timing checks together with
  * the checksum-terminated data loop, end to end, without touching real time.
  * -------------------------------------------------------------------------- */
 static enum theft_trial_res prop_send_then_recv_roundtrip(struct theft *t, void *arg)
 {
     (void)t;
     message_t msg = *(message_t *)arg;
-    msg.cs = L2_ISO9141_ComputeChecksum(msg.header, msg.data, MSG_DATA_LEN);
+    msg.cs = ISO9141_ComputeChecksum(&msg.header, &msg.data, MSG_DATA_LEN);
 
     if (hasPrematureChecksumMatch(msg.header, msg.data, MSG_DATA_LEN)) { return THEFT_TRIAL_SKIP; }
 
     uint8_t aSentMsg[MSG_WIRE_LEN] = {0};
-    size_t wireLen = 0;
-    L2_ISO9141_PrepareMessage(&msg, aSentMsg, MSG_DATA_LEN, &wireLen);
+    size_t wireLen = ISO9141_SerializeMessage(&msg, aSentMsg, MSG_DATA_LEN);
 
     virtTmrCtx_t      timer                 = { .timeNow = 0u, .timeStep = 0u };
     virtUartLinkCtx_t uartCtx =
@@ -221,21 +220,21 @@ static enum theft_trial_res prop_send_then_recv_roundtrip(struct theft *t, void 
         .tmrHandle      = &timer,
     };
 
-    LIBOBD2_UART_Init(&uartCtx);
+    UART_Init(&uartCtx);
 
     for (size_t idx = 0; idx < wireLen; idx++)
     {
-        LIBOBD2_UART_WriteByte(&uartCtx, aSentMsg[idx]);
+        UART_WriteByte(&uartCtx, aSentMsg[idx]);
     }
 
-    obd_uart_ops_t uartOps = { .recv_byte = LIBOBD2_UART_RecvByte };
+    obd_uart_ops_t uartOps = { .recv_byte = UART_RecvByte };
     obd_timing_ops_t timingOps =
     {
-        .get_time_ms       = LIBOBD2_TMR_GetTimeMs,
-        .delay_ms          = LIBOBD2_TMR_DelayMs,
-        .start_timeout     = LIBOBD2_TMR_StartTimeout,
-        .stop_timeout      = LIBOBD2_TMR_StopTimeout,
-        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
+        .get_time_ms       = TMR_GetTimeMs,
+        .delay_ms          = TMR_DelayMs,
+        .start_timeout     = TMR_StartTimeout,
+        .stop_timeout      = TMR_StopTimeout,
+        .is_timeout_expired = TMR_IsTimeoutExpired,
     };
     dataLink_if_t linkCtx =
     {
@@ -249,15 +248,15 @@ static enum theft_trial_res prop_send_then_recv_roundtrip(struct theft *t, void 
      * binds tighter than unary `&`, so that would silently misparse). */
     dataLink_if_t *self = &linkCtx;
 
-    /* Mirrors what a prior send (L2_ISO9141_SendMessage) leaves behind:
+    /* Mirrors what a prior send (ISO9141_SendMessage) leaves behind:
      * a time sample and a running P2 timeout for the upcoming response. */
-    LIBOBD_SetTimeSample(self, LIBOBD_GetTimeMs(self));
-    LIBOBD_StartTimeout(self, P2_TIME_MAX);
-    LIBOBD_Delay(self, P2_TIME_MIN);
+    LIBOBD2_TMR_SetTimeSample(self, LIBOBD2_TMR_GetTimeMs(self));
+    LIBOBD2_TMR_StartTimeout(self, P2_TIME_MAX);
+    LIBOBD2_TMR_Delay(self, P2_TIME_MIN);
 
     message_t recvdMsg = {0};
     size_t recvdLen = 0;
-    obd_status_t status = L2_ISO9141_RecvMessage(self, &recvdMsg, &recvdLen);
+    obd_status_t status = ISO9141_RecvMessage(self, &recvdMsg, &recvdLen);
 
     if (status.response != OBD_STATUS_OK)           { return THEFT_TRIAL_FAIL; }
     if (status.timeout   != OBD_STATUS_OK)           { return THEFT_TRIAL_FAIL; }
@@ -293,13 +292,13 @@ static enum theft_trial_res prop_inc_time_on_byte_read(struct theft *t, void *ar
         .tmrHandle      = &timer,
     };
 
-    LIBOBD2_UART_Init(&ctx);
+    UART_Init(&ctx);
 
-    LIBOBD2_UART_WriteByte(&ctx, byte_to_write);   /* recorded at timeNow=0 */
+    UART_WriteByte(&ctx, byte_to_write);   /* recorded at timeNow=0 */
     /* do NOT advance the timer — timeNow still equals the event timestamp */
 
     uint8_t received = 0u;
-    bool got_byte = LIBOBD2_UART_RecvByte(&ctx, &received);
+    bool got_byte = (OBD_UART_RX_OK == UART_RecvByte(&ctx, &received));
 
     /* isByteReady uses strict '>': byte must NOT be ready at the same timestamp */
     if (timer.timeNow != timer.timeStep) { return THEFT_TRIAL_FAIL; }
@@ -320,14 +319,14 @@ static enum theft_trial_res prop_byte_not_ready_at_same_timestamp(struct theft *
         .tmrHandle = &timer, /* Sync uart events with correct timing */
     };
 
-    LIBOBD2_TMR_Init(&timer);
-    LIBOBD2_UART_Init(&ctx);
+    TMR_Init(&timer);
+    UART_Init(&ctx);
 
-    LIBOBD2_UART_WriteByte(&ctx, byte_to_write);   /* recorded at timeNow=0 */
+    UART_WriteByte(&ctx, byte_to_write);   /* recorded at timeNow=0 */
     /* do NOT advance the timer — timeNow still equals the event timestamp */
 
     uint8_t received = 0u;
-    bool got_byte = LIBOBD2_UART_RecvByte(&ctx, &received);
+    bool got_byte = (OBD_UART_RX_OK == UART_RecvByte(&ctx, &received));
 
     /* isByteReady uses strict '>': byte must NOT be ready at the same timestamp */
     if (got_byte) { return THEFT_TRIAL_FAIL; }
@@ -362,11 +361,11 @@ void test_ISO9141_PBT_ComputeCheckSum(void)
     TEST_ASSERT_EQUAL(THEFT_RUN_PASS, theft_run(&cfg));
 }
 
-void test_ISO9141_PBT_PrepareMessageSerializesCorrectly(void)
+void test_ISO9141_PBT_SerializeMessageWireLayout(void)
 {
     struct theft_run_config cfg = {
-        .name      = "PrepareMessage serializes header/data/cs into wire layout",
-        .prop1     = prop_prepare_message_serializes_correctly,
+        .name      = "SerializeMessage writes header/data/cs in wire layout",
+        .prop1     = prop_serialize_message_wire_layout,
         .type_info = { &message_type_info },
         .trials    = PBT_TRIALS,
     };

@@ -20,9 +20,9 @@
 #include "libopencm3/stm32/rcc.h"
 #include "libopencm3/cm3/nvic.h"
 #include "tusb.h"
-// #include "l2_iso9141_test.h"
-#include "l2_iso9141.h"
-// #include "l2_kwp2000_test.h"
+// #include "iso9141_test.h"
+#include "iso9141.h"
+// #include "kwp2000_test.h"
 // #include "datalink_test.h"
 #include "task.h"
 #include "uart_test.h"
@@ -32,10 +32,10 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-static void L2_ISO9141_TestSuite(void);
+static void ISO9141_TestSuite(void);
 static void DL_Utils_TestSuite(void);
 #if 0 /* NOTE: Will be enabled in future release */
-static void L2_KWP_TestSuite(void)
+static void KWP_TestSuite(void)
 #endif
 static void LIBOBD2_TestSuite(void);
 static void UART_TestSuite(void);
@@ -52,50 +52,50 @@ static void DL_Utils_TestSuite(void)
     UNITY_END();
 }
 
-static void L2_ISO9141_TestSuite(void)
+static void ISO9141_TestSuite(void)
 {
     printf("============= UNIT BEGIN ==============\n");
     UNITY_BEGIN();
 
-    RUN_TEST(test_L2_ISO9141_ComputeChecksum_000);
-    RUN_TEST(test_L2_ISO9141_SendMessage_000);
-    RUN_TEST(test_L2_ISO9141_RecvMessage_000);
-    RUN_TEST(test_L2_ISO9141_ReadHeader_000);
-    RUN_TEST(test_L2_ISO9141_PrepareMessage_000);
-    RUN_TEST(test_L2_ISO9141_5BaudInit_000);
-    RUN_TEST(test_l2_ISO9141_connect_000);
-    RUN_TEST(test_l2_ISO9141_send_request_000);
-    RUN_TEST(test_l2_ISO9141_recv_response_000);
+    RUN_TEST(test_ISO9141_ComputeChecksum_000);
+    RUN_TEST(test_ISO9141_SendMessage_000);
+    RUN_TEST(test_ISO9141_RecvMessage_000);
+    RUN_TEST(test_ISO9141_ReadHeader_000);
+    RUN_TEST(test_ISO9141_PrepareMessage_000);
+    RUN_TEST(test_ISO9141_5BaudInit_000);
+    RUN_TEST(test_ISO9141_connect_000);
+    RUN_TEST(test_ISO9141_send_request_000);
+    RUN_TEST(test_ISO9141_recv_response_000);
 
     UNITY_END();
 }
 
 #if 0 /* NOTE: Will be enabled in future release */
-static void L2_KWP_TestSuite(void)
+static void KWP_TestSuite(void)
 {
     printf("============= UNIT BEGIN ==============\n");
     UNITY_BEGIN();
 
 
-    RUN_TEST(test_L2_KWP_ComputeChecksum_000);
-    RUN_TEST(test_L2_KWP_SendMessage_000);
-    RUN_TEST(test_L2_KWP_SendMessage_001);
-    RUN_TEST(test_L2_KWP_SendMessage_002);
-    RUN_TEST(test_L2_KWP_RecvMessage_000);
+    RUN_TEST(test_KWP_ComputeChecksum_000);
+    RUN_TEST(test_KWP_SendMessage_000);
+    RUN_TEST(test_KWP_SendMessage_001);
+    RUN_TEST(test_KWP_SendMessage_002);
+    RUN_TEST(test_KWP_RecvMessage_000);
 #if defined(SPT_FAST_INIT)
-    RUN_TEST(test_L2_KWP_SRV_StartCommunication_000);
-    RUN_TEST(test_L2_KWP_SRV_SendData_000);
-    RUN_TEST(test_L2_KWP_FastInit_000);
-    RUN_TEST(test_L2_KWP_IdleBasedOnConnStatus_000);
+    RUN_TEST(test_KWP_SRV_StartCommunication_000);
+    RUN_TEST(test_KWP_SRV_SendData_000);
+    RUN_TEST(test_KWP_FastInit_000);
+    RUN_TEST(test_KWP_IdleBasedOnConnStatus_000);
 #endif /* SPT_FAST_INIT */
 #if defined(SPT_CHANGE_TIMING_PARAM)
-    RUN_TEST(test_L2_KWP_SRV_AccessTimingParameter_000);
+    RUN_TEST(test_KWP_SRV_AccessTimingParameter_000);
 #endif /* SPT_CHANGE_TIMING_PARAM */
-    RUN_TEST(test_L2_KWP_ReadHeader_000);
+    RUN_TEST(test_KWP_ReadHeader_000);
     RUN_TEST(test_PrepareMessage_000);
-    RUN_TEST(test_l2_kwp_connect_000);
-    RUN_TEST(test_l2_kwp_send_request_000);
-    RUN_TEST(test_l2_kwp_recv_response_000);
+    RUN_TEST(test_kwp_connect_000);
+    RUN_TEST(test_kwp_send_request_000);
+    RUN_TEST(test_kwp_recv_response_000);
 
     UNITY_END();
 }
@@ -145,10 +145,10 @@ void TestTask(void *param)
 
     DL_Utils_TestSuite();
 
-    L2_ISO9141_TestSuite();
+    ISO9141_TestSuite();
 
 #if 0 /* NOTE: Will be enabled in future release */
-    void L2_KWP_TestSuite(void)
+    void KWP_TestSuite(void)
 #endif
 
     LIBOBD2_TestSuite();

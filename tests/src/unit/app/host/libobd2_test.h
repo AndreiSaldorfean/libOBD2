@@ -16,6 +16,9 @@ void test_LIBOBD2_RequestService_InvalidSid(void);
 void test_LIBOBD2_RequestService_VIN_000(void);
 void test_LIBOBD2_RequestService_CALID_000(void);
 void test_LIBOBD2_RequestService_CoolantTemp_000(void);
+void test_LIBOBD2_RequestService_NullCtx(void);
+void test_LIBOBD2_RequestService_TooManyMsgs(void);
+void test_LIBOBD2_DispatchSid_SingleMsgLen(void);
 
 #endif /* LIBOBD2_TEST_H */
 

@@ -9,12 +9,12 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-extern bool LIBOBD2_UART_Init(void* handle);
-extern bool LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer);
-extern void LIBOBD2_UART_WriteByte(void* handle, uint8_t data);
-extern void LIBOBD2_UART_FlushRx(void* handle);
-extern void LIBOBD2_UART_SendPulse(void* handle, bool pulse);
-extern void LIBOBD2_UART_SwitchMode(void* handle, uint8_t mode);
+extern bool UART_Init(void* handle);
+extern bool UART_RecvByte(void* handle, uint8_t *recv_buffer);
+extern void UART_WriteByte(void* handle, uint8_t data);
+extern void UART_FlushRx(void* handle);
+extern void UART_SendPulse(void* handle, bool pulse);
+extern void UART_SwitchMode(void* handle, uint8_t mode);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */

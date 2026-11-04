@@ -35,10 +35,10 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 target_include_directories(${PROJECT_NAME}
     PRIVATE
     ../../include/data_link/
-    ../../include/data_link/l2_kwp/
+    ../../include/data_link/kwp/
     ../../include/freertos/
     ../../include/app
-    ../../include/data_link/l2_iso9141/
+    ../../include/data_link/iso9141/
     ../../interface/
     ../../utils/
     ../../include/app/

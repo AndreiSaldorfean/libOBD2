@@ -59,12 +59,12 @@ if(SPT_TRACING STREQUAL ON)
 endif()
 
 file(GLOB SOURCES
-    "./src/modules/app/*.c"
-    "./src/modules/datalink/common/*.c"
-    "./src/modules/datalink/specific/l2_iso9141/*.c"
-    "./src/modules/datalink/specific/l2_kwp2000/*.c"
-    "./utils/*.c"
-    "./src/data_link/l2_kwp/*.c"
+    "./src/app/*.c"
+    "./src/datalink/common/*.c"
+    "./src/datalink/specific/iso9141/*.c"
+    "./src/datalink/specific/kwp2000/*.c"
+    "./src/utils/common/*.c"
+    "./src/data_link/kwp/*.c"
 )
 
 add_library(${PROJECT_NAME} ${SOURCES})
@@ -112,11 +112,11 @@ endif()
 target_include_directories(${PROJECT_NAME}
     PUBLIC
     ./include/
-    ./utils/
-    ./src/modules/datalink/common
-    ./src/modules/datalink/specific/l2_iso9141/
-    ./src/modules/datalink/specific/l2_kwp2000/
-    ./src/modules/app/
+    ./src/datalink/common
+    ./src/datalink/specific/iso9141/
+    ./src/datalink/specific/kwp2000/
+    ./src/utils/common/
+    ./src/app/
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE

@@ -1,7 +1,8 @@
 /* ================================================ INCLUDES =============================================== */
 #include "dl_test.h"
 #include "datalink.h"
-#include "l2_iso9141.h"
+#include "datalink_utils.h"
+#include "iso9141.h"
 #include "libobd2_timer_port.h"
 #include "libobd2_uart_port.h"
 #include "statusRetCodes.h"
@@ -19,7 +20,7 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 static virtTmrCtx_t timer;
 static virtUartLinkCtx_t uartCtx;
-static l2_iso9141_ctx_t protoCtx;
+static iso9141_ctx_t protoCtx;
 static dataLink_if_t dataLink;
 
 /* What the bit-banged byte looked like on the line */
@@ -38,7 +39,7 @@ static const header_t header_tester =
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-static bool keepTimer(void *pHandle);
+static obd_tmr_status_t keepTimer(void *pHandle);
 static bool keepLine(void *handle);
 static void recordPulse(void *handle, bool pulse);
 static void recordMode(void *handle, uint8_t mode);
@@ -48,29 +49,29 @@ static void recordMode(void *handle, uint8_t mode);
 static obd_timing_ops_t tmrOps =
 {
     .timer_init         = keepTimer,
-    .delay_ms           = LIBOBD2_TMR_DelayMs,
-    .get_time_ms        = LIBOBD2_TMR_GetTimeMs,
-    .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
-    .start_timeout      = LIBOBD2_TMR_StartTimeout,
-    .stop_timeout       = LIBOBD2_TMR_StopTimeout,
+    .delay_ms           = TMR_DelayMs,
+    .get_time_ms        = TMR_GetTimeMs,
+    .is_timeout_expired = TMR_IsTimeoutExpired,
+    .start_timeout      = TMR_StartTimeout,
+    .stop_timeout       = TMR_StopTimeout,
 };
 
 /* The host port with the bit-bang calls recorded on the way through */
 static obd_uart_ops_t uartOps =
 {
     .init        = keepLine,
-    .send_byte   = LIBOBD2_UART_WriteByte,
-    .recv_byte   = LIBOBD2_UART_RecvByte,
+    .send_byte   = UART_WriteByte,
+    .recv_byte   = UART_RecvByte,
     .send_pulse  = recordPulse,
     .switch_mode = recordMode,
-    .flush_rx    = LIBOBD2_UART_FlushRx,
+    .flush_rx    = UART_FlushRx,
 };
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-static bool keepTimer(void *pHandle)
+static obd_tmr_status_t keepTimer(void *pHandle)
 {
     (void)pHandle;
-    return true;
+    return OBD_TMR_OK;
 }
 
 static bool keepLine(void *handle)
@@ -87,7 +88,7 @@ static void recordPulse(void *handle, bool pulse)
         pulseTime[pulseCnt]  = timer.timeNow;
         pulseCnt++;
     }
-    LIBOBD2_UART_SendPulse(handle, pulse);
+    UART_SendPulse(handle, pulse);
 }
 
 static void recordMode(void *handle, uint8_t mode)
@@ -96,7 +97,7 @@ static void recordMode(void *handle, uint8_t mode)
     {
         modeSeq[modeCnt++] = mode;
     }
-    LIBOBD2_UART_SwitchMode(handle, mode);
+    UART_SwitchMode(handle, mode);
 }
 
 /******************************************************************
@@ -107,11 +108,10 @@ static void setUpLine(void)
 {
     timer = (virtTmrCtx_t){ .timeStep = TIME_STEP };
     uartCtx.tmrHandle       = &timer;
-    uartCtx.erorr_generator = NULL;
-    TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&uartCtx));
+    uartCtx.faults          = (virtUartFaultHooks_t){0};
+    TEST_ASSERT_TRUE(UART_Init(&uartCtx));
 
-    protoCtx = (l2_iso9141_ctx_t){ .header = header_tester, .kb1 = 0x08u, .kb2 = 0x08u };
-    tmrOps.timeSample = 0u;
+    protoCtx = (iso9141_ctx_t){ .header = header_tester, .kb1 = 0x08u, .kb2 = 0x08u };
     pulseCnt = 0u;
     modeCnt  = 0u;
 
@@ -122,10 +122,35 @@ static void setUpLine(void)
         .pTimingHandle    = &timer,
         .pUartOps         = &uartOps,
         .pTransportHandle = &uartCtx,
-        .connect          = l2_iso9141_connect,
-        .send_request     = l2_iso9141_send_request,
-        .recv_response    = l2_iso9141_recv_response,
+        .connect          = ISO9141_Connect,
+        .send_request     = ISO9141_SendRequest,
+        .recv_response    = ISO9141_RecvResponse,
     };
+}
+
+/* onOp fault hook: the timer cannot start a timeout */
+static void failStartTimeout(void *pUserData, virtTmrEvent_t *event)
+{
+    (void)pUserData;
+    if (VIRT_TMR_OP_START_TIMEOUT == event->op)
+    {
+        event->status = OBD_TMR_ERR_HW;
+    }
+}
+
+/* flush_rx op that only counts its calls */
+static size_t flushCnt;
+static void countFlush(void *handle)
+{
+    (void)handle;
+    flushCnt++;
+}
+
+/* onWrite fault hook: every byte put on the line arrives with a framing error */
+static void injectFramingError(void *pUserData, uartEvent_t *event)
+{
+    (void)pUserData;
+    event->error = OBD_UART_RX_FRAMING_ERR;
 }
 
 /* Put one byte on the line at virtual time `time`, without moving the clock */
@@ -134,7 +159,7 @@ static void lineWriteAt(uint32_t time, uint8_t byte)
     uint32_t now = timer.timeNow;
 
     timer.timeNow = time;
-    LIBOBD2_UART_WriteByte(&uartCtx, byte);
+    UART_WriteByte(&uartCtx, byte);
     timer.timeNow = now;
 }
 
@@ -153,7 +178,7 @@ void test_DL_ReadByteInTimeframe_000(void)
     setUpLine();
     lineWriteAt(30u, 0x55u);
 
-    obd_status_t status = ReadByteInTimeframe(&dataLink, &elapsed, &byte, P2_TIME_MIN, P2_TIME_MAX);
+    obd_status_t status = DL_ReadByteInTimeframe(&dataLink, &elapsed, &byte, P2_TIME_MIN, P2_TIME_MAX);
 
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
@@ -173,7 +198,7 @@ void test_DL_ReadByteInTimeframe_TooEarly(void)
     setUpLine();
     lineWriteAt(0u, 0x55u);
 
-    obd_status_t status = ReadByteInTimeframe(&dataLink, &elapsed, &byte, P2_TIME_MIN, P2_TIME_MAX);
+    obd_status_t status = DL_ReadByteInTimeframe(&dataLink, &elapsed, &byte, P2_TIME_MIN, P2_TIME_MAX);
 
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_TIMEOUT_MIN, status.timeout);
     TEST_ASSERT_EQUAL_HEX8(0x55u, byte);
@@ -193,7 +218,7 @@ void test_DL_ReadByteInTimeframe_NoByte(void)
     setUpLine();
     timer.timeNow = start;
 
-    obd_status_t status = ReadByteInTimeframe(&dataLink, NULL, &byte, ISO9141_W4_TIME_MIN, timeMax);
+    obd_status_t status = DL_ReadByteInTimeframe(&dataLink, NULL, &byte, ISO9141_W4_TIME_MIN, timeMax);
 
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_TIMEOUT_MAX, status.timeout);
     TEST_ASSERT_GREATER_THAN_UINT32(start + timeMax, timer.timeNow);
@@ -210,7 +235,7 @@ void test_DL_RecvByteBlocking_000(void)
     setUpLine();
     lineWriteAt(1000u, 0xA5u);
 
-    TEST_ASSERT_TRUE(RecvByteBlocking(&dataLink, &byte));
+    TEST_ASSERT_TRUE(DL_RecvByteBlocking(&dataLink, &byte));
     TEST_ASSERT_EQUAL_HEX8(0xA5u, byte);
     TEST_ASSERT_GREATER_THAN_UINT32(1000u, timer.timeNow);
 }
@@ -224,7 +249,7 @@ void test_DL_RecvByteBlocking_NoByte(void)
 
     setUpLine();
 
-    TEST_ASSERT_FALSE(RecvByteBlocking(&dataLink, &byte));
+    TEST_ASSERT_FALSE(DL_RecvByteBlocking(&dataLink, &byte));
     TEST_ASSERT_GREATER_THAN_UINT32(MAX_BLOCKING_RECV_TIME, timer.timeNow);
 }
 
@@ -244,7 +269,7 @@ void test_DL_SendByteBitBanged_000(void)
     setUpLine();
 
     UART_TRACE_Begin("test_DL_SendByteBitBanged_000.vcd");
-    SendByteBitBanged(&dataLink, TARGET_ADDR, 5u);
+    DL_SendByteBitBanged(&dataLink, TARGET_ADDR, 5u);
     UART_TRACE_End();
 
     /* 1. */
@@ -292,9 +317,9 @@ void test_DL_Connect_000(void)
 
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
-    TEST_ASSERT_EQUAL_PTR(l2_iso9141_connect, dataLink.connect);
-    TEST_ASSERT_EQUAL_PTR(l2_iso9141_send_request, dataLink.send_request);
-    TEST_ASSERT_EQUAL_PTR(l2_iso9141_recv_response, dataLink.recv_response);
+    TEST_ASSERT_EQUAL_PTR(ISO9141_Connect, dataLink.connect);
+    TEST_ASSERT_EQUAL_PTR(ISO9141_SendRequest, dataLink.send_request);
+    TEST_ASSERT_EQUAL_PTR(ISO9141_RecvResponse, dataLink.recv_response);
     TEST_ASSERT_EQUAL_HEX8(header_tester.fmt, protoCtx.header.fmt);
     TEST_ASSERT_EQUAL_HEX8(header_tester.trgAddr, protoCtx.header.trgAddr);
     TEST_ASSERT_EQUAL_HEX8(header_tester.srcAddr, protoCtx.header.srcAddr);
@@ -320,7 +345,7 @@ void test_DL_SendRecv_000(void)
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
 
-    LIBOBD_Delay((&dataLink), P2_TIME_MIN);
+    LIBOBD2_TMR_Delay((&dataLink), P2_TIME_MIN);
 
     status = DL_RecvResponse(&dataLink, &resp, &respLen);
     UART_TRACE_End();
@@ -330,4 +355,124 @@ void test_DL_SendRecv_000(void)
     TEST_ASSERT_EQUAL_size_t(2u, respLen);
     TEST_ASSERT_EQUAL_HEX8(request.sid, resp.sid);
     TEST_ASSERT_EQUAL_HEX8(request.param[0], resp.param[0]);
+}
+
+/******************************************************************
+ * Every DL entry point rejects a NULL or incomplete data link with
+ * OBD_ERR_NULL_PTR before touching the line.
+ ******************************************************************/
+void test_DL_Api_NullLink(void)
+{
+    obd_data_t data = { .sid = 0x01u };
+    size_t len = 0u;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_Connect(NULL).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_SendRequest(NULL, &data, 2u).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_RecvResponse(NULL, &data, &len).response);
+
+    /* A link without a protocol context is rejected too */
+    setUpLine();
+    dataLink.pProtocolCtx = NULL;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_Connect(&dataLink).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_SendRequest(&dataLink, &data, 2u).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_RecvResponse(&dataLink, &data, &len).response);
+    TEST_ASSERT_EQUAL_UINT32(0u, timer.timeNow);
+}
+
+/******************************************************************
+ * Before DL_Connect picks a protocol, send/recv have nothing to call
+ * and must fail with OBD_ERR_NULL_PTR instead of crashing.
+ ******************************************************************/
+void test_DL_Api_NotConnected(void)
+{
+    obd_data_t data = { .sid = 0x01u };
+    size_t len = 0u;
+
+    setUpLine();
+    dataLink.send_request  = NULL;
+    dataLink.recv_response = NULL;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_SendRequest(&dataLink, &data, 2u).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_RecvResponse(&dataLink, &data, &len).response);
+    TEST_ASSERT_EQUAL_UINT32(0u, timer.timeNow);
+}
+
+/******************************************************************
+ * A byte that arrives with a UART framing error is reported in
+ * .response, not as a timeout.
+ *   1. The onWrite fault hook marks the byte as a framing error
+ *   2. DL_ReadByteInTimeframe returns OBD_ERR_UART_FRAMING, timeout OK
+ ******************************************************************/
+void test_DL_ReadByteInTimeframe_UartError(void)
+{
+    uint8_t byte = 0u;
+
+    setUpLine();
+    uartCtx.faults.onWrite = injectFramingError;
+    lineWriteAt(30u, 0x55u);
+    uartCtx.faults.onWrite = NULL;
+
+    obd_status_t status = DL_ReadByteInTimeframe(&dataLink, NULL, &byte, P2_TIME_MIN, P2_TIME_MAX);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_UART_FRAMING, status.response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
+    TEST_ASSERT_EQUAL_HEX8(0x55u, byte);
+}
+
+/******************************************************************
+ * A timeout that cannot be started is reported in .response and
+ * no byte is waited for.
+ ******************************************************************/
+void test_DL_ReadByteInTimeframe_TimerError(void)
+{
+    uint8_t byte = 0u;
+
+    setUpLine();
+    lineWriteAt(30u, 0x55u);
+    timer.faults.onOp = failStartTimeout;
+
+    obd_status_t status = DL_ReadByteInTimeframe(&dataLink, NULL, &byte, P2_TIME_MIN, P2_TIME_MAX);
+    timer.faults.onOp = NULL;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_TMR_START_FAILED, status.response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
+    TEST_ASSERT_EQUAL_UINT32(0u, timer.timeNow);
+}
+
+/******************************************************************
+ * Sending a request ends with the driver's flush_rx, which drops
+ * the K-line echo on real hardware.
+ ******************************************************************/
+void test_DL_SendRequest_FlushesRx(void)
+{
+    const obd_data_t request = { .sid = 0x01u, .param = { 0x05u } };
+
+    setUpLine();
+    flushCnt = 0u;
+    uartOps.flush_rx = countFlush;
+
+    obd_status_t status = DL_SendRequest(&dataLink, &request, 2u);
+    uartOps.flush_rx = UART_FlushRx;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
+    TEST_ASSERT_EQUAL_size_t(1u, flushCnt);
+}
+
+/******************************************************************
+ * Two links sharing one timing ops table keep their own P2 start.
+ ******************************************************************/
+void test_DL_TimeSample_PerLink(void)
+{
+    dataLink_if_t other = {0};
+
+    setUpLine();
+    other = dataLink;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, DL_StartTimeout(&dataLink, P2_TIME_MAX).response);
+    TMR_DelayMs(&timer, 100u);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, DL_StartTimeout(&other, P2_TIME_MAX).response);
+
+    TEST_ASSERT_EQUAL_UINT32(0u, dataLink.timeSample);
+    TEST_ASSERT_EQUAL_UINT32(100u, other.timeSample);
 }

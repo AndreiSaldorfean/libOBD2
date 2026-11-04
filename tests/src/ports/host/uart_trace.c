@@ -2,6 +2,7 @@
 #include "uart_trace.h"
 #include "libobd2_uart_port.h"
 #include "datalink.h"
+#include "datalink_utils.h"
 #include "vcd_io.h"
 #include <stdio.h>
 
@@ -92,11 +93,11 @@ static void startSession(void)
 }
 
 /* Maps a virtual timer value to trace time. The first timestamp of a session lands on the session start,
- * long idle gaps are shortened, and a timer that went backwards (reset without LIBOBD2_UART_Init) opens
+ * long idle gaps are shortened, and a timer that went backwards (reset without UART_Init) opens
  * a new session. */
 static vcdTime_t traceTime(uint32_t timeMs)
 {
-    /* LIBOBD2_UART_Init() ran before UART_TRACE_Begin(): open the first session here, otherwise the first
+    /* UART_Init() ran before UART_TRACE_Begin(): open the first session here, otherwise the first
      * edge lands at time 0 on top of the idle level and is lost */
     if (g_session == 0u)
     {
@@ -132,13 +133,13 @@ static const char *errorName(uint8_t error)
 {
     switch (error)
     {
-        case PARITY_ERROR:
+        case OBD_UART_RX_PARITY_ERR:
             return "PARITY_ERROR";
-        case FRAMING_ERROR:
+        case OBD_UART_RX_FRAMING_ERR:
             return "FRAMING_ERROR";
-        case OVERRUN_ERROR:
+        case OBD_UART_RX_OVERRUN_ERR:
             return "OVERRUN_ERROR";
-        case NOISE_ERROR:
+        case OBD_UART_RX_NOISE_ERR:
             return "NOISE_ERROR";
         default:
             return "UART_ERROR";
@@ -265,9 +266,9 @@ void UART_TRACE_OnWrite(uint8_t byte, uint32_t timeMs, uint8_t error)
         start,
         byte,
         &g_lineUart,
-        (error == FRAMING_ERROR) ? VCD_UART_FLAG_FRAMING_ERROR : 0u,
+        (error == OBD_UART_RX_FRAMING_ERR) ? VCD_UART_FLAG_FRAMING_ERROR : 0u,
         &end);
-    if (error != UART_NO_ERROR)
+    if (error != OBD_UART_RX_OK)
     {
         /* uart_error is high for the whole frame that carries an injected error */
         (void)VCD_ChangeBit(g_writer, g_uartError, start, '1');
