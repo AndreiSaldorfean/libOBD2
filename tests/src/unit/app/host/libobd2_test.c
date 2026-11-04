@@ -4,6 +4,7 @@
 #include "iso15031_5.h"
 #include "iso9141.h"
 #include "libobd2.h"
+#include "libobd2_services.h"
 #include "libobd2_timer_port.h"
 #include "libobd2_uart_port.h"
 #include "statusRetCodes.h"
@@ -47,6 +48,8 @@ static const header_t header_tester =
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 extern uint8_t ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen);
+extern const libobd2_service_t libobd2Services[OBD2_MAX_NUM_SERVICES];
+extern obd_status_t LibOBD2_DispatchSid(obd_ctx_t* ctx, const libobd2_service_t *libobd2Service, libobd2_data_t* response, size_t respCap, size_t * respLen);
 
 static obd_tmr_status_t keepTimer(void *pHandle);
 static bool keepLine(void *handle);
@@ -387,4 +390,24 @@ void test_LIBOBD2_RequestService_TooManyMsgs(void)
 
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_APP_TOO_MANY_MSGS, status.response);
     TEST_ASSERT_EQUAL_size_t(0, responseLen);
+}
+
+/******************************************************************
+ * A single-message service keeps the length of the ECU message:
+ * 41 05 7B is 3 data bytes (sid + 2 params).
+ ******************************************************************/
+void test_LIBOBD2_DispatchSid_SingleMsgLen(void)
+{
+    const uint8_t ecuResp[] = { SID_SHOW_CURRENT_DATA + 0x40u, PID_01_COOLANT_TEMP, 0x7BU };
+    libobd2_data_t responseBuffer[2] = {0};
+    size_t respLen = 0;
+
+    setUpLine();
+    (void)ecuQueueFrame(REQ_DURATION(2u), ecuResp, sizeof(ecuResp));
+
+    obd_status_t status = LibOBD2_DispatchSid(&ctx, &libobd2Services[OBD_GET_COOLANT_TEMP], responseBuffer, 2u, &respLen);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
+    TEST_ASSERT_EQUAL_size_t(1, respLen);
+    TEST_ASSERT_EQUAL_size_t(sizeof(ecuResp), responseBuffer[0].dataLen);
 }

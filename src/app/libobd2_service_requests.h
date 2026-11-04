@@ -7,6 +7,8 @@
 #include "iso15031_5.h"
 
 /* ================================================= MACROS ================================================ */
+#define LIBOBD2_MAX_SREQ  (10U) /* requests one service can send */
+
 #define SREQ_GET_VIN \
     { \
         [0] = { .data = { .sid = SID_REQUEST_VEHICLE_INFO, .param = { PID_09_VIN_MESSAGE_COUNT } }, .dataLen = 2 }, \
@@ -33,7 +35,7 @@ typedef struct
 
 typedef struct
 {
-    libobd2_data_t serviceRequests[10]; // tester requests
+    libobd2_data_t serviceRequests[LIBOBD2_MAX_SREQ]; // tester requests
 }libobd2_sreq_t;
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */

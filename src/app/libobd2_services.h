@@ -8,8 +8,10 @@
 #include "libobd2_transfer_protocol.h"
 
 /* ================================================= MACROS ================================================ */
-#define OBD_SHORT_SID ((libobd2_sid_t)(0xA5U))
-#define OBD_LONG_SID ((libobd2_sid_t)(0xC3))
+#define OBD_SHORT_SID ((libobd2_sid_t)(0xA5U)) /* one request, one response */
+#define OBD_LONG_SID  ((libobd2_sid_t)(0xC3)) /* runs a transfer protocol */
+
+#define LIBOBD2_MAX_TP_STEPS  (32U) /* steps of one transfer protocol, TP_END included */
 
 #define OBD_SUPPORTED_SERVICES \
     [OBD_GET_VIN] = { .sidSize = OBD_LONG_SID, .serviceRequests = SREQ_GET_VIN, .transferProtocol = TP_GET_VIN }, \
@@ -20,8 +22,8 @@
 typedef struct
 {
     uint8_t sidSize;
-    libobd2_data_t serviceRequests[10];
-    uint8_t transferProtocol[32]; // protocol
+    libobd2_data_t serviceRequests[LIBOBD2_MAX_SREQ];
+    uint8_t transferProtocol[LIBOBD2_MAX_TP_STEPS];
 }libobd2_service_t;
 
 typedef enum
