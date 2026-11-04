@@ -37,7 +37,8 @@ typedef struct
 
 typedef struct
 {
-    Queue_t *uartEventQueue;
+    Queue_t eventQueue;                           /* the virtual line, set up by UART_Init */
+    uartEvent_t eventStore[VIRT_UART_QUEUE_SIZE]; /* storage of eventQueue, no heap needed */
     virtTmrCtx_t *tmrHandle;
     virtUartFaultHooks_t faults;
 
