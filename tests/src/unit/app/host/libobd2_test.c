@@ -355,6 +355,20 @@ void test_LIBOBD2_RequestService_CoolantTemp_000(void)
 }
 
 /******************************************************************
+ * A NULL context is rejected before anything goes on the line.
+ ******************************************************************/
+void test_LIBOBD2_RequestService_NullCtx(void)
+{
+    uint8_t response[RESPONSE_BUF_LEN] = {0};
+    size_t responseLen = 0;
+
+    obd_status_t status = LibOBD2_RequestService(NULL, OBD_GET_VIN, response, &responseLen);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, status.response);
+    TEST_ASSERT_EQUAL_size_t(0, responseLen);
+}
+
+/******************************************************************
  * The ECU announces more VIN messages than the response buffer holds.
  *   1. Tester: 68 6A F1 09 01 CS      ECU: 48 6B 12 49 01 FF CS
  *   2. The request stops with OBD_ERR_APP_TOO_MANY_MSGS before reading

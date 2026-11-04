@@ -189,13 +189,13 @@ obd_status_t LibOBD2_RequestService(
     uint8_t *response,
     size_t* responseLen)
 {
-    libobd2_service_t *service = &libobd2Services[obdSid];
+    libobd2_service_t *service = NULL;
     obd_status_t status = {0};
     libobd2_data_t responseBuffer[LIBOBD2_RESP_BUF_MSGS] = {0};
     size_t respBufLen = 0;
 
-    (void)service;
-
+    OBD2_CHECK_NULLPTR(ctx);
+    OBD2_CHECK_NULLPTR(ctx->pDataLink);
     OBD2_CHECK_NULLPTR(response);
     OBD2_CHECK_NULLPTR(responseLen);
 
@@ -204,6 +204,7 @@ obd_status_t LibOBD2_RequestService(
         status.response = OBD_ERR_INVALID_PARAM;
         goto exit;
     }
+    service = &libobd2Services[obdSid];
 
     status = LibOBD2_DispatchSid(ctx, service, responseBuffer, &respBufLen);
     OBD2_ASSERT_OK(status);
