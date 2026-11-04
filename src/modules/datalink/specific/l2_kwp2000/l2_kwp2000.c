@@ -53,15 +53,23 @@ OBD2_STATIC OBD2_INLINE obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, head
     uint8_t *buffer = (uint8_t *)header;
     uint32_t p2TimeElapsed = 0;
     obd_status_t status = {0};
+    obd_uart_rx_status_t rxStatus = OBD_UART_RX_NO_DATA;
 
     // Format byte
-    while (!LIBOBD_ReceiveByte(self, buffer))
+    rxStatus = LIBOBD_ReceiveByte(self, buffer);
+    while (OBD_UART_RX_NO_DATA == rxStatus)
     {
         // Check for P2 Timeout from Tester to ECU
         status.response = OBD_ERR_COMM_FMT_BYTE_NOT_RECVD;
         status.timeout = OBD_ERR_COMM_P2_TIMEOUT_MAX_TESTER_ECU;
         OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD_IsTimeoutExpired(self));
+        rxStatus = LIBOBD_ReceiveByte(self, buffer);
     }
+    status.timeout = OBD_STATUS_OK;
+
+    // The format byte arrived but was corrupted on the line
+    status.response = DL_UartRxStatusToResponse(rxStatus);
+    OBD2_IF_COND_GOTO_EXIT(OBD_STATUS_OK != status.response);
 
     p2TimeElapsed = LIBOBD_GetTimeMs(self);
     p2TimeElapsed -= LIBOBD_GetTimeSample(self);
@@ -333,7 +341,7 @@ obd_status_t l2_kwp_connect(dataLink_if_t *self, uint8_t* protocol)
     memset(ctx, 0, sizeof(l2_kwp_ctx_t));
 
     status.response = OBD_ERR_CONN_TIMER_INIT_FAILED;
-    if(!LIBOBD_TimingInit(self)) goto exit;
+    if(OBD_TMR_OK != LIBOBD_TimingInit(self)) goto exit;
     status.response = OBD_ERR_CONN_TRANS_INIT_FAILED;
     if(!LIBOBD_TransportInit(self)) goto exit;
 

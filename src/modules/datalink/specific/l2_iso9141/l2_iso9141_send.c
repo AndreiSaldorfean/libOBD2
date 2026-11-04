@@ -85,7 +85,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_SendMessage(dataLink_if_t *self, const uint8
         LIBOBD_Delay(self, P4_TIME_MIN);
     }
 
-    DL_StartTimeout(self, P2_TIME_MAX);
+    status = DL_StartTimeout(self, P2_TIME_MAX);
 
     // Clear echo
     // TODO: check the echo once LIBOBD_FlushRx is implemented

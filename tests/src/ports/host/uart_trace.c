@@ -133,13 +133,13 @@ static const char *errorName(uint8_t error)
 {
     switch (error)
     {
-        case PARITY_ERROR:
+        case OBD_UART_RX_PARITY_ERR:
             return "PARITY_ERROR";
-        case FRAMING_ERROR:
+        case OBD_UART_RX_FRAMING_ERR:
             return "FRAMING_ERROR";
-        case OVERRUN_ERROR:
+        case OBD_UART_RX_OVERRUN_ERR:
             return "OVERRUN_ERROR";
-        case NOISE_ERROR:
+        case OBD_UART_RX_NOISE_ERR:
             return "NOISE_ERROR";
         default:
             return "UART_ERROR";
@@ -266,9 +266,9 @@ void UART_TRACE_OnWrite(uint8_t byte, uint32_t timeMs, uint8_t error)
         start,
         byte,
         &g_lineUart,
-        (error == FRAMING_ERROR) ? VCD_UART_FLAG_FRAMING_ERROR : 0u,
+        (error == OBD_UART_RX_FRAMING_ERR) ? VCD_UART_FLAG_FRAMING_ERROR : 0u,
         &end);
-    if (error != UART_NO_ERROR)
+    if (error != OBD_UART_RX_OK)
     {
         /* uart_error is high for the whole frame that carries an injected error */
         (void)VCD_ChangeBit(g_writer, g_uartError, start, '1');

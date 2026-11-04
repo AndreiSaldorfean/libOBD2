@@ -8,41 +8,53 @@
 #include "cQueue.h"
 #include "libobd2_timer_port.h"
 #include "statusRetCodes.h"
+#include "uart_if.h"
 
 /* ================================================= MACROS ================================================ */
-/* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
-typedef enum
-{
-    UART_NO_ERROR = 0U,
-    PARITY_ERROR,
-    FRAMING_ERROR,
-    OVERRUN_ERROR,
-    NOISE_ERROR,
-    UART_MAX_NUM_ERRORS
-}uartErrors_t;
+#define VIRT_UART_QUEUE_SIZE         (128U)   /* bytes the virtual line can hold */
+#define VIRT_UART_BITBANG_FRAME_BITS (10U)    /* start + 8 data + stop */
+#define VIRT_UART_BITBANG_DATA_SHIFT (1U)     /* data bits follow the start bit */
+#define VIRT_UART_BITBANG_DATA_MASK  (0xFFU)
 
+/* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
+/* One byte on the virtual line */
 typedef struct
 {
     uint8_t byte;
     uint32_t timeReceived;
-    uartErrors_t error;
+    obd_uart_rx_status_t error; /* OBD_UART_RX_OK, or the error the receiver reports for this byte */
 }uartEvent_t;
+
+/* Error-injection seam. A NULL hook injects nothing. */
+typedef struct
+{
+    /* Called for every byte put on the line; may change event->byte or set event->error */
+    void (*onWrite)(void *pUserData, uartEvent_t *event);
+    /* Called for every byte handed to the receiver; may set event->error (e.g. overrun) */
+    void (*onRead)(void *pUserData, uartEvent_t *event);
+    void *pUserData;
+}virtUartFaultHooks_t;
 
 typedef struct
 {
     Queue_t *uartEventQueue;
     virtTmrCtx_t *tmrHandle;
-    void (*erorr_generator)(uartEvent_t *event);
+    virtUartFaultHooks_t faults;
+
+    /* Line mode and 5-baud bit-bang state, reset by LIBOBD2_UART_Init */
+    uint8_t mode;
+    uint16_t bitbangedByte;
+    uint16_t bitbangIdx;
 }virtUartLinkCtx_t;
+
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 bool LIBOBD2_UART_Init(void* handle);
-bool LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer);
+obd_uart_rx_status_t LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer);
 void LIBOBD2_UART_WriteByte(void* handle, uint8_t data);
 void LIBOBD2_UART_FlushRx(void* handle);
 void LIBOBD2_UART_SendPulse(void* handle, bool pulse);
 void LIBOBD2_UART_SwitchMode(void* handle, uint8_t mode);
-
 
 #endif /* UART_TRANSPORT_PORT_H */

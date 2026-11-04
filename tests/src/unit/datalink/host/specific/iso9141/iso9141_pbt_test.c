@@ -298,7 +298,7 @@ static enum theft_trial_res prop_inc_time_on_byte_read(struct theft *t, void *ar
     /* do NOT advance the timer — timeNow still equals the event timestamp */
 
     uint8_t received = 0u;
-    bool got_byte = LIBOBD2_UART_RecvByte(&ctx, &received);
+    bool got_byte = (OBD_UART_RX_OK == LIBOBD2_UART_RecvByte(&ctx, &received));
 
     /* isByteReady uses strict '>': byte must NOT be ready at the same timestamp */
     if (timer.timeNow != timer.timeStep) { return THEFT_TRIAL_FAIL; }
@@ -326,7 +326,7 @@ static enum theft_trial_res prop_byte_not_ready_at_same_timestamp(struct theft *
     /* do NOT advance the timer — timeNow still equals the event timestamp */
 
     uint8_t received = 0u;
-    bool got_byte = LIBOBD2_UART_RecvByte(&ctx, &received);
+    bool got_byte = (OBD_UART_RX_OK == LIBOBD2_UART_RecvByte(&ctx, &received));
 
     /* isByteReady uses strict '>': byte must NOT be ready at the same timestamp */
     if (got_byte) { return THEFT_TRIAL_FAIL; }

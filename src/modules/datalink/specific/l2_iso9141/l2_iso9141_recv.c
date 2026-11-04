@@ -20,23 +20,34 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Verify(const obd_data_t *resp);
 /******************************************
 * title: L2_ISO9141_WaitForResponseStart
 * brief: Waits for the first byte (format byte) of an ECU response inside
-*        the P2 window, then stops the P2 timeout.
+*        the P2 window, then stops the P2 timeout. UART/timer errors go in .response.
 ******************************************/
 OBD2_STATIC obd_status_t L2_ISO9141_WaitForResponseStart(dataLink_if_t *self, uint8_t *respByte)
 {
     obd_status_t status = {0};
+    obd_uart_rx_status_t rxStatus = OBD_UART_RX_NO_DATA;
 
     // Format byte
-    while (!LIBOBD_ReceiveByte(self, respByte))
+    rxStatus = LIBOBD_ReceiveByte(self, respByte);
+    while (OBD_UART_RX_NO_DATA == rxStatus)
     {
         // Check for P2 Timeout from Tester to ECU
         status.timeout = OBD_ERR_COMM_P2_TIMEOUT_MAX_TESTER_ECU;
         OBD2_ASSERT_EQUAL_OR_EXIT(false, LIBOBD_IsTimeoutExpired(self));
+        rxStatus = LIBOBD_ReceiveByte(self, respByte);
     }
+    status.timeout = OBD_STATUS_OK;
+
+    // The format byte arrived but was corrupted on the line
+    status.response = DL_UartRxStatusToResponse(rxStatus);
+    OBD2_IF_COND_GOTO_EXIT(OBD_STATUS_OK != status.response);
 
     status.timeout = OBD_ERR_COMM_P2_TIMEOUT_MIN_TESTER_ECU;
     OBD2_ASSERT_EQUAL_OR_EXIT(true, DL_IsTimeoutMinDone(self, P2_TIME_MIN));
-    LIBOBD_StopTimeout(self);
+    status.timeout = OBD_STATUS_OK;
+
+    status.response = OBD_ERR_TMR_STOP_FAILED;
+    OBD2_IF_COND_GOTO_EXIT(OBD_TMR_OK != LIBOBD_StopTimeout(self));
 
     memset(&status, 0, sizeof(obd_status_t));
 exit:
@@ -53,6 +64,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *
     const l2_iso9141_ctx_t *ctx = NULL;
     uint8_t *pMsg       = (uint8_t *)recvdMsg;
     obd_status_t status = {0};
+    obd_status_t restartStatus = {0};
     uint8_t byteRead    = 0;
     uint8_t byteReadIdx = 0;
     uint8_t runningCheckSum = 0;
@@ -65,8 +77,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *
     ctx = (const l2_iso9141_ctx_t *)(self->pProtocolCtx);
 
     status = L2_ISO9141_WaitForResponseStart(self, &byteRead);
-    status.response = OBD_ERR_COMM_FMT_BYTE_NOT_RECVD;
-    OBD2_ASSERT_NO_TIMEOUT(status);
+    OBD2_ASSERT_BYTE_RECVD(status, OBD_ERR_COMM_FMT_BYTE_NOT_RECVD);
 
     runningCheckSum = byteRead;
     pMsg[byteReadIdx++] = byteRead;
@@ -80,8 +91,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *
     {
         // Receive byte
         status = DL_ReadByteInTimeframe(self, &elapsedTime , &byteRead, P1_TIME_MIN, P1_TIME_MAX);
-        status.response = OBD_ERR_COMM_DATA_BYTE_NOT_RECVD;
-        OBD2_ASSERT_NO_TIMEOUT(status);
+        OBD2_ASSERT_BYTE_RECVD(status, OBD_ERR_COMM_DATA_BYTE_NOT_RECVD);
 
         // Once the header is complete, a byte equal to the running checksum ends the frame
         if ((sizeof(header_t) <= byteReadIdx) && (byteRead == runningCheckSum))
@@ -107,7 +117,12 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *
 
     status.response = OBD_ERR_COMM_RECV_MSG_FAILED;
 exit:
-    DL_StartTimeout(self, P2_TIME_MAX);
+    // Start the P2 window for a following response; a frame error takes priority
+    restartStatus = DL_StartTimeout(self, P2_TIME_MAX);
+    if ((OBD_STATUS_OK == status.response) && (OBD_STATUS_OK == status.timeout))
+    {
+        status = restartStatus;
+    }
     return status;
 }
 

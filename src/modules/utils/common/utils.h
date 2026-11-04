@@ -57,6 +57,14 @@
        if (cond) {goto exit;} \
     }while(0)
 
+/* After DL_ReadByteInTimeframe: exits with `err` when the byte did not arrive in
+ * time, or with the UART error the byte was received with. */
+#define OBD2_ASSERT_BYTE_RECVD(status, err) \
+    do { \
+       if (OBD_STATUS_OK != (status).timeout) { (status).response = (err); goto exit; } \
+       if (OBD_STATUS_OK != (status).response) { goto exit; } \
+    }while(0)
+
 #define OBD2_ASSERT_EQUAL_OR_EXIT(val1, val2) \
     do { \
        if ((val1) != (val2)) {goto exit;} \

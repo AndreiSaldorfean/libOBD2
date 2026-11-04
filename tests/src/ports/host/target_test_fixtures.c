@@ -42,7 +42,9 @@ void targetRunTests()
     RUN_TEST(test_TMR_StartTimeout_001);
     RUN_TEST(test_TMR_IsTimeoutExpired_000);
     RUN_TEST(test_TMR_StopTimeout_000);
+    RUN_TEST(test_TMR_FaultHook_000);
     RUN_TEST(test_TMR_StopTimeout_NotExpired);
+    RUN_TEST(test_TMR_FaultHook_InitFails);
 
     RUN_TEST(test_UART_WriteByte_0);
     RUN_TEST(test_UART_WriteByte_1);
@@ -54,6 +56,8 @@ void targetRunTests()
     RUN_TEST(test_DL_ReadByteInTimeframe_000);
     RUN_TEST(test_DL_ReadByteInTimeframe_TooEarly);
     RUN_TEST(test_DL_ReadByteInTimeframe_NoByte);
+    RUN_TEST(test_DL_ReadByteInTimeframe_UartError);
+    RUN_TEST(test_DL_ReadByteInTimeframe_TimerError);
     RUN_TEST(test_DL_TimeSample_PerLink);
     RUN_TEST(test_DL_RecvByteBlocking_000);
     RUN_TEST(test_DL_RecvByteBlocking_NoByte);

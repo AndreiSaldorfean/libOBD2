@@ -14,6 +14,8 @@ void test_TMR_StartTimeout_000(void);
 void test_TMR_StartTimeout_001(void);
 void test_TMR_IsTimeoutExpired_000(void);
 void test_TMR_StopTimeout_000(void);
+void test_TMR_FaultHook_000(void);
 void test_TMR_StopTimeout_NotExpired(void);
+void test_TMR_FaultHook_InitFails(void);
 
 #endif /* TIMER_TEST_H */

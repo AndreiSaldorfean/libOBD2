@@ -38,6 +38,29 @@
 
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 /* ============================================ INLINE FUNCTIONS =========================================== */
+/******************************************
+* title: DL_UartRxStatusToResponse
+* brief: Maps a recv_byte result to the obd_status_t response code that
+*        reports it (OBD_STATUS_OK for a clean byte).
+******************************************/
+static inline uint16_t DL_UartRxStatusToResponse(obd_uart_rx_status_t rxStatus)
+{
+    uint16_t response = OBD_GENERIC_ERROR;
+
+    switch (rxStatus)
+    {
+        case OBD_UART_RX_OK:          response = OBD_STATUS_OK;        break;
+        case OBD_UART_RX_NO_DATA:     response = OBD_RECV_NOT_READY;   break;
+        case OBD_UART_RX_PARITY_ERR:  response = OBD_ERR_UART_PARITY;  break;
+        case OBD_UART_RX_FRAMING_ERR: response = OBD_ERR_UART_FRAMING; break;
+        case OBD_UART_RX_OVERRUN_ERR: response = OBD_ERR_UART_OVERRUN; break;
+        case OBD_UART_RX_NOISE_ERR:   response = OBD_ERR_UART_NOISE;   break;
+        default:                                                       break;
+    }
+
+    return response;
+}
+
 static inline void DL_SendByteBitBanged(dataLink_if_t *self, uint8_t byte, uint8_t baudRate)
 {
     const uint16_t delay = (1000 / baudRate);
@@ -66,9 +89,15 @@ static inline void DL_SendByteBitBanged(dataLink_if_t *self, uint8_t byte, uint8
 }
 
 
+/******************************************
+* title: DL_ReadByteInTimeframe
+* brief: Waits up to timeMax for one byte. Reports a missing or early byte in
+*        .timeout and a UART receive error in .response.
+******************************************/
 static inline obd_status_t DL_ReadByteInTimeframe(dataLink_if_t *self, uint32_t *timeElapsed, uint8_t *byte, uint16_t timeMin, uint16_t timeMax)
 {
     obd_status_t status  = {0};
+    obd_uart_rx_status_t rxStatus = OBD_UART_RX_NO_DATA;
     uint32_t timeStart   = 0;
     uint32_t timeEnd     = 0;
     uint32_t lTimeElapsed = 0;
@@ -77,9 +106,13 @@ static inline obd_status_t DL_ReadByteInTimeframe(dataLink_if_t *self, uint32_t 
     TRACE_TIMER_LOG(TRACE_TAG_TMR_START, timeMax);
     #endif /* SPT_TRACING */
     timeStart = LIBOBD_GetTimeMs(self);
-    LIBOBD_StartTimeout(self, timeMax);
 
-    while (!LIBOBD_ReceiveByte(self, byte))
+    status.response = OBD_ERR_TMR_START_FAILED;
+    OBD2_IF_COND_GOTO_EXIT(OBD_TMR_OK != LIBOBD_StartTimeout(self, timeMax));
+    status.response = OBD_STATUS_OK;
+
+    rxStatus = LIBOBD_ReceiveByte(self, byte);
+    while (OBD_UART_RX_NO_DATA == rxStatus)
     {
         status.timeout = OBD_ERR_TIMEOUT_MAX;
         if (LIBOBD_IsTimeoutExpired(self))
@@ -90,10 +123,16 @@ static inline obd_status_t DL_ReadByteInTimeframe(dataLink_if_t *self, uint32_t 
             lTimeElapsed = timeEnd - timeStart;
             goto exit;
         }
+        rxStatus = LIBOBD_ReceiveByte(self, byte);
     }
+    status.timeout = OBD_STATUS_OK;
 
     timeEnd = LIBOBD_GetTimeMs(self);
     lTimeElapsed = timeEnd - timeStart;
+
+    // The byte arrived but was corrupted on the line
+    status.response = DL_UartRxStatusToResponse(rxStatus);
+    OBD2_IF_COND_GOTO_EXIT(OBD_STATUS_OK != status.response);
 
     if (lTimeElapsed < timeMin)
     {
@@ -109,29 +148,34 @@ exit:
     return status;
 }
 
+/******************************************
+* title: DL_RecvByteBlocking
+* brief: Waits up to MAX_BLOCKING_RECV_TIME for one byte. Returns true only
+*        for a byte received without a UART or timer error.
+******************************************/
 static inline bool DL_RecvByteBlocking(dataLink_if_t *self, uint8_t *byte)
 {
-    uint32_t lTimeElapsed = 0;
-    bool status = false;
+    obd_uart_rx_status_t rxStatus = OBD_UART_RX_NO_DATA;
 
-    (void)lTimeElapsed;
+    OBD2_IF_COND_GOTO_EXIT(OBD_TMR_OK != LIBOBD_StartTimeout(self, MAX_BLOCKING_RECV_TIME));
 
-    LIBOBD_StartTimeout(self, MAX_BLOCKING_RECV_TIME);
-
-    while (false == status)
+    while (OBD_UART_RX_NO_DATA == rxStatus)
     {
         if (LIBOBD_IsTimeoutExpired(self))
         {
-            status = false;
             goto exit;
         }
 
-        status = LIBOBD_ReceiveByte(self, byte);
+        rxStatus = LIBOBD_ReceiveByte(self, byte);
     }
 
 exit:
-    return status;
+    return (OBD_UART_RX_OK == rxStatus);
 }
+/******************************************
+* title: DL_IsTimeoutMinDone
+* brief: True once minTimeout has passed since the last DL_StartTimeout.
+******************************************/
 static inline bool DL_IsTimeoutMinDone(dataLink_if_t *self, uint32_t minTimeout)
 {
     uint32_t p2TimeElapsed = 0;
@@ -142,10 +186,23 @@ static inline bool DL_IsTimeoutMinDone(dataLink_if_t *self, uint32_t minTimeout)
     return p2TimeElapsed >= minTimeout;
 }
 
-static inline void DL_StartTimeout(dataLink_if_t *self, uint32_t timeout)
+/******************************************
+* title: DL_StartTimeout
+* brief: Remembers the current time as the window start and arms the timeout.
+*        Reports OBD_ERR_TMR_START_FAILED when the timer cannot start.
+******************************************/
+static inline obd_status_t DL_StartTimeout(dataLink_if_t *self, uint32_t timeout)
 {
+    obd_status_t status = {0};
+
     LIBOBD_SetTimeSample(self, LIBOBD_GetTimeMs(self));
-    LIBOBD_StartTimeout(self, timeout);
+
+    if (OBD_TMR_OK != LIBOBD_StartTimeout(self, timeout))
+    {
+        status.response = OBD_ERR_TMR_START_FAILED;
+    }
+
+    return status;
 }
 
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */

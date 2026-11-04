@@ -7,22 +7,51 @@
 
 /* ================================================= MACROS ================================================ */
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
+/* Timer operation a fault hook is called for */
+typedef enum
+{
+    VIRT_TMR_OP_INIT = 0U,         /* status: returned to the caller */
+    VIRT_TMR_OP_GET_TIME,          /* value: time returned */
+    VIRT_TMR_OP_DELAY,             /* value: delay applied */
+    VIRT_TMR_OP_START_TIMEOUT,     /* value: timeout armed; status: returned to the caller */
+    VIRT_TMR_OP_STOP_TIMEOUT,      /* status: returned to the caller */
+    VIRT_TMR_OP_IS_TIMEOUT_EXPIRED /* expired: returned to the caller */
+}virtTmrOp_t;
+
+/* What an operation is about to do; a fault hook may change value, status and
+ * expired. An operation whose status is set to an error is not carried out. */
+typedef struct
+{
+    virtTmrOp_t op;
+    uint32_t value;
+    obd_tmr_status_t status;
+    bool expired;
+}virtTmrEvent_t;
+
+/* Error-injection seam. A NULL hook injects nothing. */
+typedef struct
+{
+    void (*onOp)(void *pUserData, virtTmrEvent_t *event);
+    void *pUserData;
+}virtTmrFaultHooks_t;
+
 typedef struct
 {
     uint32_t timeNow;
     uint32_t timeStep;
     uint32_t timeoutTime;
     bool timeoutStarted;
+    virtTmrFaultHooks_t faults;
 }virtTmrCtx_t;
 
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-bool LIBOBD2_TMR_Init(void *pHandle);
+obd_tmr_status_t LIBOBD2_TMR_Init(void *pHandle);
 uint32_t LIBOBD2_TMR_GetTimeMs(void *pHandle);
 void LIBOBD2_TMR_DelayMs(void *pHandle, uint32_t delay_ms);
-bool LIBOBD2_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t callback, void *pUserData);
-bool LIBOBD2_TMR_StopTimeout(void *pHandle);
+obd_tmr_status_t LIBOBD2_TMR_StartTimeout(void *pHandle, uint32_t timeout_ms, timing_callback_t callback, void *pUserData);
+obd_tmr_status_t LIBOBD2_TMR_StopTimeout(void *pHandle);
 bool LIBOBD2_TMR_IsTimeoutExpired(void *pHandle);
 
 #endif /* KWP_TIMER_H */

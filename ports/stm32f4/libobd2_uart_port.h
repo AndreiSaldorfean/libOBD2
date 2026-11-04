@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "statusRetCodes.h"
+#include "uart_if.h"
 
 /* ================================================= MACROS ================================================ */
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
@@ -33,7 +34,7 @@ typedef struct
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 bool LIBOBD2_UART_Init(void* handle);
-bool LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer);
+obd_uart_rx_status_t LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer);
 void LIBOBD2_UART_WriteByte(void* handle, uint8_t data);
 void LIBOBD2_UART_FlushRx(void* handle);
 void LIBOBD2_UART_SendPulse(void* handle, bool pulse);

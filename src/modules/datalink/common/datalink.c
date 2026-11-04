@@ -88,8 +88,10 @@ obd_status_t DL_Connect(dataLink_if_t *pDataLink)
     status = DL_ValidateLink(pDataLink);
     OBD2_ASSERT_OK(status);
 
-    LIBOBD_TransportInit(pDataLink);
-    LIBOBD_TimingInit(pDataLink);
+    status.response = OBD_ERR_CONN_TRANS_INIT_FAILED;
+    OBD2_IF_COND_GOTO_EXIT(!LIBOBD_TransportInit(pDataLink));
+    status.response = OBD_ERR_CONN_TIMER_INIT_FAILED;
+    OBD2_IF_COND_GOTO_EXIT(OBD_TMR_OK != LIBOBD_TimingInit(pDataLink));
 
     status = DL_IdentifyProtocol(pDataLink, &protocolIdx);
     OBD2_ASSERT_OK(status);

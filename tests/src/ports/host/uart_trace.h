@@ -13,7 +13,7 @@
  *                     8N1) starting at the time of the read; reads faster than one frame queue up
  *   kline.rx_waiting  1 while reads come back empty, 0 once a byte is read
  *   kline.session     short pulse at each LIBOBD2_UART_Init(), i.e. at every PBT trial
- *   kline.uart_error  high during a frame that carries an error from erorr_generator
+ *   kline.uart_error  high during a frame that carries an error from the onWrite fault hook
  *
  * PulseView: Import -> Value Change Dump, then add a UART decoder with RX = line and TX = rx_data at
  * UART_TRACE_BAUD: RX rows show what was on the wire, TX rows what the library read.

@@ -48,7 +48,7 @@ static const header_t header_tester =
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 extern uint8_t L2_ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen);
 
-static bool keepTimer(void *pHandle);
+static obd_tmr_status_t keepTimer(void *pHandle);
 static bool keepLine(void *handle);
 
 /* DL_Connect() re-initialises the timer and the transport. On the virtual line that would zero timeStep and
@@ -74,10 +74,10 @@ static obd_uart_ops_t uartOps =
 };
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-static bool keepTimer(void *pHandle)
+static obd_tmr_status_t keepTimer(void *pHandle)
 {
     (void)pHandle;
-    return true;
+    return OBD_TMR_OK;
 }
 
 static bool keepLine(void *handle)
@@ -94,7 +94,7 @@ static void setUpLine(void)
 {
     timer = (virtTmrCtx_t){ .timeStep = TIME_STEP };
     uartCtx.tmrHandle       = &timer;
-    uartCtx.erorr_generator = NULL;
+    uartCtx.faults          = (virtUartFaultHooks_t){0};
     TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&uartCtx));
 
     protoCtx = (l2_iso9141_ctx_t){ .header = header_tester, .kb1 = 0x08u, .kb2 = 0x08u };

@@ -39,7 +39,7 @@ static const header_t header_tester =
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-static bool keepTimer(void *pHandle);
+static obd_tmr_status_t keepTimer(void *pHandle);
 static bool keepLine(void *handle);
 static void recordPulse(void *handle, bool pulse);
 static void recordMode(void *handle, uint8_t mode);
@@ -68,10 +68,10 @@ static obd_uart_ops_t uartOps =
 };
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-static bool keepTimer(void *pHandle)
+static obd_tmr_status_t keepTimer(void *pHandle)
 {
     (void)pHandle;
-    return true;
+    return OBD_TMR_OK;
 }
 
 static bool keepLine(void *handle)
@@ -108,7 +108,7 @@ static void setUpLine(void)
 {
     timer = (virtTmrCtx_t){ .timeStep = TIME_STEP };
     uartCtx.tmrHandle       = &timer;
-    uartCtx.erorr_generator = NULL;
+    uartCtx.faults          = (virtUartFaultHooks_t){0};
     TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&uartCtx));
 
     protoCtx = (l2_iso9141_ctx_t){ .header = header_tester, .kb1 = 0x08u, .kb2 = 0x08u };
@@ -126,6 +126,23 @@ static void setUpLine(void)
         .send_request     = l2_iso9141_send_request,
         .recv_response    = l2_iso9141_recv_response,
     };
+}
+
+/* onOp fault hook: the timer cannot start a timeout */
+static void failStartTimeout(void *pUserData, virtTmrEvent_t *event)
+{
+    (void)pUserData;
+    if (VIRT_TMR_OP_START_TIMEOUT == event->op)
+    {
+        event->status = OBD_TMR_ERR_HW;
+    }
+}
+
+/* onWrite fault hook: every byte put on the line arrives with a framing error */
+static void injectFramingError(void *pUserData, uartEvent_t *event)
+{
+    (void)pUserData;
+    event->error = OBD_UART_RX_FRAMING_ERR;
 }
 
 /* Put one byte on the line at virtual time `time`, without moving the clock */
@@ -374,6 +391,48 @@ void test_DL_Api_NotConnected(void)
 }
 
 /******************************************************************
+ * A byte that arrives with a UART framing error is reported in
+ * .response, not as a timeout.
+ *   1. The onWrite fault hook marks the byte as a framing error
+ *   2. DL_ReadByteInTimeframe returns OBD_ERR_UART_FRAMING, timeout OK
+ ******************************************************************/
+void test_DL_ReadByteInTimeframe_UartError(void)
+{
+    uint8_t byte = 0u;
+
+    setUpLine();
+    uartCtx.faults.onWrite = injectFramingError;
+    lineWriteAt(30u, 0x55u);
+    uartCtx.faults.onWrite = NULL;
+
+    obd_status_t status = DL_ReadByteInTimeframe(&dataLink, NULL, &byte, P2_TIME_MIN, P2_TIME_MAX);
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_UART_FRAMING, status.response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
+    TEST_ASSERT_EQUAL_HEX8(0x55u, byte);
+}
+
+/******************************************************************
+ * A timeout that cannot be started is reported in .response and
+ * no byte is waited for.
+ ******************************************************************/
+void test_DL_ReadByteInTimeframe_TimerError(void)
+{
+    uint8_t byte = 0u;
+
+    setUpLine();
+    lineWriteAt(30u, 0x55u);
+    timer.faults.onOp = failStartTimeout;
+
+    obd_status_t status = DL_ReadByteInTimeframe(&dataLink, NULL, &byte, P2_TIME_MIN, P2_TIME_MAX);
+    timer.faults.onOp = NULL;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_TMR_START_FAILED, status.response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
+    TEST_ASSERT_EQUAL_UINT32(0u, timer.timeNow);
+}
+
+/******************************************************************
  * Two links sharing one timing ops table keep their own P2 start.
  ******************************************************************/
 void test_DL_TimeSample_PerLink(void)
@@ -383,9 +442,9 @@ void test_DL_TimeSample_PerLink(void)
     setUpLine();
     other = dataLink;
 
-    DL_StartTimeout(&dataLink, P2_TIME_MAX);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, DL_StartTimeout(&dataLink, P2_TIME_MAX).response);
     LIBOBD2_TMR_DelayMs(&timer, 100u);
-    DL_StartTimeout(&other, P2_TIME_MAX);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, DL_StartTimeout(&other, P2_TIME_MAX).response);
 
     TEST_ASSERT_EQUAL_UINT32(0u, dataLink.timeSample);
     TEST_ASSERT_EQUAL_UINT32(100u, other.timeSample);

@@ -48,6 +48,15 @@
 // Transport status codes
 #define SRV_STATUS_TRANSPORT               (0x04)
 #define OBD_RECV_NOT_READY                 (OBD_MAKE_ERROR(SRV_STATUS_TRANSPORT, (uint16_t)0x1U))
+#define OBD_ERR_UART_PARITY                (OBD_MAKE_ERROR(SRV_STATUS_TRANSPORT, (uint16_t)0x2U))
+#define OBD_ERR_UART_FRAMING               (OBD_MAKE_ERROR(SRV_STATUS_TRANSPORT, (uint16_t)0x3U))
+#define OBD_ERR_UART_OVERRUN               (OBD_MAKE_ERROR(SRV_STATUS_TRANSPORT, (uint16_t)0x4U))
+#define OBD_ERR_UART_NOISE                 (OBD_MAKE_ERROR(SRV_STATUS_TRANSPORT, (uint16_t)0x5U))
+
+// Timer status codes
+#define SRV_STATUS_TIMER                   (0x05)
+#define OBD_ERR_TMR_START_FAILED           (OBD_MAKE_ERROR(SRV_STATUS_TIMER, (uint16_t)0x1U))
+#define OBD_ERR_TMR_STOP_FAILED            (OBD_MAKE_ERROR(SRV_STATUS_TIMER, (uint16_t)0x2U))
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
 {
