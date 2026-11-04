@@ -35,10 +35,6 @@
 #define PULSE_LOW (0U)
 #define MAX_BLOCKING_RECV_TIME (5000U)
 
-#define FAST_INIT_WAKEUP_START  (0x1)
-#define FAST_INIT_WAKEUP_END    (0x2)
-#define DIGITAL_MODE_BEGIN      (0x3)
-#define DIGITAL_MODE_END        (0x4)
 
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 /* ============================================ INLINE FUNCTIONS =========================================== */

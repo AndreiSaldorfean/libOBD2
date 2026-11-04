@@ -11,6 +11,12 @@
 #include <stdbool.h>
 
 /* ================================================= MACROS ================================================ */
+/* Line modes passed to switch_mode */
+#define FAST_INIT_WAKEUP_START  (0x1) /* TX pin driven as GPIO for the fast-init wake-up pattern */
+#define FAST_INIT_WAKEUP_END    (0x2) /* TX pin handed back to the UART */
+#define DIGITAL_MODE_BEGIN      (0x3) /* TX pin driven as GPIO for 5-baud bit-banging */
+#define DIGITAL_MODE_END        (0x4) /* TX pin handed back to the UART */
+
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 
 typedef struct
