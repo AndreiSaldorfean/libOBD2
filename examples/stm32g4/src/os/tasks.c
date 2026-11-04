@@ -80,6 +80,7 @@ static obd_uart_ops_t transportOps =
     .recv_byte   = LIBOBD2_UART_RecvByte,
     .send_pulse  = LIBOBD2_UART_SendPulse,
     .switch_mode = LIBOBD2_UART_SwitchMode,
+    .flush_rx    = LIBOBD2_UART_FlushRx,
 };
 
 

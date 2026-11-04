@@ -58,6 +58,7 @@ void targetRunTests()
     RUN_TEST(test_DL_ReadByteInTimeframe_NoByte);
     RUN_TEST(test_DL_ReadByteInTimeframe_UartError);
     RUN_TEST(test_DL_ReadByteInTimeframe_TimerError);
+    RUN_TEST(test_DL_SendRequest_FlushesRx);
     RUN_TEST(test_DL_TimeSample_PerLink);
     RUN_TEST(test_DL_RecvByteBlocking_000);
     RUN_TEST(test_DL_RecvByteBlocking_NoByte);

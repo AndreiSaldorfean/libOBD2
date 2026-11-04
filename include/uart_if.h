@@ -33,7 +33,7 @@ typedef struct
 {
     bool (*init)(void *handle);
     obd_uart_rx_status_t (*recv_byte)(void *handle, uint8_t *buffer);
-    void (*flush_rx)(void *handle);
+    void (*flush_rx)(void *handle); /* optional: drops pending RX bytes (e.g. the K-line echo) */
     void (*send_byte)(void *handle, uint8_t data);
     void (*send_pulse)(void *handle, bool pulse);
     void (*switch_mode)(void *handle, uint8_t mode);

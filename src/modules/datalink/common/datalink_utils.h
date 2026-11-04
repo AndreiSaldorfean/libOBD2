@@ -27,8 +27,7 @@
 #define LIBOBD_SendByte(handle, byte)     (handle->pUartOps->send_byte(handle->pTransportHandle, byte))
 #define LIBOBD_ReceiveByte(handle, byte)  (handle->pUartOps->recv_byte(handle->pTransportHandle, byte))
 #define LIBOBD_SendPulse(handle, pulse)   (handle->pUartOps->send_pulse(handle->pTransportHandle, pulse))
-// #define LIBOBD_FlushRx(handle)            (handle->pUartOps->flush_rx(handle->pTransportHandle))
-#define LIBOBD_FlushRx(handle)            (void)handle;
+#define LIBOBD_FlushRx(handle)            do { if (NULL != handle->pUartOps->flush_rx) { handle->pUartOps->flush_rx(handle->pTransportHandle); } } while (0)
 #define LIBOBD_SwitchMode(handle, mode)   (handle->pUartOps->switch_mode(handle->pTransportHandle, mode))
 
 #define PULSE_HIGH (1U)

@@ -12,6 +12,7 @@ void test_DL_ReadByteInTimeframe_TooEarly(void);
 void test_DL_ReadByteInTimeframe_NoByte(void);
 void test_DL_ReadByteInTimeframe_UartError(void);
 void test_DL_ReadByteInTimeframe_TimerError(void);
+void test_DL_SendRequest_FlushesRx(void);
 void test_DL_TimeSample_PerLink(void);
 void test_DL_RecvByteBlocking_000(void);
 void test_DL_RecvByteBlocking_NoByte(void);

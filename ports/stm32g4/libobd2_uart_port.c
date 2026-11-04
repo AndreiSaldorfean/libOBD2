@@ -172,8 +172,8 @@ obd_uart_rx_status_t LIBOBD2_UART_RecvByte(void* handle, uint8_t *recv_buffer)
 
 /******************************************
 * title: LIBOBD2_UART_FlushRx
-* brief: Lets the last sent byte come back, then drops whatever is pending in
-*        the receive register.
+* brief: Lets the last sent byte come back, drops whatever is pending in the
+*        receive register and clears the error flags the echo left behind.
 ******************************************/
 void LIBOBD2_UART_FlushRx(void* handle)
 {
@@ -189,11 +189,14 @@ void LIBOBD2_UART_FlushRx(void* handle)
         __asm__ volatile ("nop");
     }
 
-    /* STM32F4 USART has no FIFO - at most one byte can be pending in DR */
+    /* With the FIFO disabled at most one byte is pending in RDR */
     while ((USART_ISR(ctx->usartNum) & USART_ISR_RXNE))
     {
         usart_recv(ctx->usartNum);
     }
+
+    /* An echo that overran RDR leaves ORE set, which would block reception */
+    USART_ICR(ctx->usartNum) = UART_RX_ERROR_CLEAR;
 }
 
 /******************************************

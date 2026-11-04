@@ -138,6 +138,14 @@ static void failStartTimeout(void *pUserData, virtTmrEvent_t *event)
     }
 }
 
+/* flush_rx op that only counts its calls */
+static size_t flushCnt;
+static void countFlush(void *handle)
+{
+    (void)handle;
+    flushCnt++;
+}
+
 /* onWrite fault hook: every byte put on the line arrives with a framing error */
 static void injectFramingError(void *pUserData, uartEvent_t *event)
 {
@@ -430,6 +438,25 @@ void test_DL_ReadByteInTimeframe_TimerError(void)
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_TMR_START_FAILED, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
     TEST_ASSERT_EQUAL_UINT32(0u, timer.timeNow);
+}
+
+/******************************************************************
+ * Sending a request ends with the driver's flush_rx, which drops
+ * the K-line echo on real hardware.
+ ******************************************************************/
+void test_DL_SendRequest_FlushesRx(void)
+{
+    const obd_data_t request = { .sid = 0x01u, .param = { 0x05u } };
+
+    setUpLine();
+    flushCnt = 0u;
+    uartOps.flush_rx = countFlush;
+
+    obd_status_t status = DL_SendRequest(&dataLink, &request, 2u);
+    uartOps.flush_rx = LIBOBD2_UART_FlushRx;
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
+    TEST_ASSERT_EQUAL_size_t(1u, flushCnt);
 }
 
 /******************************************************************
