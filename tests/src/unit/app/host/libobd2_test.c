@@ -98,7 +98,6 @@ static void setUpLine(void)
     TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&uartCtx));
 
     protoCtx = (l2_iso9141_ctx_t){ .header = header_tester, .kb1 = 0x08u, .kb2 = 0x08u };
-    tmrOps.timeSample = 0u;
 
     dataLink = (dataLink_if_t)
     {

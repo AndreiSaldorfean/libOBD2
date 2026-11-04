@@ -75,6 +75,7 @@ struct dataLink_if
     /* Timing layer */
     obd_timing_ops_t *pTimingOps;
     void *pTimingHandle;
+    uint32_t timeSample; /* start of the running P2 window, set by DL_StartTimeout */
 
     /* Protocol-specific context (e.g., l2_kwp_ctx_t) */
     void *pProtocolCtx;

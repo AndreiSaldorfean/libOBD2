@@ -54,6 +54,7 @@ void targetRunTests()
     RUN_TEST(test_DL_ReadByteInTimeframe_000);
     RUN_TEST(test_DL_ReadByteInTimeframe_TooEarly);
     RUN_TEST(test_DL_ReadByteInTimeframe_NoByte);
+    RUN_TEST(test_DL_TimeSample_PerLink);
     RUN_TEST(test_DL_RecvByteBlocking_000);
     RUN_TEST(test_DL_RecvByteBlocking_NoByte);
     RUN_TEST(test_DL_SendByteBitBanged_000);

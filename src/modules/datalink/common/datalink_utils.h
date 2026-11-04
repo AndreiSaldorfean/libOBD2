@@ -14,8 +14,8 @@
 #endif /* SPT_TRACING */
 
 /* ================================================= MACROS ================================================ */
-#define LIBOBD_SetTimeSample(handle, val)    (handle->pTimingOps->timeSample = val)
-#define LIBOBD_GetTimeSample(handle)         (handle->pTimingOps->timeSample)
+#define LIBOBD_SetTimeSample(handle, val)    (handle->timeSample = val)
+#define LIBOBD_GetTimeSample(handle)         (handle->timeSample)
 #define LIBOBD_TimingInit(handle)            (handle->pTimingOps->timer_init(handle->pTimingHandle))
 #define LIBOBD_GetTimeMs(handle)             (handle->pTimingOps->get_time_ms(handle->pTimingHandle))
 #define LIBOBD_Delay(handle, delay)          (handle->pTimingOps->delay_ms(handle->pTimingHandle, delay))

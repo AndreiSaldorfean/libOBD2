@@ -112,7 +112,6 @@ static void setUpLine(void)
     TEST_ASSERT_TRUE(LIBOBD2_UART_Init(&uartCtx));
 
     protoCtx = (l2_iso9141_ctx_t){ .header = header_tester, .kb1 = 0x08u, .kb2 = 0x08u };
-    tmrOps.timeSample = 0u;
     pulseCnt = 0u;
     modeCnt  = 0u;
 
@@ -372,4 +371,22 @@ void test_DL_Api_NotConnected(void)
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_SendRequest(&dataLink, &data, 2u).response);
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_RecvResponse(&dataLink, &data, &len).response);
     TEST_ASSERT_EQUAL_UINT32(0u, timer.timeNow);
+}
+
+/******************************************************************
+ * Two links sharing one timing ops table keep their own P2 start.
+ ******************************************************************/
+void test_DL_TimeSample_PerLink(void)
+{
+    dataLink_if_t other = {0};
+
+    setUpLine();
+    other = dataLink;
+
+    DL_StartTimeout(&dataLink, P2_TIME_MAX);
+    LIBOBD2_TMR_DelayMs(&timer, 100u);
+    DL_StartTimeout(&other, P2_TIME_MAX);
+
+    TEST_ASSERT_EQUAL_UINT32(0u, dataLink.timeSample);
+    TEST_ASSERT_EQUAL_UINT32(100u, other.timeSample);
 }
