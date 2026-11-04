@@ -61,10 +61,10 @@ endif()
 file(GLOB SOURCES
     "./src/modules/app/*.c"
     "./src/modules/datalink/common/*.c"
-    "./src/modules/datalink/specific/l2_iso9141/*.c"
-    "./src/modules/datalink/specific/l2_kwp2000/*.c"
+    "./src/modules/datalink/specific/iso9141/*.c"
+    "./src/modules/datalink/specific/kwp2000/*.c"
     "./src/modules/utils/common/*.c"
-    "./src/data_link/l2_kwp/*.c"
+    "./src/data_link/kwp/*.c"
 )
 
 add_library(${PROJECT_NAME} ${SOURCES})
@@ -113,8 +113,8 @@ target_include_directories(${PROJECT_NAME}
     PUBLIC
     ./include/
     ./src/modules/datalink/common
-    ./src/modules/datalink/specific/l2_iso9141/
-    ./src/modules/datalink/specific/l2_kwp2000/
+    ./src/modules/datalink/specific/iso9141/
+    ./src/modules/datalink/specific/kwp2000/
     ./src/modules/utils/common/
     ./src/modules/app/
 )

@@ -1,6 +1,6 @@
 /* ================================================ INCLUDES =============================================== */
 #include "datalink.h"
-#include "l2_iso9141_priv.h"
+#include "iso9141_priv.h"
 #include "statusRetCodes.h"
 #include "utils.h"
 
@@ -8,21 +8,21 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-OBD2_STATIC obd_status_t L2_ISO9141_WaitForResponseStart(dataLink_if_t *self, uint8_t *respByte);
+OBD2_STATIC obd_status_t ISO9141_WaitForResponseStart(dataLink_if_t *self, uint8_t *respByte);
 
-OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t* len);
+OBD2_STATIC obd_status_t ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t* len);
 
-OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Validate(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
-OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Execute(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
-OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Verify(const obd_data_t *resp);
+OBD2_STATIC obd_status_t ISO9141_RecvResponse_Validate(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
+OBD2_STATIC obd_status_t ISO9141_RecvResponse_Execute(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
+OBD2_STATIC obd_status_t ISO9141_RecvResponse_Verify(const obd_data_t *resp);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /******************************************
-* title: L2_ISO9141_WaitForResponseStart
+* title: ISO9141_WaitForResponseStart
 * brief: Waits for the first byte (format byte) of an ECU response inside
 *        the P2 window, then stops the P2 timeout. UART/timer errors go in .response.
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_WaitForResponseStart(dataLink_if_t *self, uint8_t *respByte)
+OBD2_STATIC obd_status_t ISO9141_WaitForResponseStart(dataLink_if_t *self, uint8_t *respByte)
 {
     obd_status_t status = {0};
     obd_uart_rx_status_t rxStatus = OBD_UART_RX_NO_DATA;
@@ -55,13 +55,13 @@ exit:
 }
 
 /******************************************
-* title: L2_ISO9141_RecvMessage
+* title: ISO9141_RecvMessage
 * brief: Reads one frame byte by byte until one equals the running checksum,
 *        skipping header.len if absent. Restarts the P2 timeout at the end.
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t* len)
+OBD2_STATIC obd_status_t ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t* len)
 {
-    const l2_iso9141_ctx_t *ctx = NULL;
+    const iso9141_ctx_t *ctx = NULL;
     uint8_t *pMsg       = (uint8_t *)recvdMsg;
     obd_status_t status = {0};
     obd_status_t restartStatus = {0};
@@ -74,9 +74,9 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *
     OBD2_DEBUG_ASSERT((NULL != self) && (NULL != self->pProtocolCtx));
     OBD2_DEBUG_ASSERT((NULL != recvdMsg) && (NULL != len));
 
-    ctx = (const l2_iso9141_ctx_t *)(self->pProtocolCtx);
+    ctx = (const iso9141_ctx_t *)(self->pProtocolCtx);
 
-    status = L2_ISO9141_WaitForResponseStart(self, &byteRead);
+    status = ISO9141_WaitForResponseStart(self, &byteRead);
     OBD2_ASSERT_BYTE_RECVD(status, OBD_ERR_COMM_FMT_BYTE_NOT_RECVD);
 
     runningCheckSum = byteRead;
@@ -127,11 +127,11 @@ exit:
 }
 
 /******************************************
-* title: L2_ISO9141_RecvResponse_Validate
-* brief: Checks the arguments of l2_iso9141_recv_response. The link itself is
+* title: ISO9141_RecvResponse_Validate
+* brief: Checks the arguments of iso9141_recv_response. The link itself is
 *        checked by DL_RecvResponse.
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Validate(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
+OBD2_STATIC obd_status_t ISO9141_RecvResponse_Validate(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
 {
     obd_status_t status = {0};
 
@@ -146,15 +146,15 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Validate(dataLink_if_t *self, o
 }
 
 /******************************************
-* title: L2_ISO9141_RecvResponse_Execute
+* title: ISO9141_RecvResponse_Execute
 * brief: Receives one frame and copies its data part to resp.
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Execute(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
+OBD2_STATIC obd_status_t ISO9141_RecvResponse_Execute(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
 {
     message_t recvdMsg = {0};
     obd_status_t status;
 
-    status = L2_ISO9141_RecvMessage(self, &recvdMsg, dataLen);
+    status = ISO9141_RecvMessage(self, &recvdMsg, dataLen);
     OBD2_ASSERT_OK(status);
 
     *resp = recvdMsg.data;
@@ -165,10 +165,10 @@ exit:
 }
 
 /******************************************
-* title: L2_ISO9141_RecvResponse_Verify
+* title: ISO9141_RecvResponse_Verify
 * brief: Checks that the ECU did not answer with a negative response (0x7F).
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Verify(const obd_data_t *resp)
+OBD2_STATIC obd_status_t ISO9141_RecvResponse_Verify(const obd_data_t *resp)
 {
     obd_status_t status = {0};
 
@@ -182,18 +182,18 @@ OBD2_STATIC obd_status_t L2_ISO9141_RecvResponse_Verify(const obd_data_t *resp)
 
 /* ================================================ MODULE API ============================================= */
 /******************************************
-* title: l2_iso9141_recv_response
+* title: iso9141_recv_response
 * brief: Receives the ECU response to the last request over ISO9141-2.
 ******************************************/
-obd_status_t l2_iso9141_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
+obd_status_t iso9141_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen)
 {
     obd_status_t status = {0};
 
-    status = L2_ISO9141_RecvResponse_Validate(self, resp, dataLen);
+    status = ISO9141_RecvResponse_Validate(self, resp, dataLen);
     OBD2_ASSERT_OK(status);
-    status = L2_ISO9141_RecvResponse_Execute(self, resp, dataLen);
+    status = ISO9141_RecvResponse_Execute(self, resp, dataLen);
     OBD2_ASSERT_OK(status);
-    status = L2_ISO9141_RecvResponse_Verify(resp);
+    status = ISO9141_RecvResponse_Verify(resp);
 
 exit:
     return status;

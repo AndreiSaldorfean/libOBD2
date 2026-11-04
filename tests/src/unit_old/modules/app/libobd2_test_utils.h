@@ -2,8 +2,8 @@
 #define LIBOBD2_TEST_UTILS_H
 /* ================================================ INCLUDES =============================================== */
 #include "datalink.h"
-#include "l2_iso9141.h"
-#include "l2_kwp2000.h"
+#include "iso9141.h"
+#include "kwp2000.h"
 #include "libobd2_timer_port.h"
 #include "libobd2.h"
 #include "statusRetCodes.h"
@@ -58,8 +58,8 @@ extern uart_ctx_t uartCtxTx;
 extern uart_ctx_t uartCtxRx;
 // extern timerCtx_t tmrCtxRx;
 extern obd_uart_ops_t transportOps;
-extern l2_iso9141_ctx_t iso9141CtxTx;
-extern l2_iso9141_ctx_t iso9141CtxRx;
+extern iso9141_ctx_t iso9141CtxTx;
+extern iso9141_ctx_t iso9141CtxRx;
 extern dataLink_if_t dataLink_00;
 extern dataLink_if_t dataLink_tx;
 extern dataLink_if_t dataLink_rx;

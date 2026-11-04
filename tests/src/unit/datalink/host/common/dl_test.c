@@ -2,7 +2,7 @@
 #include "dl_test.h"
 #include "datalink.h"
 #include "datalink_utils.h"
-#include "l2_iso9141.h"
+#include "iso9141.h"
 #include "libobd2_timer_port.h"
 #include "libobd2_uart_port.h"
 #include "statusRetCodes.h"
@@ -20,7 +20,7 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 static virtTmrCtx_t timer;
 static virtUartLinkCtx_t uartCtx;
-static l2_iso9141_ctx_t protoCtx;
+static iso9141_ctx_t protoCtx;
 static dataLink_if_t dataLink;
 
 /* What the bit-banged byte looked like on the line */
@@ -111,7 +111,7 @@ static void setUpLine(void)
     uartCtx.faults          = (virtUartFaultHooks_t){0};
     TEST_ASSERT_TRUE(UART_Init(&uartCtx));
 
-    protoCtx = (l2_iso9141_ctx_t){ .header = header_tester, .kb1 = 0x08u, .kb2 = 0x08u };
+    protoCtx = (iso9141_ctx_t){ .header = header_tester, .kb1 = 0x08u, .kb2 = 0x08u };
     pulseCnt = 0u;
     modeCnt  = 0u;
 
@@ -122,9 +122,9 @@ static void setUpLine(void)
         .pTimingHandle    = &timer,
         .pUartOps         = &uartOps,
         .pTransportHandle = &uartCtx,
-        .connect          = l2_iso9141_connect,
-        .send_request     = l2_iso9141_send_request,
-        .recv_response    = l2_iso9141_recv_response,
+        .connect          = iso9141_connect,
+        .send_request     = iso9141_send_request,
+        .recv_response    = iso9141_recv_response,
     };
 }
 
@@ -317,9 +317,9 @@ void test_DL_Connect_000(void)
 
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
-    TEST_ASSERT_EQUAL_PTR(l2_iso9141_connect, dataLink.connect);
-    TEST_ASSERT_EQUAL_PTR(l2_iso9141_send_request, dataLink.send_request);
-    TEST_ASSERT_EQUAL_PTR(l2_iso9141_recv_response, dataLink.recv_response);
+    TEST_ASSERT_EQUAL_PTR(iso9141_connect, dataLink.connect);
+    TEST_ASSERT_EQUAL_PTR(iso9141_send_request, dataLink.send_request);
+    TEST_ASSERT_EQUAL_PTR(iso9141_recv_response, dataLink.recv_response);
     TEST_ASSERT_EQUAL_HEX8(header_tester.fmt, protoCtx.header.fmt);
     TEST_ASSERT_EQUAL_HEX8(header_tester.trgAddr, protoCtx.header.trgAddr);
     TEST_ASSERT_EQUAL_HEX8(header_tester.srcAddr, protoCtx.header.srcAddr);

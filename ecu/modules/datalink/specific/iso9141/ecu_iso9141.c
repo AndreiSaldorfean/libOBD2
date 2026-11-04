@@ -1,5 +1,5 @@
 /* ================================================ INCLUDES =============================================== */
-#include "l2_iso9141.h"
+#include "iso9141.h"
 #include "datalink.h"
 #include "datalink_utils.h"
 #include "libobd2.h"
@@ -14,11 +14,11 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-OBD2_STATIC uint8_t ECU_L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t len);
-OBD2_STATIC obd_status_t ECU_L2_ISO9141_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len);
-OBD2_STATIC obd_status_t ECU_L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t* len);
-OBD2_STATIC OBD2_INLINE obd_status_t ECU_L2_ISO9141_ReadHeader(dataLink_if_t *self, header_t *header);
-OBD2_STATIC void ECU_L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len, size_t dataLen);
+OBD2_STATIC uint8_t ECU_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t len);
+OBD2_STATIC obd_status_t ECU_ISO9141_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len);
+OBD2_STATIC obd_status_t ECU_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t* len);
+OBD2_STATIC OBD2_INLINE obd_status_t ECU_ISO9141_ReadHeader(dataLink_if_t *self, header_t *header);
+OBD2_STATIC void ECU_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len, size_t dataLen);
 
 static inline void startTimeout(dataLink_if_t *self, uint32_t timeout);
 static inline bool isTimeoutMinDone(dataLink_if_t *self, uint32_t minTimeout);
@@ -39,7 +39,7 @@ static inline void startTimeout(dataLink_if_t *self, uint32_t timeout)
     LIBOBD2_TMR_StartTimeout(self, timeout);
 }
 
-OBD2_STATIC uint8_t ECU_L2_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t len)
+OBD2_STATIC uint8_t ECU_ISO9141_ComputeChecksum(header_t header, obd_data_t data, size_t len)
 {
     uint8_t *hdr      = (uint8_t *)&header;
     uint8_t *serviceRequests      = (uint8_t *)&data;
@@ -59,7 +59,7 @@ OBD2_STATIC uint8_t ECU_L2_ISO9141_ComputeChecksum(header_t header, obd_data_t d
     return checksum % 256;
 }
 
-OBD2_STATIC OBD2_INLINE obd_status_t ECU_L2_ISO9141_ReadHeader(dataLink_if_t *self, header_t *header)
+OBD2_STATIC OBD2_INLINE obd_status_t ECU_ISO9141_ReadHeader(dataLink_if_t *self, header_t *header)
 {
     uint8_t *buffer     = (uint8_t *)header;
     obd_status_t status = {0};
@@ -86,7 +86,7 @@ exit:
     return status;
 }
 
-OBD2_STATIC obd_status_t ECU_L2_ISO9141_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len)
+OBD2_STATIC obd_status_t ECU_ISO9141_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len)
 {
     obd_status_t status = {0};
 
@@ -105,13 +105,13 @@ OBD2_STATIC obd_status_t ECU_L2_ISO9141_SendMessage(dataLink_if_t *self, uint8_t
     return status;
 }
 
-OBD2_STATIC obd_status_t ECU_L2_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t* len)
+OBD2_STATIC obd_status_t ECU_ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t* len)
 {
     uint8_t *pMsg       = (uint8_t *)recvdMsg;
     obd_status_t status = {0};
     uint8_t idx         = 0;
 
-    status = ECU_L2_ISO9141_ReadHeader(self, &recvdMsg->header);
+    status = ECU_ISO9141_ReadHeader(self, &recvdMsg->header);
     OBD2_ASSERT_OK(status);
 
     // Read data
@@ -131,7 +131,7 @@ exit:
     return status;
 }
 
-OBD2_STATIC void ECU_L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len, size_t dataLen)
+OBD2_STATIC void ECU_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t *len, size_t dataLen)
 {
     size_t idx = 0;
 
@@ -151,9 +151,9 @@ OBD2_STATIC void ECU_L2_ISO9141_PrepareMessage(message_t *sentMsg, uint8_t *aSen
         *len = idx;
 }
 
-OBD2_STATIC obd_status_t ECU_L2_ISO9141_5BaudInit(dataLink_if_t *self)
+OBD2_STATIC obd_status_t ECU_ISO9141_5BaudInit(dataLink_if_t *self)
 {
-    l2_iso9141_ctx_t *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
+    iso9141_ctx_t *ctx = (iso9141_ctx_t *)(self->pProtocolCtx);
     obd_status_t status = {0};
     (void)status;
     (void)ctx;
@@ -203,18 +203,18 @@ exit:
 }
 
 /* ================================================ MODULE API ============================================= */
-obd_status_t ecu_l2_iso9141_connect(dataLink_if_t *self, uint8_t* protocol)
+obd_status_t ecu_iso9141_connect(dataLink_if_t *self, uint8_t* protocol)
 {
-    l2_iso9141_ctx_t  *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
-    memset(ctx, 0, sizeof(l2_iso9141_ctx_t));
+    iso9141_ctx_t  *ctx = (iso9141_ctx_t *)(self->pProtocolCtx);
+    memset(ctx, 0, sizeof(iso9141_ctx_t));
     *protocol = ISO9141;
 
-    return ECU_L2_ISO9141_5BaudInit(self);
+    return ECU_ISO9141_5BaudInit(self);
 }
 
-obd_status_t ecu_l2_iso9141_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t len)
+obd_status_t ecu_iso9141_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t len)
 {
-    l2_iso9141_ctx_t ctx = *(l2_iso9141_ctx_t *)(self->pProtocolCtx);
+    iso9141_ctx_t ctx = *(iso9141_ctx_t *)(self->pProtocolCtx);
     uint8_t aMessage[11] = {0};
     obd_status_t status;
     size_t msgLen = 0;
@@ -228,12 +228,12 @@ obd_status_t ecu_l2_iso9141_send_request(dataLink_if_t *self, const obd_data_t *
     message.header.srcAddr = ctx.header.srcAddr;
 
     message.data = data;
-    message.cs = ECU_L2_ISO9141_ComputeChecksum(message.header, data, len);
+    message.cs = ECU_ISO9141_ComputeChecksum(message.header, data, len);
 
-    ECU_L2_ISO9141_PrepareMessage(&message, aMessage, &msgLen, len);
+    ECU_ISO9141_PrepareMessage(&message, aMessage, &msgLen, len);
 
     status.response = OBD_ERR_COMM_SEND_MSG_FAILED;
-    status = ECU_L2_ISO9141_SendMessage(self, aMessage, msgLen);
+    status = ECU_ISO9141_SendMessage(self, aMessage, msgLen);
     OBD2_ASSERT_OK(status);
 
     memset(&status, 0, sizeof(obd_status_t));
@@ -241,13 +241,13 @@ exit:
     return status;
 }
 
-obd_status_t ecu_l2_iso9141_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t *len)
+obd_status_t ecu_iso9141_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t *len)
 {
     message_t recvdMsg = {0};
     obd_status_t status;
 
     status.response = OBD_ERR_COMM_RECV_MSG_FAILED;
-    status = ECU_L2_ISO9141_RecvMessage(self, &recvdMsg, len);
+    status = ECU_ISO9141_RecvMessage(self, &recvdMsg, len);
     OBD2_ASSERT_OK(status);
 
     *resp = recvdMsg.data;

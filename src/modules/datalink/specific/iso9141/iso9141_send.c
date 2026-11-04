@@ -1,24 +1,24 @@
 /* ================================================ INCLUDES =============================================== */
-#include "l2_iso9141_priv.h"
+#include "iso9141_priv.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-OBD2_STATIC uint8_t L2_ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen);
-OBD2_STATIC size_t L2_ISO9141_SerializeMessage(const message_t *msg, uint8_t *frame, size_t dataLen);
-OBD2_STATIC obd_status_t L2_ISO9141_SendMessage(dataLink_if_t *self, const uint8_t *frame, size_t frameLen);
+OBD2_STATIC uint8_t ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen);
+OBD2_STATIC size_t ISO9141_SerializeMessage(const message_t *msg, uint8_t *frame, size_t dataLen);
+OBD2_STATIC obd_status_t ISO9141_SendMessage(dataLink_if_t *self, const uint8_t *frame, size_t frameLen);
 
-OBD2_STATIC obd_status_t L2_ISO9141_SendRequest_Validate(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
-OBD2_STATIC obd_status_t L2_ISO9141_SendRequest_Execute(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
+OBD2_STATIC obd_status_t ISO9141_SendRequest_Validate(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
+OBD2_STATIC obd_status_t ISO9141_SendRequest_Execute(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /******************************************
-* title: L2_ISO9141_ComputeChecksum
+* title: ISO9141_ComputeChecksum
 * brief: Returns the ISO9141 checksum: the sum of the 3 header bytes and
 *        dataLen data bytes, modulo 256.
 ******************************************/
-OBD2_STATIC uint8_t L2_ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen)
+OBD2_STATIC uint8_t ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen)
 {
     const uint8_t *dataBytes = (const uint8_t *)data;
     uint8_t checksum = 0;
@@ -36,11 +36,11 @@ OBD2_STATIC uint8_t L2_ISO9141_ComputeChecksum(const header_t *header, const obd
 }
 
 /******************************************
-* title: L2_ISO9141_SerializeMessage
+* title: ISO9141_SerializeMessage
 * brief: Writes header, sid, params and checksum into frame and returns the
 *        number of bytes written (dataLen + ISO9141_WIRE_OVERHEAD).
 ******************************************/
-OBD2_STATIC size_t L2_ISO9141_SerializeMessage(const message_t *msg, uint8_t *frame, size_t dataLen)
+OBD2_STATIC size_t ISO9141_SerializeMessage(const message_t *msg, uint8_t *frame, size_t dataLen)
 {
     size_t idx = 0;
 
@@ -66,11 +66,11 @@ OBD2_STATIC size_t L2_ISO9141_SerializeMessage(const message_t *msg, uint8_t *fr
 }
 
 /******************************************
-* title: L2_ISO9141_SendMessage
+* title: ISO9141_SendMessage
 * brief: Waits P3, sends the frame with P4 between bytes, then starts the
 *        P2 timeout for the ECU response.
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_SendMessage(dataLink_if_t *self, const uint8_t *frame, size_t frameLen)
+OBD2_STATIC obd_status_t ISO9141_SendMessage(dataLink_if_t *self, const uint8_t *frame, size_t frameLen)
 {
     obd_status_t status = {0};
 
@@ -95,11 +95,11 @@ OBD2_STATIC obd_status_t L2_ISO9141_SendMessage(dataLink_if_t *self, const uint8
 }
 
 /******************************************
-* title: L2_ISO9141_SendRequest_Validate
-* brief: Checks the arguments of l2_iso9141_send_request. The link itself is
+* title: ISO9141_SendRequest_Validate
+* brief: Checks the arguments of iso9141_send_request. The link itself is
 *        checked by DL_SendRequest.
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_SendRequest_Validate(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
+OBD2_STATIC obd_status_t ISO9141_SendRequest_Validate(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
 {
     obd_status_t status = {0};
 
@@ -118,35 +118,35 @@ OBD2_STATIC obd_status_t L2_ISO9141_SendRequest_Validate(dataLink_if_t *self, co
 }
 
 /******************************************
-* title: L2_ISO9141_SendRequest_Execute
+* title: ISO9141_SendRequest_Execute
 * brief: Builds the request with the header from the context, adds the
 *        checksum, serializes it and sends it.
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_SendRequest_Execute(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
+OBD2_STATIC obd_status_t ISO9141_SendRequest_Execute(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
 {
-    const l2_iso9141_ctx_t *ctx = (const l2_iso9141_ctx_t *)(self->pProtocolCtx);
+    const iso9141_ctx_t *ctx = (const iso9141_ctx_t *)(self->pProtocolCtx);
     message_t msg = { .header = ctx->header, .data = *serviceRequests };
     uint8_t frame[ISO9141_MAX_FRAME_LEN] = {0};
     size_t frameLen = 0;
 
-    msg.cs   = L2_ISO9141_ComputeChecksum(&msg.header, &msg.data, dataLen);
-    frameLen = L2_ISO9141_SerializeMessage(&msg, frame, dataLen);
+    msg.cs   = ISO9141_ComputeChecksum(&msg.header, &msg.data, dataLen);
+    frameLen = ISO9141_SerializeMessage(&msg, frame, dataLen);
 
-    return L2_ISO9141_SendMessage(self, frame, frameLen);
+    return ISO9141_SendMessage(self, frame, frameLen);
 }
 
 /* ================================================ MODULE API ============================================= */
 /******************************************
-* title: l2_iso9141_send_request
+* title: iso9141_send_request
 * brief: Sends an OBD service request to the ECU over ISO9141-2.
 ******************************************/
-obd_status_t l2_iso9141_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
+obd_status_t iso9141_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen)
 {
     obd_status_t status = {0};
 
-    status = L2_ISO9141_SendRequest_Validate(self, serviceRequests, dataLen);
+    status = ISO9141_SendRequest_Validate(self, serviceRequests, dataLen);
     OBD2_ASSERT_OK(status);
-    status = L2_ISO9141_SendRequest_Execute(self, serviceRequests, dataLen);
+    status = ISO9141_SendRequest_Execute(self, serviceRequests, dataLen);
 
 exit:
     return status;

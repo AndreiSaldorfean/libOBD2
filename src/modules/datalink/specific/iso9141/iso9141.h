@@ -1,5 +1,5 @@
-#ifndef L2_ISO9141_H
-#define L2_ISO9141_H
+#ifndef ISO9141_H
+#define ISO9141_H
 
 /* ================================================ INCLUDES =============================================== */
 #include "statusRetCodes.h"
@@ -25,28 +25,28 @@ typedef struct
     uint8_t protocol;
     uint8_t kb1;
     uint8_t kb2;
-}l2_iso9141_ctx_t;
+}iso9141_ctx_t;
 
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 /******************************************
-* title: l2_iso9141_connect
+* title: iso9141_connect
 * brief: Opens an ISO9141-2 connection to the ECU (5-baud init) and stores
 *        the header to use in the protocol context.
 ******************************************/
-obd_status_t l2_iso9141_connect(dataLink_if_t *self, uint8_t* protocol);
+obd_status_t iso9141_connect(dataLink_if_t *self, uint8_t* protocol);
 
 /******************************************
-* title: l2_iso9141_send_request
+* title: iso9141_send_request
 * brief: Sends an OBD service request to the ECU over ISO9141-2.
 ******************************************/
-obd_status_t l2_iso9141_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
+obd_status_t iso9141_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
 
 /******************************************
-* title: l2_iso9141_recv_response
+* title: iso9141_recv_response
 * brief: Receives the ECU response to the last request over ISO9141-2.
 ******************************************/
-obd_status_t l2_iso9141_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
+obd_status_t iso9141_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
 
-#endif /* L2_ISO9141_H */
+#endif /* ISO9141_H */

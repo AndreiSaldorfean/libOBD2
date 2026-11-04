@@ -1,6 +1,6 @@
 /* ================================================ INCLUDES =============================================== */
 #include "libobd2_test_utils.h"
-#include "l2_iso9141.h"
+#include "iso9141.h"
 #include "libobd2_uart_port.h"
 #define STM32F4
 #include "libopencm3/stm32/f4/rcc.h"
@@ -147,7 +147,7 @@ obd_uart_ops_t transportOps =
     .flush_rx    = UART_FlushRx,
 };
 
-l2_iso9141_ctx_t iso9141CtxTx =
+iso9141_ctx_t iso9141CtxTx =
 {
     .header =
     {
@@ -157,7 +157,7 @@ l2_iso9141_ctx_t iso9141CtxTx =
     },
 };
 
-l2_iso9141_ctx_t iso9141CtxRx =
+iso9141_ctx_t iso9141CtxRx =
 {
     .header =
     {
@@ -174,9 +174,9 @@ dataLink_if_t dataLink_00 =
     .pTimingHandle    = &tmrCtxTx,
     .pTransportHandle = &uartCtxTx,
     .pUartOps    = &transportOps,
-    .connect          = l2_iso9141_connect,
-    .send_request     = l2_iso9141_send_request,
-    .recv_response    = l2_iso9141_recv_response,
+    .connect          = iso9141_connect,
+    .send_request     = iso9141_send_request,
+    .recv_response    = iso9141_recv_response,
 };
 
 dataLink_if_t dataLink_tx =
@@ -186,9 +186,9 @@ dataLink_if_t dataLink_tx =
     .pTimingHandle    = &tmrCtxTx,
     .pTransportHandle = &uartCtxTx,
     .pUartOps    = &transportOps,
-    .connect          = l2_iso9141_connect,
-    .send_request     = l2_iso9141_send_request,
-    .recv_response    = l2_iso9141_recv_response,
+    .connect          = iso9141_connect,
+    .send_request     = iso9141_send_request,
+    .recv_response    = iso9141_recv_response,
 };
 dataLink_if_t dataLink_rx =
 {
@@ -197,9 +197,9 @@ dataLink_if_t dataLink_rx =
     .pTimingHandle    = &tmrCtxRx,
     .pTransportHandle = &uartCtxRx,
     .pUartOps    = &transportOps,
-    .connect          = l2_iso9141_connect,
-    .send_request     = l2_iso9141_send_request,
-    .recv_response    = l2_iso9141_recv_response,
+    .connect          = iso9141_connect,
+    .send_request     = iso9141_send_request,
+    .recv_response    = iso9141_recv_response,
 };
 obd_ctx_t ctxRx =
 {

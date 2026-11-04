@@ -77,7 +77,7 @@ struct dataLink_if
     void *pTimingHandle;
     uint32_t timeSample; /* start of the running P2 window, set by DL_StartTimeout */
 
-    /* Protocol-specific context (e.g., l2_kwp_ctx_t) */
+    /* Protocol-specific context (e.g., kwp_ctx_t) */
     void *pProtocolCtx;
 
     /* Data link operations */

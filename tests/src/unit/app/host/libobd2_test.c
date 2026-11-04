@@ -2,7 +2,7 @@
 #include "libobd2_test.h"
 #include "datalink.h"
 #include "iso15031_5.h"
-#include "l2_iso9141.h"
+#include "iso9141.h"
 #include "libobd2.h"
 #include "libobd2_timer_port.h"
 #include "libobd2_uart_port.h"
@@ -26,7 +26,7 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 static virtTmrCtx_t timer;
 static virtUartLinkCtx_t uartCtx;
-static l2_iso9141_ctx_t protoCtx;
+static iso9141_ctx_t protoCtx;
 static dataLink_if_t dataLink;
 static obd_ctx_t ctx;
 
@@ -46,7 +46,7 @@ static const header_t header_tester =
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-extern uint8_t L2_ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen);
+extern uint8_t ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen);
 
 static obd_tmr_status_t keepTimer(void *pHandle);
 static bool keepLine(void *handle);
@@ -97,7 +97,7 @@ static void setUpLine(void)
     uartCtx.faults          = (virtUartFaultHooks_t){0};
     TEST_ASSERT_TRUE(UART_Init(&uartCtx));
 
-    protoCtx = (l2_iso9141_ctx_t){ .header = header_tester, .kb1 = 0x08u, .kb2 = 0x08u };
+    protoCtx = (iso9141_ctx_t){ .header = header_tester, .kb1 = 0x08u, .kb2 = 0x08u };
 
     dataLink = (dataLink_if_t)
     {
@@ -106,9 +106,9 @@ static void setUpLine(void)
         .pTimingHandle    = &timer,
         .pUartOps         = &uartOps,
         .pTransportHandle = &uartCtx,
-        .connect          = l2_iso9141_connect,
-        .send_request     = l2_iso9141_send_request,
-        .recv_response    = l2_iso9141_recv_response,
+        .connect          = iso9141_connect,
+        .send_request     = iso9141_send_request,
+        .recv_response    = iso9141_recv_response,
     };
 
     ctx = (obd_ctx_t){ .pDataLink = &dataLink, .connectionStatus = 0 };
@@ -136,7 +136,7 @@ static uint32_t ecuQueueFrame(uint32_t reqEnd, const uint8_t *data, size_t dataL
     frame[frameLen++] = header_ecu.srcAddr;
     memcpy(&frame[frameLen], data, dataLen);
     frameLen += dataLen;
-    frame[frameLen++] = L2_ISO9141_ComputeChecksum(&header_ecu, &obdData, dataLen);
+    frame[frameLen++] = ISO9141_ComputeChecksum(&header_ecu, &obdData, dataLen);
 
     for (size_t idx = 0; idx < frameLen; idx++)
     {
@@ -205,7 +205,7 @@ void test_LIBOBD2_Init_000(void)
 {
     setUpLine();
     /* nothing is known about the protocol before the connect */
-    protoCtx = (l2_iso9141_ctx_t){0};
+    protoCtx = (iso9141_ctx_t){0};
     dataLink.connect       = NULL;
     dataLink.send_request  = NULL;
     dataLink.recv_response = NULL;
@@ -227,9 +227,9 @@ void test_LIBOBD2_Init_000(void)
 
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
-    TEST_ASSERT_EQUAL_PTR(l2_iso9141_connect, dataLink.connect);
-    TEST_ASSERT_EQUAL_PTR(l2_iso9141_send_request, dataLink.send_request);
-    TEST_ASSERT_EQUAL_PTR(l2_iso9141_recv_response, dataLink.recv_response);
+    TEST_ASSERT_EQUAL_PTR(iso9141_connect, dataLink.connect);
+    TEST_ASSERT_EQUAL_PTR(iso9141_send_request, dataLink.send_request);
+    TEST_ASSERT_EQUAL_PTR(iso9141_recv_response, dataLink.recv_response);
     TEST_ASSERT_EQUAL_HEX8(header_tester.fmt, protoCtx.header.fmt);
     TEST_ASSERT_EQUAL_HEX8(header_tester.trgAddr, protoCtx.header.trgAddr);
     TEST_ASSERT_EQUAL_HEX8(header_tester.srcAddr, protoCtx.header.srcAddr);

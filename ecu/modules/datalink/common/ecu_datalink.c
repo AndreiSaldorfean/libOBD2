@@ -1,15 +1,15 @@
 /* ================================================ INCLUDES =============================================== */
-#include "l2_kwp2000.h"
+#include "kwp2000.h"
 #include "ecu_datalink.h"
 #include "datalink_utils.h"
 #include "statusRetCodes.h"
-#include "ecu_l2_iso9141.h"
+#include "ecu_iso9141.h"
 #include "timing_if.h"
 #include "uart_if.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
-#include "l2_kwp2000.h"
+#include "kwp2000.h"
 
 /* ================================================= MACROS ================================================ */
 #define NUM_SPT_PROTOCOLS (1U)
@@ -17,19 +17,19 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 static dl_connect_t initProtocols[NUM_SPT_PROTOCOLS ] =
 {
-    [ISO9141] = ecu_l2_iso9141_connect,
+    [ISO9141] = ecu_iso9141_connect,
 };
 
 static dl_send_request_t sendRequests[NUM_SPT_PROTOCOLS] =
 {
 
-    [ISO9141] = ecu_l2_iso9141_send_request,
+    [ISO9141] = ecu_iso9141_send_request,
 };
 
 static dl_recv_response_t recvResponses[NUM_SPT_PROTOCOLS] =
 {
 
-    [ISO9141] = ecu_l2_iso9141_recv_response,
+    [ISO9141] = ecu_iso9141_recv_response,
 };
 
 /* ============================================ GLOBAL VARIABLES =========================================== */

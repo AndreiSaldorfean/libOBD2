@@ -1,5 +1,5 @@
-#ifndef L2_KWP2000_H
-#define L2_KWP2000_H
+#ifndef KWP2000_H
+#define KWP2000_H
 
 /* ================================================ INCLUDES =============================================== */
 #include "statusRetCodes.h"
@@ -42,13 +42,13 @@ typedef struct
     header_t header;
     uint8_t kb1;
     uint8_t kb2;
-}l2_kwp_ctx_t;
+}kwp_ctx_t;
 
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-obd_status_t l2_kwp_connect(dataLink_if_t *self, uint8_t* protocol);
-obd_status_t l2_kwp_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
-obd_status_t l2_kwp_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
+obd_status_t kwp_connect(dataLink_if_t *self, uint8_t* protocol);
+obd_status_t kwp_send_request(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
+obd_status_t kwp_recv_response(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
 
-#endif /* L2_KWP2000_H */
+#endif /* KWP2000_H */

@@ -1,10 +1,10 @@
-#ifndef L2_ISO9141_PRIV_H
-#define L2_ISO9141_PRIV_H
+#ifndef ISO9141_PRIV_H
+#define ISO9141_PRIV_H
 
-/* NOTE: Module-internal header. Include it only from l2_iso9141_*.c */
+/* NOTE: Module-internal header. Include it only from iso9141_*.c */
 
 /* ================================================ INCLUDES =============================================== */
-#include "l2_iso9141.h"
+#include "iso9141.h"
 #include "datalink.h"
 #include "datalink_utils.h"
 #include "libobd2.h"
@@ -38,4 +38,4 @@
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 
-#endif /* L2_ISO9141_PRIV_H */
+#endif /* ISO9141_PRIV_H */

@@ -16,7 +16,7 @@
 #include <time.h>
 #include "libobd2_timer_port.h"
 #include "utils.h"
-#include "l2_kwp2000.h"
+#include "kwp2000.h"
 
 /* ================================================= MACROS ================================================ */
 #define MSG_00_SIZE        (0x6U)
@@ -26,36 +26,36 @@ static volatile BaseType_t g_receiver_done = pdFALSE;
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-extern uint8_t L2_KWP_ComputeChecksum(header_t header, obd_data_t data);
-extern obd_status_t L2_KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len);
-extern obd_status_t L2_KWP_RecvMessage(dataLink_if_t *self, message_t *recvdMsg);
+extern uint8_t KWP_ComputeChecksum(header_t header, obd_data_t data);
+extern obd_status_t KWP_SendMessage(dataLink_if_t *self, uint8_t *msg, size_t len);
+extern obd_status_t KWP_RecvMessage(dataLink_if_t *self, message_t *recvdMsg);
 #if defined(SPT_FAST_INIT)
-extern obd_status_t L2_KWP_SRV_StartCommunication(dataLink_if_t *self);
-extern obd_status_t L2_KWP_SRV_SendData( dataLink_if_t *self, message_t *sentMsg, message_t *recvdMsg);
-extern obd_status_t L2_KWP_FastInit(dataLink_if_t *self);
-extern void L2_KWP_IdleBasedOnConnStatus(dataLink_if_t *self);
+extern obd_status_t KWP_SRV_StartCommunication(dataLink_if_t *self);
+extern obd_status_t KWP_SRV_SendData( dataLink_if_t *self, message_t *sentMsg, message_t *recvdMsg);
+extern obd_status_t KWP_FastInit(dataLink_if_t *self);
+extern void KWP_IdleBasedOnConnStatus(dataLink_if_t *self);
 #endif /* SPT_FAST_INIT */
 #if defined(SPT_CHANGE_TIMING_PARAM)
-extern obd_status_t L2_KWP_SRV_AccessTimingParameter(dataLink_if_t *self);
+extern obd_status_t KWP_SRV_AccessTimingParameter(dataLink_if_t *self);
 #endif /* SPT_CHANGE_TIMING_PARAM */
 #if defined(SPT_5BAUD_INIT)
-extern obd_status_t L2_KWP_5BaudInit(dataLink_if_t *self);
+extern obd_status_t KWP_5BaudInit(dataLink_if_t *self);
 #endif /* SPT_5BAUD_INIT */
-extern obd_status_t L2_KWP_ReadHeader(dataLink_if_t *self, header_t *header, size_t *headerLen);
-extern void L2_KWP2000_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
-static void test_L2_KWP_RecvMessage_000_Sender(void *param);
-static void test_L2_KWP_RecvMessage_000_Receiver(void *param);
-static void test_L2_KWP_ReadHeader_000_Sender(void *param);
-static void test_L2_KWP_ReadHeader_000_Receiver(void *param);
-static void test_l2_kwp_connect_000_Sender(void *param);
-static void test_l2_kwp_connect_000_Receiver(void *param);
-static void test_l2_kwp_send_request_000_Sender(void *param);
-static void test_l2_kwp_send_request_000_Receiver(void *param);
-static void test_l2_kwp_recv_response_000_Sender(void *param);
-static void test_l2_kwp_recv_response_000_Receiver(void *param);
+extern obd_status_t KWP_ReadHeader(dataLink_if_t *self, header_t *header, size_t *headerLen);
+extern void KWP2000_PrepareMessage(message_t *sentMsg, uint8_t *aSentMsg, size_t dataLen, size_t *len);
+static void test_KWP_RecvMessage_000_Sender(void *param);
+static void test_KWP_RecvMessage_000_Receiver(void *param);
+static void test_KWP_ReadHeader_000_Sender(void *param);
+static void test_KWP_ReadHeader_000_Receiver(void *param);
+static void test_kwp_connect_000_Sender(void *param);
+static void test_kwp_connect_000_Receiver(void *param);
+static void test_kwp_send_request_000_Sender(void *param);
+static void test_kwp_send_request_000_Receiver(void *param);
+static void test_kwp_recv_response_000_Sender(void *param);
+static void test_kwp_recv_response_000_Receiver(void *param);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
-static void test_L2_KWP_RecvMessage_000_Sender(void *param)
+static void test_KWP_RecvMessage_000_Sender(void *param)
 {
     dataLink_if_t *pDataLinkTx = &dataLink_tx;
     message_t response = {0};
@@ -71,7 +71,7 @@ static void test_L2_KWP_RecvMessage_000_Sender(void *param)
     (void)dataLink_00;
     (void)response;
 
-    L2_KWP2000_PrepareMessage(&msg, aSentMsg, dataLen, &len);
+    KWP2000_PrepareMessage(&msg, aSentMsg, dataLen, &len);
 
     // ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
@@ -82,7 +82,7 @@ static void test_L2_KWP_RecvMessage_000_Sender(void *param)
     vTaskDelete(NULL);
 }
 
-static void test_L2_KWP_RecvMessage_000_Receiver(void *param)
+static void test_KWP_RecvMessage_000_Receiver(void *param)
 {
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
     message_t response = {0};
@@ -100,7 +100,7 @@ static void test_L2_KWP_RecvMessage_000_Receiver(void *param)
     LIBOBD2_TMR_StartTimeout(pDataLinkRx, P2_TIME_MAX);
     LIBOBD2_TMR_Delay(pDataLinkRx, P2_TIME_MIN);
 
-    actual = L2_KWP_RecvMessage(pDataLinkRx, &response);
+    actual = KWP_RecvMessage(pDataLinkRx, &response);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
 
     LIBOBD2_UART_FlushRx(pDataLinkRx);
@@ -109,7 +109,7 @@ static void test_L2_KWP_RecvMessage_000_Receiver(void *param)
     vTaskDelete(NULL);
 }
 
-static void test_L2_KWP_ReadHeader_000_Sender(void *param)
+static void test_KWP_ReadHeader_000_Sender(void *param)
 {
     UnitySetTestFile(__FILE__);
     // dataLink_if_t *pDataLinkTx = &dataLink_tx;
@@ -123,7 +123,7 @@ static void test_L2_KWP_ReadHeader_000_Sender(void *param)
     vTaskDelete(NULL);
 }
 
-static void test_L2_KWP_ReadHeader_000_Receiver(void *param)
+static void test_KWP_ReadHeader_000_Receiver(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
@@ -136,16 +136,16 @@ static void test_L2_KWP_ReadHeader_000_Receiver(void *param)
 
     (void)param;
 
-    // Mirror the pattern used by test_L2_KWP_RecvMessage_000:
+    // Mirror the pattern used by test_KWP_RecvMessage_000:
     //   set timeSample = now, start 50ms timeout, busy-wait 25ms so the
-    //   P2_MIN elapsed-time check inside L2_KWP_ReadHeader always passes.
+    //   P2_MIN elapsed-time check inside KWP_ReadHeader always passes.
     timeSample = LIBOBD2_TMR_GetTimeMs(pDataLinkRx);
     LIBOBD2_TMR_SetTimeSample(pDataLinkRx, timeSample);
     LIBOBD2_TMR_StartTimeout(pDataLinkRx, P2_TIME_MAX);
     LIBOBD2_TMR_Delay(pDataLinkRx, P2_TIME_MIN);
 
-    actual = L2_KWP_ReadHeader(pDataLinkRx, &header, &headerLen);
-    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "L2_KWP_ReadHeader return");
+    actual = KWP_ReadHeader(pDataLinkRx, &header, &headerLen);
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "KWP_ReadHeader return");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(header_00.fmt, header.fmt, "fmt");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(header_00.trgAddr, header.trgAddr,  "trgAddr");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(header_00.srcAddr, header.srcAddr,  "srcAddr");
@@ -155,7 +155,7 @@ static void test_L2_KWP_ReadHeader_000_Receiver(void *param)
     vTaskDelete(NULL);
 }
 
-static void test_l2_kwp_connect_000_Sender(void *param)
+static void test_kwp_connect_000_Sender(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkTx = &dataLink_tx;
@@ -165,14 +165,14 @@ static void test_l2_kwp_connect_000_Sender(void *param)
 
     (void)param;
 
-    actual = l2_kwp_connect(pDataLinkTx, &protocol);
-    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_connect");
+    actual = kwp_connect(pDataLinkTx, &protocol);
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "kwp_connect");
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
 }
 
-static void test_l2_kwp_connect_000_Receiver(void *param)
+static void test_kwp_connect_000_Receiver(void *param)
 {
     UnitySetTestFile(__FILE__);
 
@@ -184,7 +184,7 @@ static void test_l2_kwp_connect_000_Receiver(void *param)
     vTaskDelete(NULL);
 }
 
-static void test_l2_kwp_send_request_000_Sender(void *param)
+static void test_kwp_send_request_000_Sender(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkTx = &dataLink_tx;
@@ -199,15 +199,15 @@ static void test_l2_kwp_send_request_000_Sender(void *param)
     LIBOBD2_TMR_StartTimeout(pDataLinkTx, P3_TIME_MAX);
     LIBOBD2_TMR_Delay(pDataLinkTx, P3_TIME_MIN);
 
-    actual = l2_kwp_send_request(pDataLinkTx, &request_00, 1);
+    actual = kwp_send_request(pDataLinkTx, &request_00, 1);
     LIBOBD2_TMR_StopTimeout(pDataLinkTx);
-    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_send_request");
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "kwp_send_request");
 
     g_sender_done = pdTRUE;
     vTaskDelete(NULL);
 }
 
-static void test_l2_kwp_send_request_000_Receiver(void *param)
+static void test_kwp_send_request_000_Receiver(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
@@ -226,7 +226,7 @@ static void test_l2_kwp_send_request_000_Receiver(void *param)
     vTaskDelete(NULL);
 }
 
-static void test_l2_kwp_recv_response_000_Sender(void *param)
+static void test_kwp_recv_response_000_Sender(void *param)
 {
     UnitySetTestFile(__FILE__);
     // dataLink_if_t      *pDataLinkTx = &dataLink_tx;
@@ -241,7 +241,7 @@ static void test_l2_kwp_recv_response_000_Sender(void *param)
     (void)msg_00;
     (void)dataLink_00;
 
-    L2_KWP2000_PrepareMessage(&msg, aSentMsg, dataLen, &len);
+    KWP2000_PrepareMessage(&msg, aSentMsg, dataLen, &len);
 
     // ECUSIM_SendMessage(pDataLinkTx, aSentMsg, len);
     TEST_ASSERT_EQUAL_OBD_STATUS(expected, actual);
@@ -250,7 +250,7 @@ static void test_l2_kwp_recv_response_000_Sender(void *param)
     vTaskDelete(NULL);
 }
 
-static void test_l2_kwp_recv_response_000_Receiver(void *param)
+static void test_kwp_recv_response_000_Receiver(void *param)
 {
     UnitySetTestFile(__FILE__);
     dataLink_if_t *pDataLinkRx = &dataLink_rx;
@@ -267,8 +267,8 @@ static void test_l2_kwp_recv_response_000_Receiver(void *param)
     LIBOBD2_TMR_StartTimeout(pDataLinkRx, P2_TIME_MAX);
     LIBOBD2_TMR_Delay(pDataLinkRx, P2_TIME_MIN);
 
-    actual = l2_kwp_recv_response(pDataLinkRx, &resp, &len);
-    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "l2_kwp_recv_response return");
+    actual = kwp_recv_response(pDataLinkRx, &resp, &len);
+    TEST_ASSERT_EQUAL_OBD_STATUS_MESSAGE(expected, actual, "kwp_recv_response return");
     TEST_ASSERT_EQUAL_HEX8_MESSAGE(0x81, resp.sid, "resp sid");
 
     g_receiver_done = pdTRUE;
@@ -281,22 +281,22 @@ static void test_l2_kwp_recv_response_000_Receiver(void *param)
 // Type: Positive
 // Steps:
 //  - Input dummy message 0xC1 0x33 0xF1 0x81 0x01
-//  - Call L2_KWP_ComputeChecksum with dummy data
+//  - Call KWP_ComputeChecksum with dummy data
 //  - Expected checksum 0x67
 // ==========================================================================================================
-void test_L2_KWP_ComputeChecksum_000(void)
+void test_KWP_ComputeChecksum_000(void)
 {
     uint8_t expected = 0x67U;
     uint8_t actual   = 0;
 
     // msg: 0xC1 0x33 0xF1 0x81 0x01 CS:0x67
-    actual = L2_KWP_ComputeChecksum(header_00, data_00);
+    actual = KWP_ComputeChecksum(header_00, data_00);
 
     TEST_ASSERT_EQUAL_HEX8(expected, actual);
 }
 
 // ==========================================================================================================
-// Description: Test correct usage of L2_KWP_SendMessage
+// Description: Test correct usage of KWP_SendMessage
 // Type: Positive
 // Steps:
 //  - Start max p3 timeout
@@ -304,7 +304,7 @@ void test_L2_KWP_ComputeChecksum_000(void)
 //  - Send msg
 //  - Expected response OBD_STATUS_OK
 // ==========================================================================================================
-void test_L2_KWP_SendMessage_000(void)
+void test_KWP_SendMessage_000(void)
 {
     dataLink_if_t *pDataLink = &dataLink_00;
     obd_status_t expected    = {0};
@@ -322,9 +322,9 @@ void test_L2_KWP_SendMessage_000(void)
     LIBOBD2_TMR_StartTimeout(pDataLink, P3_TIME_MAX);
     LIBOBD2_TMR_Delay(pDataLink, P3_TIME_MIN);
 
-    L2_KWP2000_PrepareMessage(&msg, buffer, dataLen, NULL);
+    KWP2000_PrepareMessage(&msg, buffer, dataLen, NULL);
 
-    actual = L2_KWP_SendMessage(pDataLink, buffer, MSG_00_SIZE);
+    actual = KWP_SendMessage(pDataLink, buffer, MSG_00_SIZE);
 
     LIBOBD2_TMR_StopTimeout(pDataLink);
 
@@ -332,7 +332,7 @@ void test_L2_KWP_SendMessage_000(void)
 }
 
 // ==========================================================================================================
-// Description: Test L2_KWP_SendMessage with incorrect min p3 time waited
+// Description: Test KWP_SendMessage with incorrect min p3 time waited
 // Type: Negative
 // Steps:
 //  - Start max p3 timeout
@@ -340,7 +340,7 @@ void test_L2_KWP_SendMessage_000(void)
 //  - Send msg
 //  - Expected response OBD_ERR_COMM_P3_TIMEOUT_MIN_ECU_TESTER
 // ==========================================================================================================
-void test_L2_KWP_SendMessage_001(void)
+void test_KWP_SendMessage_001(void)
 {
     dataLink_if_t *pDataLink = &dataLink_00;
     obd_status_t expected    = {0};
@@ -356,7 +356,7 @@ void test_L2_KWP_SendMessage_001(void)
         LIBOBD2_TMR_StartTimeout(pDataLink, P3_TIME_MAX);
         LIBOBD2_TMR_Delay(pDataLink, P3_TIME_MAX);
 
-        actual = L2_KWP_SendMessage(pDataLink, (uint8_t*)&msg_00, MSG_00_SIZE);
+        actual = KWP_SendMessage(pDataLink, (uint8_t*)&msg_00, MSG_00_SIZE);
 
         LIBOBD2_TMR_StopTimeout(pDataLink);
 
@@ -370,7 +370,7 @@ void test_L2_KWP_SendMessage_001(void)
         LIBOBD2_TMR_StartTimeout(pDataLink, P3_TIME_MAX);
         LIBOBD2_TMR_Delay(pDataLink, P3_TIME_MAX + 1);
 
-        actual = L2_KWP_SendMessage(pDataLink, (uint8_t*)&msg_00, MSG_00_SIZE);
+        actual = KWP_SendMessage(pDataLink, (uint8_t*)&msg_00, MSG_00_SIZE);
 
         LIBOBD2_TMR_StopTimeout(pDataLink);
 
@@ -379,7 +379,7 @@ void test_L2_KWP_SendMessage_001(void)
     }
 }
 
-// Description: Test L2_KWP_SendMessage with incorrect max p3 time waited
+// Description: Test KWP_SendMessage with incorrect max p3 time waited
 // Type: Negative
 // Steps:
 //  - Start max p3 timeout
@@ -387,7 +387,7 @@ void test_L2_KWP_SendMessage_001(void)
 //  - Send msg
 //  - Expected response OBD_ERR_COMM_P3_TIMEOUT_MAX_ECU_TESTER
 // ==========================================================================================================
-void test_L2_KWP_SendMessage_002(void)
+void test_KWP_SendMessage_002(void)
 {
     dataLink_if_t *pDataLink = &dataLink_00;
     obd_status_t  expected = {0};
@@ -403,7 +403,7 @@ void test_L2_KWP_SendMessage_002(void)
         LIBOBD2_TMR_StartTimeout(pDataLink, P3_TIME_MAX);
         LIBOBD2_TMR_Delay(pDataLink, P3_TIME_MIN - 1);
 
-        actual = L2_KWP_SendMessage(pDataLink, (uint8_t*)&msg_00, MSG_00_SIZE);
+        actual = KWP_SendMessage(pDataLink, (uint8_t*)&msg_00, MSG_00_SIZE);
 
         LIBOBD2_TMR_StopTimeout(pDataLink);
 
@@ -416,7 +416,7 @@ void test_L2_KWP_SendMessage_002(void)
         LIBOBD2_TMR_SetTimeSample(pDataLink, timeSample);
         LIBOBD2_TMR_StartTimeout(pDataLink, P3_TIME_MAX);
 
-        actual = L2_KWP_SendMessage(pDataLink, (uint8_t*)&msg_00, MSG_00_SIZE);
+        actual = KWP_SendMessage(pDataLink, (uint8_t*)&msg_00, MSG_00_SIZE);
 
         LIBOBD2_TMR_StopTimeout(pDataLink);
 
@@ -430,7 +430,7 @@ void test_L2_KWP_SendMessage_002(void)
 // Type:
 // Steps:
 // ==========================================================================================================
-void test_L2_KWP_RecvMessage_000(void)
+void test_KWP_RecvMessage_000(void)
 {
     TaskHandle_t senderTask = NULL;
     TaskHandle_t receiverTAsk = NULL;
@@ -441,7 +441,7 @@ void test_L2_KWP_RecvMessage_000(void)
 
     vTaskSuspendAll();
     status = xTaskCreate(
-        test_L2_KWP_RecvMessage_000_Receiver,
+        test_KWP_RecvMessage_000_Receiver,
         "Receiver Task",
         1024,
         NULL,
@@ -450,7 +450,7 @@ void test_L2_KWP_RecvMessage_000(void)
     TEST_ASSERT_EQUAL(pdPASS, status);
 
     status = xTaskCreate(
-        test_L2_KWP_RecvMessage_000_Sender,
+        test_KWP_RecvMessage_000_Sender,
         "Sender Task",
         256,
         NULL,
@@ -476,7 +476,7 @@ void test_L2_KWP_RecvMessage_000(void)
 // Type:
 // Steps:
 // ==========================================================================================================
-void test_L2_KWP_SRV_StartCommunication_000(void)
+void test_KWP_SRV_StartCommunication_000(void)
 {
     uint32_t expected = 0;
     uint32_t actual = 0;
@@ -489,7 +489,7 @@ void test_L2_KWP_SRV_StartCommunication_000(void)
 // Type:
 // Steps:
 // ==========================================================================================================
-void test_L2_KWP_SRV_SendData_000(void)
+void test_KWP_SRV_SendData_000(void)
 {
     uint32_t expected = 0;
     uint32_t actual = 0;
@@ -502,7 +502,7 @@ void test_L2_KWP_SRV_SendData_000(void)
 // Type:
 // Steps:
 // ==========================================================================================================
-void test_L2_KWP_FastInit_000(void)
+void test_KWP_FastInit_000(void)
 {
     uint32_t expected = 0;
     uint32_t actual = 0;
@@ -515,7 +515,7 @@ void test_L2_KWP_FastInit_000(void)
 // Type:
 // Steps:
 // ==========================================================================================================
-void test_L2_KWP_IdleBasedOnConnStatus_000(void)
+void test_KWP_IdleBasedOnConnStatus_000(void)
 {
     uint32_t expected = 0;
     uint32_t actual = 0;
@@ -530,7 +530,7 @@ void test_L2_KWP_IdleBasedOnConnStatus_000(void)
 // Type:
 // Steps:
 // ==========================================================================================================
-void test_L2_KWP_SRV_AccessTimingParameter_000(void)
+void test_KWP_SRV_AccessTimingParameter_000(void)
 {
     uint32_t expected = 0;
     uint32_t actual = 0;
@@ -545,7 +545,7 @@ void test_L2_KWP_SRV_AccessTimingParameter_000(void)
 // Type:
 // Steps:
 // ==========================================================================================================
-void test_L2_KWP_5BaudInit_000(void)
+void test_KWP_5BaudInit_000(void)
 {
     TaskHandle_t senderTask = NULL;
     TaskHandle_t receiverTAsk = NULL;
@@ -556,7 +556,7 @@ void test_L2_KWP_5BaudInit_000(void)
 
     vTaskSuspendAll();
     status = xTaskCreate(
-        test_L2_KWP_5BaudInit_000_Sender,
+        test_KWP_5BaudInit_000_Sender,
         "Receiver Task",
         256,
         NULL,
@@ -565,7 +565,7 @@ void test_L2_KWP_5BaudInit_000(void)
     TEST_ASSERT_EQUAL(pdPASS, status);
 
     status = xTaskCreate(
-        test_L2_KWP_5BaudInit_000_Receiver,
+        test_KWP_5BaudInit_000_Receiver,
         "Sender Task",
         256,
         NULL,
@@ -590,10 +590,10 @@ void test_L2_KWP_5BaudInit_000(void)
 // Steps:
 //  - ECU sim sends fmt (0xC1), trgAddr (0x33), srcAddr (0xF1) bytes
 //  - Receiver sets time sample, starts P2 timeout, delays P2_TIME_MIN before reading
-//  - Call L2_KWP_ReadHeader
+//  - Call KWP_ReadHeader
 //  - Expected: OBD_STATUS_OK, all header fields match header_00, headerLen == 3
 // ==========================================================================================================
-void test_L2_KWP_ReadHeader_000(void)
+void test_KWP_ReadHeader_000(void)
 {
     TaskHandle_t senderTask   = NULL;
     TaskHandle_t receiverTask = NULL;
@@ -604,7 +604,7 @@ void test_L2_KWP_ReadHeader_000(void)
 
     vTaskSuspendAll();
     status = xTaskCreate(
-        test_L2_KWP_ReadHeader_000_Sender,
+        test_KWP_ReadHeader_000_Sender,
         "Sender Task",
         256,
         NULL,
@@ -613,7 +613,7 @@ void test_L2_KWP_ReadHeader_000(void)
     TEST_ASSERT_EQUAL(pdPASS, status);
 
     status = xTaskCreate(
-        test_L2_KWP_ReadHeader_000_Receiver,
+        test_KWP_ReadHeader_000_Receiver,
         "Receiver Task",
         256,
         NULL,
@@ -637,7 +637,7 @@ void test_L2_KWP_ReadHeader_000(void)
 // Description: Test correct serialization of message_t into KWP wire-format byte array
 // Type: Positive
 // Steps:
-//  - Call L2_KWP2000_PrepareMessage with msg_00
+//  - Call KWP2000_PrepareMessage with msg_00
 //    {fmt=0xC1, trgAddr=0x33, srcAddr=0xF1, sid=0x81, param[0]=0x01, cs=0x67}
 //  - Expected output bytes: {0xC1, 0x33, 0xF1, 0x81, 0x01, 0x67}, length == MSG_00_SIZE (6)
 // ==========================================================================================================
@@ -648,7 +648,7 @@ void test_PrepareMessage_000(void)
     size_t        actualLen                   = 0;
     size_t dataLen = 2;
 
-    L2_KWP2000_PrepareMessage((message_t *)&msg_00, actual, dataLen, &actualLen);
+    KWP2000_PrepareMessage((message_t *)&msg_00, actual, dataLen, &actualLen);
 
     TEST_ASSERT_EQUAL_MESSAGE(MSG_00_SIZE, actualLen, "message length");
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, actual, MSG_00_SIZE);
@@ -658,11 +658,11 @@ void test_PrepareMessage_000(void)
 // Description: Test successful KWP2000 connection establishment via 5-baud initialization
 // Type: Positive
 // Steps:
-//  - l2_kwp_connect resets context, initializes timing and transport, then calls L2_KWP_Init
+//  - kwp_connect resets context, initializes timing and transport, then calls KWP_Init
 //  - ECU sim performs the full 5-baud handshake (sync, KB1, KB2, inverted address)
 //  - Expected: OBD_STATUS_OK, CONN_OK bit set in connection status
 // ==========================================================================================================
-void test_l2_kwp_connect_000(void)
+void test_kwp_connect_000(void)
 {
     TaskHandle_t senderTask   = NULL;
     TaskHandle_t receiverTask = NULL;
@@ -673,7 +673,7 @@ void test_l2_kwp_connect_000(void)
 
     vTaskSuspendAll();
     status = xTaskCreate(
-        test_l2_kwp_connect_000_Sender,
+        test_kwp_connect_000_Sender,
         "Sender Task",
         256,
         NULL,
@@ -682,7 +682,7 @@ void test_l2_kwp_connect_000(void)
     TEST_ASSERT_EQUAL(pdPASS, status);
 
     status = xTaskCreate(
-        test_l2_kwp_connect_000_Receiver,
+        test_kwp_connect_000_Receiver,
         "Receiver Task",
         256,
         NULL,
@@ -708,11 +708,11 @@ void test_l2_kwp_connect_000(void)
 // Steps:
 //  - Set iso9141CtxTx.header to known state (3-byte header format, len=0)
 //  - Set up P3 timing (start timeout, delay P3_TIME_MIN)
-//  - Call l2_kwp_send_request with request_00 (sid=0x81, param=0x01)
+//  - Call kwp_send_request with request_00 (sid=0x81, param=0x01)
 //  - ECU sim drains MSG_00_SIZE received bytes
 //  - Expected response OBD_STATUS_OK
 // ==========================================================================================================
-void test_l2_kwp_send_request_000(void)
+void test_kwp_send_request_000(void)
 {
     TaskHandle_t senderTask   = NULL;
     TaskHandle_t receiverTask = NULL;
@@ -730,7 +730,7 @@ void test_l2_kwp_send_request_000(void)
 
     vTaskSuspendAll();
     status = xTaskCreate(
-        test_l2_kwp_send_request_000_Sender,
+        test_kwp_send_request_000_Sender,
         "Sender Task",
         512,
         NULL,
@@ -739,7 +739,7 @@ void test_l2_kwp_send_request_000(void)
     TEST_ASSERT_EQUAL(pdPASS, status);
 
     status = xTaskCreate(
-        test_l2_kwp_send_request_000_Receiver,
+        test_kwp_send_request_000_Receiver,
         "Receiver Task",
         256,
         NULL,
@@ -766,10 +766,10 @@ void test_l2_kwp_send_request_000(void)
 // Steps:
 //  - ECU sim sends 5-byte wire message: {0xC1, 0x33, 0xF1, 0x81, 0x67}
 //    (fmt.bit.len=1 → 3-byte header, 1 data byte, 1 cs byte)
-//  - Receiver sets P2 timeout, delays P2_TIME_MIN, calls l2_kwp_recv_response
+//  - Receiver sets P2 timeout, delays P2_TIME_MIN, calls kwp_recv_response
 //  - Expected: OBD_STATUS_OK, resp.positive.sid == 0x81
 // ==========================================================================================================
-void test_l2_kwp_recv_response_000(void)
+void test_kwp_recv_response_000(void)
 {
     TaskHandle_t senderTask   = NULL;
     TaskHandle_t receiverTask = NULL;
@@ -780,7 +780,7 @@ void test_l2_kwp_recv_response_000(void)
 
     vTaskSuspendAll();
     status = xTaskCreate(
-        test_l2_kwp_recv_response_000_Sender,
+        test_kwp_recv_response_000_Sender,
         "Sender Task",
         256,
         NULL,
@@ -789,7 +789,7 @@ void test_l2_kwp_recv_response_000(void)
     TEST_ASSERT_EQUAL(pdPASS, status);
 
     status = xTaskCreate(
-        test_l2_kwp_recv_response_000_Receiver,
+        test_kwp_recv_response_000_Receiver,
         "Receiver Task",
         512,
         NULL,

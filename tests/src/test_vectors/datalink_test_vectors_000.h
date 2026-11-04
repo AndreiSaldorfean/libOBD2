@@ -3,8 +3,8 @@
 
 /* ================================================ INCLUDES =============================================== */
 #include "datalink.h"
-#include "l2_iso9141.h"
-#include "ecu_l2_iso9141.h"
+#include "iso9141.h"
+#include "ecu_iso9141.h"
 #ifndef PLATFORM_HOST
 #include "driver_test_vectors_000.h"
 #else
@@ -57,12 +57,12 @@ static const message_t msg_tester =
     .header = header_tester
 };
 
-static l2_iso9141_ctx_t dl_ctx_tester =
+static iso9141_ctx_t dl_ctx_tester =
 {
     .header = header_tester
 };
 
-static l2_iso9141_ctx_t dl_ctx_ecu   =
+static iso9141_ctx_t dl_ctx_ecu   =
 {
     .header = header_ecu
 };
@@ -75,9 +75,9 @@ static dataLink_if_t dl_ecu =
     .pTimingHandle    = &tmr_ctx_ecu,
     .pUartOps         = &uart_ops,
     .pTransportHandle = &uart_ctx_ecu,
-    .connect          = ecu_l2_iso9141_connect,
-    .send_request     = ecu_l2_iso9141_send_request,
-    .recv_response    = ecu_l2_iso9141_recv_response,
+    .connect          = ecu_iso9141_connect,
+    .send_request     = ecu_iso9141_send_request,
+    .recv_response    = ecu_iso9141_recv_response,
 };
 
 static dataLink_if_t dl_tester =
@@ -87,9 +87,9 @@ static dataLink_if_t dl_tester =
     .pTimingHandle    = &tmr_ctx_tester,
     .pUartOps         = &uart_ops,
     .pTransportHandle = &uart_ctx_tester,
-    .connect          = l2_iso9141_connect,
-    .send_request     = l2_iso9141_send_request,
-    .recv_response    = l2_iso9141_recv_response,
+    .connect          = iso9141_connect,
+    .send_request     = iso9141_send_request,
+    .recv_response    = iso9141_recv_response,
 };
 
 #endif /* DATALINK_TEST_VECTORS_000_H */

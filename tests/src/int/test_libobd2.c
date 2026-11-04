@@ -19,7 +19,7 @@
 #include "unity.h"
 #include <stdio.h>
 #include "libobd2_uart_port.h"
-#include "l2_kwp.h"
+#include "kwp.h"
 #include "libopencm3/stm32/f4/timer.h"
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
@@ -30,7 +30,7 @@
 
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
-extern uint8_t L2_KWP_ComputeChecksum(header_t header, obd_data_t data);
+extern uint8_t KWP_ComputeChecksum(header_t header, obd_data_t data);
 
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
@@ -84,7 +84,7 @@ void test_LIBOBD2_0(void)
     };
 
 
-    l2_kwp_ctx_t kwpCtx =
+    kwp_ctx_t kwpCtx =
     {
         .conStatus = {0u},
         .header =
@@ -104,9 +104,9 @@ void test_LIBOBD2_0(void)
         .pTimingHandle = &tmrCtx,
         .pTransportHandle = &uartCtx,
         .pUartOps = &transportOps,
-        .connect = l2_kwp_connect,
-        .send_request = l2_kwp_send_request,
-        .recv_response = l2_kwp_recv_response,
+        .connect = kwp_connect,
+        .send_request = kwp_send_request,
+        .recv_response = kwp_recv_response,
     };
 
     obd_ctx_t ctx =

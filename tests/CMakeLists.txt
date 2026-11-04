@@ -33,8 +33,8 @@ file(GLOB SOURCES
     "${CMAKE_SOURCE_DIR}/src/main.c"
     "${CMAKE_SOURCE_DIR}/src/unit/modules/app/*.c"
     "${CMAKE_SOURCE_DIR}/src/unit/modules/datalink/common/*.c"
-    "${CMAKE_SOURCE_DIR}/src/unit/modules/datalink/specific/l2_iso9141/*.c"
-    "${CMAKE_SOURCE_DIR}/src/unit/modules/datalink/specific/l2_kwp2000/*.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/modules/datalink/specific/iso9141/*.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/modules/datalink/specific/kwp2000/*.c"
     "${CMAKE_SOURCE_DIR}/src/unit/ports/${PLATFORM}/*.c"
     "${CMAKE_SOURCE_DIR}/src/ports/${PLATFORM}/*.c"
     "${CMAKE_SOURCE_DIR}/src/os/*.c"
@@ -62,13 +62,13 @@ target_include_directories(${PROJECT_NAME}
     ../interface/
     ../include/app/
     ../include/data_link/
-    ../include/data_link/l2_kwp/
-    ../include/data_link/l2_iso9141/
+    ../include/data_link/kwp/
+    ../include/data_link/iso9141/
     ./src/
     ./src/unit/modules/app/
     ./src/unit/modules/datalink/common
-    ./src/unit/modules/datalink/specific/l2_iso9141/
-    ./src/unit/modules/datalink/specific/l2_kwp2000/
+    ./src/unit/modules/datalink/specific/iso9141/
+    ./src/unit/modules/datalink/specific/kwp2000/
     ./src/test_vectors/
     "./src/unit/ports/${PLATFORM}/"
     "./src/ports/${PLATFORM}/"

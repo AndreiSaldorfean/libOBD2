@@ -14,8 +14,8 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/.. ${CMAKE_BINARY_DIR}/libOBD2)
 file(GLOB ECU_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/modules/app/*.c"
     "${CMAKE_CURRENT_LIST_DIR}/modules/datalink/common/*.c"
-    "${CMAKE_CURRENT_LIST_DIR}/modules/datalink/specific/l2_iso9141/*.c"
-    "${CMAKE_CURRENT_LIST_DIR}/modules/datalink/specific/l2_kwp2000/*.c"
+    "${CMAKE_CURRENT_LIST_DIR}/modules/datalink/specific/iso9141/*.c"
+    "${CMAKE_CURRENT_LIST_DIR}/modules/datalink/specific/kwp2000/*.c"
 )
 
 add_library(${PROJECT_NAME} ${ECU_SOURCES})
@@ -35,8 +35,8 @@ target_include_directories(${PROJECT_NAME}
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/modules/app/
     ${CMAKE_CURRENT_LIST_DIR}/modules/datalink/common/
-    ${CMAKE_CURRENT_LIST_DIR}/modules/datalink/specific/l2_iso9141/
-    ${CMAKE_CURRENT_LIST_DIR}/modules/datalink/specific/l2_kwp2000/
+    ${CMAKE_CURRENT_LIST_DIR}/modules/datalink/specific/iso9141/
+    ${CMAKE_CURRENT_LIST_DIR}/modules/datalink/specific/kwp2000/
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE

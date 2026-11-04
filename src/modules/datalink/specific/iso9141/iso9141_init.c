@@ -1,26 +1,26 @@
 /* ================================================ INCLUDES =============================================== */
-#include "l2_iso9141_priv.h"
+#include "iso9141_priv.h"
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol(dataLink_if_t *self, uint8_t *protocol, uint8_t kb1, uint8_t kb2);
-OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* protocol);
+OBD2_STATIC obd_status_t ISO9141_StoreKwbAndSelectProtocol(dataLink_if_t *self, uint8_t *protocol, uint8_t kb1, uint8_t kb2);
+OBD2_STATIC obd_status_t ISO9141_5BaudInit(dataLink_if_t *self, uint8_t* protocol);
 
-OBD2_STATIC obd_status_t L2_ISO9141_Connect_Validate(dataLink_if_t *self, uint8_t *protocol);
-OBD2_STATIC obd_status_t L2_ISO9141_Connect_Execute(dataLink_if_t *self, uint8_t *protocol);
-OBD2_STATIC obd_status_t L2_ISO9141_Connect_Verify(dataLink_if_t *self);
+OBD2_STATIC obd_status_t ISO9141_Connect_Validate(dataLink_if_t *self, uint8_t *protocol);
+OBD2_STATIC obd_status_t ISO9141_Connect_Execute(dataLink_if_t *self, uint8_t *protocol);
+OBD2_STATIC obd_status_t ISO9141_Connect_Verify(dataLink_if_t *self);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /******************************************
-* title: L2_ISO9141_StoreKwbAndSelectProtocol
+* title: ISO9141_StoreKwbAndSelectProtocol
 * brief: Stores the keyword bytes in the context and picks the header and
 *        protocol that go with them.
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_StoreKwbAndSelectProtocol(dataLink_if_t *self, uint8_t *protocol, uint8_t kb1, uint8_t kb2)
+OBD2_STATIC obd_status_t ISO9141_StoreKwbAndSelectProtocol(dataLink_if_t *self, uint8_t *protocol, uint8_t kb1, uint8_t kb2)
 {
-    l2_iso9141_ctx_t *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
+    iso9141_ctx_t *ctx = (iso9141_ctx_t *)(self->pProtocolCtx);
     obd_status_t status = {0};
 
     // Store keyword bytes for protocol identification
@@ -55,11 +55,11 @@ exit:
 }
 
 /******************************************
-* title: L2_ISO9141_5BaudInit
+* title: ISO9141_5BaudInit
 * brief: Runs the 5-baud wake-up (address, sync, keyword bytes, ~KB2, inverted
 *        address) and selects the protocol from the keyword bytes.
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t *protocol)
+OBD2_STATIC obd_status_t ISO9141_5BaudInit(dataLink_if_t *self, uint8_t *protocol)
 {
     obd_status_t status = {0};
     uint8_t syncByte = 0;
@@ -102,7 +102,7 @@ OBD2_STATIC obd_status_t L2_ISO9141_5BaudInit(dataLink_if_t *self, uint8_t *prot
     status.response = OBD_ERR_5BAUD_WRONG_INV_ADDR;
     OBD2_ASSERT_EQUAL_OR_EXIT((uint8_t)(~ISO9141_INIT_TARGET_ADDR), invAddr);
 
-    status = L2_ISO9141_StoreKwbAndSelectProtocol(self, protocol, kb1, kb2);
+    status = ISO9141_StoreKwbAndSelectProtocol(self, protocol, kb1, kb2);
     OBD2_ASSERT_OK(status);
 
     memset(&status, 0, sizeof(obd_status_t));
@@ -111,11 +111,11 @@ exit:
 }
 
 /******************************************
-* title: L2_ISO9141_Connect_Validate
-* brief: Checks the arguments of l2_iso9141_connect. The link itself is
+* title: ISO9141_Connect_Validate
+* brief: Checks the arguments of iso9141_connect. The link itself is
 *        checked by DL_Connect.
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_Connect_Validate(dataLink_if_t *self, uint8_t *protocol)
+OBD2_STATIC obd_status_t ISO9141_Connect_Validate(dataLink_if_t *self, uint8_t *protocol)
 {
     obd_status_t status = {0};
 
@@ -130,25 +130,25 @@ OBD2_STATIC obd_status_t L2_ISO9141_Connect_Validate(dataLink_if_t *self, uint8_
 }
 
 /******************************************
-* title: L2_ISO9141_Connect_Execute
+* title: ISO9141_Connect_Execute
 * brief: Clears the protocol context and runs the 5-baud init.
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_Connect_Execute(dataLink_if_t *self, uint8_t *protocol)
+OBD2_STATIC obd_status_t ISO9141_Connect_Execute(dataLink_if_t *self, uint8_t *protocol)
 {
-    l2_iso9141_ctx_t *ctx = (l2_iso9141_ctx_t *)(self->pProtocolCtx);
+    iso9141_ctx_t *ctx = (iso9141_ctx_t *)(self->pProtocolCtx);
 
-    memset(ctx, 0, sizeof(l2_iso9141_ctx_t));
-    return L2_ISO9141_5BaudInit(self, protocol);
+    memset(ctx, 0, sizeof(iso9141_ctx_t));
+    return ISO9141_5BaudInit(self, protocol);
 }
 
 /******************************************
-* title: L2_ISO9141_Connect_Verify
+* title: ISO9141_Connect_Verify
 * brief: Checks that the connection left a header in the context. Execute
 *        clears the context first, so a header means init filled it in.
 ******************************************/
-OBD2_STATIC obd_status_t L2_ISO9141_Connect_Verify(dataLink_if_t *self)
+OBD2_STATIC obd_status_t ISO9141_Connect_Verify(dataLink_if_t *self)
 {
-    const l2_iso9141_ctx_t *ctx = (const l2_iso9141_ctx_t *)(self->pProtocolCtx);
+    const iso9141_ctx_t *ctx = (const iso9141_ctx_t *)(self->pProtocolCtx);
     obd_status_t status = {0};
 
     if (0U == ctx->header.fmt)
@@ -161,19 +161,19 @@ OBD2_STATIC obd_status_t L2_ISO9141_Connect_Verify(dataLink_if_t *self)
 
 /* ================================================ MODULE API ============================================= */
 /******************************************
-* title: l2_iso9141_connect
+* title: iso9141_connect
 * brief: Opens an ISO9141-2 connection to the ECU (5-baud init) and stores
 *        the header to use in the protocol context.
 ******************************************/
-obd_status_t l2_iso9141_connect(dataLink_if_t *self, uint8_t* protocol)
+obd_status_t iso9141_connect(dataLink_if_t *self, uint8_t* protocol)
 {
     obd_status_t status = {0};
 
-    status = L2_ISO9141_Connect_Validate(self, protocol);
+    status = ISO9141_Connect_Validate(self, protocol);
     OBD2_ASSERT_OK(status);
-    status = L2_ISO9141_Connect_Execute(self, protocol);
+    status = ISO9141_Connect_Execute(self, protocol);
     OBD2_ASSERT_OK(status);
-    status = L2_ISO9141_Connect_Verify(self);
+    status = ISO9141_Connect_Verify(self);
 
 exit:
     return status;
