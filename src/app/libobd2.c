@@ -109,20 +109,28 @@ exit:
     return status;
 }
 
-static void LibOBD2_DecodeLiveData(libobd2_data_t *buffer, uint8_t *response)
+static obd_status_t LibOBD2_DecodeLiveData(libobd2_data_t *buffer, uint8_t *response, size_t* responseLen)
 {
+    obd_status_t status = {0};
     uint8_t pid = buffer[0].data.param[0];
 
     switch (pid)
     {
         case PID_01_COOLANT_TEMP:
             OP_COOLANT_TEMP(buffer, response);
+            *responseLen = 1;
+        break;
+        default:
+            status.response = OBD_NOT_SUPPORTED;
         break;
     }
+
+    return status;
 }
 
-static void LibOBD2_DecodeVehicleInfo(libobd2_data_t *buffer, size_t bufferLen, uint8_t *response, size_t* responseLen)
+static obd_status_t LibOBD2_DecodeVehicleInfo(libobd2_data_t *buffer, size_t bufferLen, uint8_t *response, size_t* responseLen)
 {
+    obd_status_t status = {0};
     uint8_t pid = buffer[0].data.param[0];
 
     switch (pid)
@@ -133,26 +141,36 @@ static void LibOBD2_DecodeVehicleInfo(libobd2_data_t *buffer, size_t bufferLen, 
         case PID_09_CALID:
             OP_CALID(buffer, bufferLen, response, responseLen);
         break;
+        default:
+            status.response = OBD_NOT_SUPPORTED;
+        break;
     }
+
+    return status;
 }
 
-static void LibOBD2_DecodeAndSend(libobd2_data_t *buffer, size_t bufferLen, uint8_t *response, size_t* responseLen)
+static obd_status_t LibOBD2_DecodeAndSend(libobd2_data_t *buffer, size_t bufferLen, uint8_t *response, size_t* responseLen)
 {
+    obd_status_t status = {0};
     uint8_t sid = 0;
 
-    if (bufferLen <= 0)
-        return;
+    *responseLen = 0;
+
+    if (0U == bufferLen)
+    {
+        status.response = OBD_NOT_SUPPORTED;
+        return status;
+    }
 
     sid = buffer[0].data.sid - 0x40;
 
     switch (sid)
     {
         case SID_SHOW_CURRENT_DATA:
-            LibOBD2_DecodeLiveData(buffer, response);
-            *responseLen = 1;
+            status = LibOBD2_DecodeLiveData(buffer, response, responseLen);
         break;
         case SID_REQUEST_VEHICLE_INFO:
-            LibOBD2_DecodeVehicleInfo(buffer, bufferLen, response, responseLen);
+            status = LibOBD2_DecodeVehicleInfo(buffer, bufferLen, response, responseLen);
         break;
 
         // Currently not supported
@@ -164,10 +182,12 @@ static void LibOBD2_DecodeAndSend(libobd2_data_t *buffer, size_t bufferLen, uint
         case SID_SHOW_PENDING_DTCS:
         case SID_CONTROL_ONBOARD_SYSTEM:
         case SID_PERMANENT_DTCS:
+        default:
+            status.response = OBD_NOT_SUPPORTED;
         break;
     }
 
-
+    return status;
 }
 
 /* ================================================ MODULE API ============================================= */
@@ -209,7 +229,7 @@ obd_status_t LibOBD2_RequestService(
     status = LibOBD2_DispatchSid(ctx, service, responseBuffer, &respBufLen);
     OBD2_ASSERT_OK(status);
 
-    LibOBD2_DecodeAndSend(responseBuffer, respBufLen, response, responseLen);
+    status = LibOBD2_DecodeAndSend(responseBuffer, respBufLen, response, responseLen);
 
 exit:
     return status;

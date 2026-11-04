@@ -350,7 +350,7 @@ void test_LIBOBD2_RequestService_CoolantTemp_000(void)
 
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
-    // TEST_ASSERT_EQUAL_size_t(1, responseLen);
+    TEST_ASSERT_EQUAL_size_t(1, responseLen);
     TEST_ASSERT_EQUAL_UINT8(83u, response[0]);
 }
 
