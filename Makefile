@@ -17,7 +17,7 @@ else
 dir=library
 endif
 
-# Coverage build of the tests (host only), kept apart from the normal build
+# Coverage build of the tests (host_virtual only), kept apart from the normal build
 cc_dir=$(dir)_cc
 
 .PHONY: all b r cc clean

@@ -5,7 +5,7 @@
 #include "datalink.h"
 #include "iso9141.h"
 #include "ecu_iso9141.h"
-#ifndef PLATFORM_HOST
+#ifndef PLATFORM_HOST_VIRTUAL
 #include "driver_test_vectors_000.h"
 #else
 #include "driver_test_vectors_001.h"

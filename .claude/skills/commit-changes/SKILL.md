@@ -113,7 +113,7 @@ After the last commit, run `git status` and `git log --oneline -N` and show the 
 ```
 
 - **Subject**: imperative mood, lower case after the colon, no trailing period, at most ~72 characters in total. `fix(datalink): reject frames with bad checksum`, not `Fixed checksum.`
-- **Scope**: optional. Use it when the change is inside one area of the repo, e.g. `app`, `datalink`, `iso9141`, `kwp2000`, `ecu`, `ports`, `stm32f4`, `host`, `tests`, `build`. Leave it out when the change spans many areas.
+- **Scope**: optional. Use it when the change is inside one area of the repo, e.g. `app`, `datalink`, `iso9141`, `kwp2000`, `ecu`, `ports`, `stm32f4`, `host_virtual`, `host_serial`, `tests`, `build`. Leave it out when the change spans many areas.
 - **No issue or ticket number** in the message.
 - **Body**: add one when the reason is not obvious from the subject. Always add one for `fix` commits: describe the wrong behaviour and how the change fixes it.
 - Follow any commit attribution rules in effect for the session (e.g. a `Co-Authored-By` trailer).

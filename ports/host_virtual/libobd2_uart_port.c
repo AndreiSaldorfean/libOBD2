@@ -1,6 +1,5 @@
-/** NOTE: This file location and name, may implies, that the API provided is a port on the x86 systems and similar.
- * But the intended usage is to provided a virtual port, to emulate the communication between tester and ecu, in a virtual environment.
- * TODO: Therefore a more suitable name and place shall be found */
+/* Virtual K-line port: emulates the tester <-> ECU line in memory, driven by the virtual clock of
+ * libobd2_timer_port.c. Used by the unit tests; for a real serial adapter on the host see ports/host_serial. */
 /* ================================================ INCLUDES =============================================== */
 #include "libobd2_uart_port.h"
 #include "libobd2_timer_port.h"

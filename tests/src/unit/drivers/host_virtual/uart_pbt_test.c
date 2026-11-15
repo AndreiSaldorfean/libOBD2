@@ -139,7 +139,7 @@ static enum theft_trial_res prop_byte_not_ready_at_same_timestamp(struct theft *
 }
 
 /* --------------------------------------------------------------------------
- * Runs a theft config while the UART tracer (tests/src/ports/host/uart_trace.*)
+ * Runs a theft config while the UART tracer (tests/src/ports/host_virtual/uart_trace.*)
  * records the virtual K-line into a .vcd waveform, one session per trial.
  * Open it in PulseView (UART decoder on kline.line, 10400 baud) or GTKWave.
  * -------------------------------------------------------------------------- */

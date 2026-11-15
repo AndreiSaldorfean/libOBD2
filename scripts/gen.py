@@ -59,8 +59,8 @@ def create_cfg(app: str, coverage: bool = False) -> None:
 
     if coverage:
         # Coverage gets its own build directory so the normal test build stays uninstrumented
-        if app != "tests" or build_config["PLATFORM"] != "host":
-            print("Error: --coverage needs --app tests and PLATFORM host", file=sys.stderr)
+        if app != "tests" or build_config["PLATFORM"] != "host_virtual":
+            print("Error: --coverage needs --app tests and PLATFORM host_virtual", file=sys.stderr)
             sys.exit(1)
         config = dict(build_config[app], COVERAGE="ON")
         run_cmake(common_cmake_cfg(PROJECT_ROOT / "tests", build_dir.with_name(build_dir.name + "_cc"), config))
@@ -103,7 +103,7 @@ def parse_arguments():
     )
     parser.add_argument("-a", "--app", choices=["example", "tests", "library"], help="", required=True)
     parser.add_argument("--coverage", action="store_true",
-                        help="configure the tests in builds/<dir>_cc with gcov instrumentation (host only)")
+                        help="configure the tests in builds/<dir>_cc with gcov instrumentation (host_virtual only)")
     return parser.parse_args()
 
 

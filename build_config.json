@@ -1,5 +1,5 @@
 {
-    "PLATFORM": "host",
+    "PLATFORM": "host_virtual",
     "MEMORY": "flash",
     "LOGGING": "OFF",
     "TYPE": "Debug",
