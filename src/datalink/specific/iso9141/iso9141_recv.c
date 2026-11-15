@@ -82,8 +82,10 @@ OBD2_STATIC obd_status_t ISO9141_RecvMessage(dataLink_if_t *self, message_t *rec
     runningCheckSum = byteRead;
     pMsg[byteReadIdx++] = byteRead;
 
+    #ifdef LIBOBD2_SPT_KWP2000
     // Only KWP2000 frames with no length in the format byte carry a length byte
     hasLenByte = (KWP2000 == ctx->protocol) && (0U == (recvdMsg->header.fmt & ISO9141_FMT_LEN_MASK));
+    #endif /* LIBOBD2_SPT_KWP2000 */
 
     // Bound by the message_t layout (header slot incl. len + data), not the wire length,
     // since byteReadIdx skips header.len when the frame has no length byte

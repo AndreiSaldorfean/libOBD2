@@ -13,27 +13,36 @@
 #include "kwp2000.h"
 
 /* ================================================= MACROS ================================================ */
-#define NUM_SPT_PROTOCOLS (2U)
 #define PROTOCOL_NOT_FOUND (NUM_SPT_PROTOCOLS + 1U)
 /* ============================================ LOCAL VARIABLES ============================================ */
 static dl_connect_t initProtocols[NUM_SPT_PROTOCOLS ] =
 {
+#ifdef LIBOBD2_SPT_ISO9141
     [ISO9141] = ISO9141_Connect,
+#endif /* LIBOBD2_SPT_ISO9141 */
+#ifdef LIBOBD2_SPT_KWP2000
     [KWP2000] = KWP_Connect,
+#endif /* LIBOBD2_SPT_KWP2000 */
 };
 
 static dl_send_request_t sendRequests[NUM_SPT_PROTOCOLS] =
 {
-
+#ifdef LIBOBD2_SPT_ISO9141
     [ISO9141] = ISO9141_SendRequest,
+#endif /* LIBOBD2_SPT_ISO9141 */
+#ifdef LIBOBD2_SPT_KWP2000
     [KWP2000] = KWP_SendRequest,
+#endif /* LIBOBD2_SPT_KWP2000 */
 };
 
 static dl_recv_response_t recvResponses[NUM_SPT_PROTOCOLS] =
 {
-
+#ifdef LIBOBD2_SPT_ISO9141
     [ISO9141] = ISO9141_RecvResponse,
+#endif /* LIBOBD2_SPT_ISO9141 */
+#ifdef LIBOBD2_SPT_KWP2000
     [KWP2000] = KWP_RecvResponse,
+#endif /* LIBOBD2_SPT_KWP2000 */
 };
 
 /* ============================================ GLOBAL VARIABLES =========================================== */

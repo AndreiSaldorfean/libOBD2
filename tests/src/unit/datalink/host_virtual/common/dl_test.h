@@ -18,6 +18,7 @@ void test_DL_RecvByteBlocking_000(void);
 void test_DL_RecvByteBlocking_NoByte(void);
 void test_DL_SendByteBitBanged_000(void);
 void test_DL_Connect_000(void);
+void test_DL_Connect_001(void);
 void test_DL_SendRecv_000(void);
 void test_DL_Api_NullLink(void);
 void test_DL_Api_NotConnected(void);

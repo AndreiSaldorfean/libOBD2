@@ -67,6 +67,7 @@ void targetRunTests()
     RUN_TEST(test_DL_RecvByteBlocking_NoByte);
     RUN_TEST(test_DL_SendByteBitBanged_000);
     RUN_TEST(test_DL_Connect_000);
+    RUN_TEST(test_DL_Connect_001);
     RUN_TEST(test_DL_SendRecv_000);
     RUN_TEST(test_DL_Api_NullLink);
     RUN_TEST(test_DL_Api_NotConnected);

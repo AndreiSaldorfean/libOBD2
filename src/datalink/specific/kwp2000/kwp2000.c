@@ -8,6 +8,7 @@
 #include <string.h>
 #include "kwp2000.h"
 
+#ifdef LIBOBD2_SPT_KWP2000
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
@@ -409,3 +410,4 @@ obd_status_t KWP_RecvResponse(dataLink_if_t *self, obd_data_t *resp, size_t *dat
 exit:
     return status;
 }
+#endif /* LIBOBD2_SPT_KWP2000 */

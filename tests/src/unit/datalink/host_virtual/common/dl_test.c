@@ -291,6 +291,42 @@ void test_DL_SendByteBitBanged_000(void)
 }
 
 /******************************************************************
+ * No ECU on the line: DL_Connect must not report a connection.
+ * Guards the build with KWP2000 compiled out, where ISO9141 is the
+ * only protocol tried and nothing may fall back to the KWP2000 stub.
+ *   1. The 5-baud address goes out, but no sync byte comes back
+ *   2. DL_Connect fails with ISO9141's error (sync not received)
+ *   3. Only the one 5-baud wake-up ran (no KWP2000 fast init)
+ *   4. No send/recv functions are bound and no header is left
+ ******************************************************************/
+void test_DL_Connect_001(void)
+{
+    setUpLine();
+    dataLink.connect       = NULL;
+    dataLink.send_request  = NULL;
+    dataLink.recv_response = NULL;
+
+    UART_TRACE_Begin("test_DL_Connect_001.vcd");
+    obd_status_t status = DL_Connect(&dataLink);
+    UART_TRACE_End();
+
+    /* 1. + 2. */
+    TEST_ASSERT_EQUAL_size_t(BITBANG_BITS, pulseCnt);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_5BAUD_SYNC_NOT_RECVD, status.response);
+
+    /* 3. */
+    TEST_ASSERT_EQUAL_size_t(2u, modeCnt);
+    TEST_ASSERT_EQUAL_UINT8(DIGITAL_MODE_BEGIN, modeSeq[0]);
+    TEST_ASSERT_EQUAL_UINT8(DIGITAL_MODE_END, modeSeq[1]);
+
+    /* 4. */
+    TEST_ASSERT_NULL(dataLink.connect);
+    TEST_ASSERT_NULL(dataLink.send_request);
+    TEST_ASSERT_NULL(dataLink.recv_response);
+    TEST_ASSERT_EQUAL_HEX8(0x00u, protoCtx.header.fmt);
+}
+
+/******************************************************************
  * Connect to an ISO9141-2 ECU through the common datalink.
  *   1. ECU answers the 5 baud init with 55 08 08 and CC
  *   2. DL_Connect must report OK and bind send/recv to ISO9141
@@ -545,9 +581,9 @@ static obd_tmr_status_t timerInitOnce(void *pHandle)
 /******************************************************************
  * When every protocol's connect fails, DL_Connect fails with the last
  * protocol's error and binds no send/recv functions.
- *   - ISO9141: no ECU, the tester reads back its own 5-baud address
- *     (33) instead of the sync byte -> wrong sync
- *   - KWP2000: its own timer init fails -> OBD_ERR_CONN_TIMER_INIT_FAILED
+ *   - ISO9141: no ECU answers -> OBD_ERR_5BAUD_SYNC_NOT_RECVD
+ *   - KWP2000 (only when LIBOBD2_SPT_KWP2000 is set, tried last): its
+ *     own timer init fails -> OBD_ERR_CONN_TIMER_INIT_FAILED
  * KWP2000 clears its own context type, so the link gets a context big
  * enough for either protocol.
  ******************************************************************/
@@ -570,7 +606,11 @@ void test_DL_Connect_NoProtocol(void)
     obd_status_t status = DL_Connect(&dataLink);
     tmrOps.timer_init = keepTimer;
 
+#ifdef LIBOBD2_SPT_KWP2000
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_CONN_TIMER_INIT_FAILED, status.response);
+#else
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_5BAUD_SYNC_NOT_RECVD, status.response);
+#endif /* LIBOBD2_SPT_KWP2000 */
     TEST_ASSERT_NULL(dataLink.send_request);
     TEST_ASSERT_NULL(dataLink.recv_response);
 }
