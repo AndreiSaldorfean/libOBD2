@@ -13,6 +13,10 @@
 #endif /* SPT_TRACING */
 
 /* ================================================= MACROS ================================================ */
+// Feature flags
+#define LIBOBD2_SPT_ISO9141
+// #define LIBOBD2_SPT_KWP2000 /* Not supported yet */
+
 // Timing
 #if 0
 #define P1_TIME_MIN      (0U)
@@ -88,8 +92,13 @@ struct dataLink_if
 
 enum
 {
+#ifdef LIBOBD2_SPT_ISO9141
     ISO9141,
-    KWP2000
+#endif /* LIBOBD2_SPT_ISO9141 */
+#ifdef LIBOBD2_SPT_KWP2000
+    KWP2000,
+#endif /* LIBOBD2_SPT_KWP2000 */
+    NUM_SPT_PROTOCOLS
 };
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */

@@ -8,6 +8,7 @@
 #include <string.h>
 #include "kwp2000.h"
 
+#ifdef LIBOBD2_SPT_KWP2000
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
@@ -212,7 +213,8 @@ OBD2_STATIC obd_status_t KWP_SRV_StartCommunication(dataLink_if_t *self)
 {
     (void) self;
     // message_t recvdMsg = {0};
-    obd_status_t status = {0};
+    /* Not implemented yet: report it, so a link where no ECU answered is not taken as connected */
+    obd_status_t status = { .response = OBD_NOT_SUPPORTED };
     #if 0 /* TODO: Fix logic and addapt to new library structure */
     kwp_ctx_t *ctx = (kwp_ctx_t *)self->pProtocolCtx;
     uint8_t aMessage[256] = {0};
@@ -408,3 +410,4 @@ obd_status_t KWP_RecvResponse(dataLink_if_t *self, obd_data_t *resp, size_t *dat
 exit:
     return status;
 }
+#endif /* LIBOBD2_SPT_KWP2000 */

@@ -26,3 +26,7 @@
 [submodule "tests/theft"]
 	path = tests/theft
 	url = https://github.com/silentbicycle/theft.git
+
+[submodule "examples/libs/libserialport"]
+	path = examples/libs/libserialport
+	url = https://github.com/sigrokproject/libserialport.git

@@ -1,0 +1,29 @@
+/* config.h for building libserialport with CMake (replaces the one its autotools configure generates).
+ * Values match glibc on Linux x86/x86_64. */
+#ifndef LIBSERIALPORT_CONFIG_H
+#define LIBSERIALPORT_CONFIG_H
+
+#define HAVE_CLOCK_GETTIME 1
+#define HAVE_DECL_BOTHER 1
+#define HAVE_FLOCK 1
+#define HAVE_REALPATH 1
+#define HAVE_STRUCT_SERIAL_STRUCT 1
+#define HAVE_STRUCT_TERMIOS2 1
+#define HAVE_STRUCT_TERMIOS2_C_ISPEED 1
+#define HAVE_STRUCT_TERMIOS2_C_OSPEED 1
+#define HAVE_TERMIOS2_SPEED 1
+#define HAVE_SYS_FILE_H 1
+
+#define SP_API __attribute__((visibility("default")))
+#define SP_PRIV __attribute__((visibility("hidden")))
+
+#define SP_PACKAGE_VERSION_MAJOR @SP_VERSION_MAJOR@
+#define SP_PACKAGE_VERSION_MINOR @SP_VERSION_MINOR@
+#define SP_PACKAGE_VERSION_MICRO @SP_VERSION_MICRO@
+#define SP_PACKAGE_VERSION_STRING "@SP_VERSION_MAJOR@.@SP_VERSION_MINOR@.@SP_VERSION_MICRO@"
+#define SP_LIB_VERSION_CURRENT 1
+#define SP_LIB_VERSION_REVISION 1
+#define SP_LIB_VERSION_AGE 1
+#define SP_LIB_VERSION_STRING "1:1:1"
+
+#endif /* LIBSERIALPORT_CONFIG_H */

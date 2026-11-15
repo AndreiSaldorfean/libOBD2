@@ -1,5 +1,4 @@
 /* ================================================ INCLUDES =============================================== */
-#include "ports/host/target_test_fixtures.h"
 #include "unity.h"
 #include <stddef.h>
 #include <unistd.h>

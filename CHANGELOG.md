@@ -5,6 +5,23 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **host_serial** port (`ports/host_serial/`): K-line on x86 Linux through a serial / USB adapter (KKL, FTDI), on top of libserialport. 5-baud and fast-init wake-ups use the serial BREAK condition; the port asks the driver for low latency so USB adapters do not batch received bytes.
+- `examples/host_serial/`: `obd2_reader` command-line example that connects and reads VIN, CALID and coolant temperature.
+- libserialport submodule (`examples/libs/libserialport`), built with CMake (`ports/host_serial/cmake/libserialport.cmake`).
+- Fault injector for the `host_virtual` UART and timer ports (`ports/host_virtual/fault_injection.h`): declarative rules for UART errors / flipped bits on chosen bytes and failing, early-expiring or shifted timer operations; applied faults show on `kline.fault` in the VCD trace. First part of #46, still under review.
+
+### Fixed
+
+- `LibOBD2_Init` no longer reports a connection when no ECU answers: the stubbed KWP2000 StartCommunication (tried after ISO9141 fails) returned OK; it now returns `OBD_NOT_SUPPORTED` until KWP2000 is implemented.
+
+### Changed
+
+- **Breaking:** the `host` platform is renamed to `host_virtual` (`ports/host_virtual/`, `tests/src/**/host_virtual/`, define `PLATFORM_HOST_VIRTUAL`). Set `"PLATFORM": "host_virtual"` in `build_config.json` and delete `builds/library` once, since its CMake cache still points at the old toolchain path.
+
 ## [0.0.0](https://github.com/AndreiSaldorfean/libOBD2/releases/tag/v0.0.0) - 2026-06-24
 
 First public preview. Expect breaking changes before `0.1.0`.

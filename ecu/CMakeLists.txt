@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(OBD2_ECU LANGUAGES C)
 
 if("${PLATFORM}" STREQUAL "")
-    message(FATAL_ERROR "PLATFORM is required to build the ECU (e.g. stm32f4, stm32g4, host)")
+    message(FATAL_ERROR "PLATFORM is required to build the ECU (e.g. stm32f4, stm32g4, host_virtual, host_serial)")
 endif()
 
 # --- libOBD2 (base library) ---

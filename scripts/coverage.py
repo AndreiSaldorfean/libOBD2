@@ -27,8 +27,8 @@ def parse_arguments():
     parser.add_argument("build_dir", help="coverage build directory, e.g. builds/tests_flash_Debug_cc")
     parser.add_argument("--reset", action="store_true", help="delete the .gcda counters and exit")
     parser.add_argument("--uncovered", action="store_true", help="also list uncovered lines and never-called functions")
-    parser.add_argument("--include", nargs="+", default=["src", "ports/host"],
-                        help="paths (relative to the repo) to report on (default: src ports/host)")
+    parser.add_argument("--include", nargs="+", default=["src", "ports/host_virtual"],
+                        help="paths (relative to the repo) to report on (default: src ports/host_virtual)")
     parser.add_argument("--exclude", nargs="+", default=["third_party", "kwp2000"],
                         help="path parts to leave out (default: third_party kwp2000)")
     return parser.parse_args()
