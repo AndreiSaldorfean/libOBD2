@@ -22,6 +22,7 @@ void test_LIBOBD2_DispatchSid_SingleMsgLen(void);
 void test_LIBOBD2_RequestService_NullDataLink(void);
 void test_LIBOBD2_DecodeResponse_Unsupported(void);
 void test_LIBOBD2_DispatchSid_TransferSteps(void);
+void test_LIBOBD2_RequestService_VIN_FramingError(void);
 
 #endif /* LIBOBD2_TEST_H */
 

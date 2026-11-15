@@ -2,6 +2,7 @@
 #include "libobd2_test.h"
 #include "datalink.h"
 #include "iso15031_5.h"
+#include "fault_injection.h"
 #include "iso9141.h"
 #include "libobd2.h"
 #include "libobd2_services.h"
@@ -496,3 +497,29 @@ void test_LIBOBD2_DispatchSid_TransferSteps(void)
     UART_TRACE_End();
 }
 
+/******************************************************************
+ * A framing error inside the 3rd VIN message stops the request with
+ * OBD_ERR_UART_FRAMING and returns no data.
+ *   Line bytes: count answer 0..6, VIN messages 7..17, 18..28, 29..39;
+ *   byte 34 (message number of the 3rd message) gets the error.
+ ******************************************************************/
+void test_LIBOBD2_RequestService_VIN_FramingError(void)
+{
+    const uint8_t vin[VIN_MSG_CNT * 4u] = { 0x00, 0x00, 0x00, '1', 'H', 'G', 'C', 'M', '8', '2',
+                                            '6', '3', '3', 'A', '0', '0', '4', '3', '5', '2' };
+    faultUartInjector_t inj = { .onWrite = { .error = OBD_UART_RX_FRAMING_ERR, .firstByte = 34u, .count = 1u } };
+    uint8_t response[RESPONSE_BUF_LEN] = {0};
+    size_t responseLen = 0;
+
+    UART_TRACE_Begin("test_LIBOBD2_RequestService_VIN_FramingError.vcd");
+    setUpLine();
+    TEST_ASSERT_TRUE(FAULT_UartAttach(&uartCtx, &inj));
+    ecuQueueVehicleInfo(PID_09_VIN_MESSAGE_COUNT, PID_09_VIN, vin, VIN_MSG_CNT);
+
+    obd_status_t status = LibOBD2_RequestService(&ctx, OBD_GET_VIN, response, &responseLen);
+    UART_TRACE_End();
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_UART_FRAMING, status.response);
+    TEST_ASSERT_EQUAL_size_t(0, responseLen);
+    TEST_ASSERT_EQUAL_UINT32(1u, inj.injected);
+}
