@@ -23,6 +23,7 @@ static vcdSignal_t g_rxData;
 static vcdSignal_t g_rxWaiting;
 static vcdSignal_t g_sessionPulse;
 static vcdSignal_t g_uartError;
+static vcdSignal_t g_fault;
 #if UART_TRACE_EXTRA_SIGNALS
 static vcdSignal_t g_txByte;
 static vcdSignal_t g_rxByte;
@@ -171,6 +172,7 @@ bool UART_TRACE_Begin(const char *path)
     (void)VCD_AddVar(g_writer, VCD_VAR_WIRE, 1u, "rx_waiting", &g_rxWaiting);
     (void)VCD_AddVar(g_writer, VCD_VAR_WIRE, 1u, "session", &g_sessionPulse);
     (void)VCD_AddVar(g_writer, VCD_VAR_WIRE, 1u, "uart_error", &g_uartError);
+    (void)VCD_AddVar(g_writer, VCD_VAR_WIRE, 1u, "fault", &g_fault);
 #if UART_TRACE_EXTRA_SIGNALS
     (void)VCD_AddVar(g_writer, VCD_VAR_WIRE, 8u, "tx_byte[7:0]", &g_txByte);
     (void)VCD_AddVar(g_writer, VCD_VAR_WIRE, 8u, "rx_byte[7:0]", &g_rxByte);
@@ -198,6 +200,7 @@ bool UART_TRACE_Begin(const char *path)
     (void)VCD_UartWriteIdle(g_writer, g_line, 0u, &g_lineUart);
     (void)VCD_UartWriteIdle(g_writer, g_rxData, 0u, &g_rxUart);
     (void)VCD_ChangeBit(g_writer, g_rxWaiting, 0u, '0');
+    (void)VCD_ChangeBit(g_writer, g_fault, 0u, '0');
     (void)VCD_ChangeBit(g_writer, g_sessionPulse, 0u, '0');
     (void)VCD_ChangeBit(g_writer, g_uartError, 0u, '0');
 #if UART_TRACE_EXTRA_SIGNALS
@@ -368,4 +371,18 @@ void UART_TRACE_OnMode(uint8_t mode, uint32_t timeMs)
             noteAt(t, text);
             break;
     }
+}
+
+void UART_TRACE_OnFault(uint32_t timeMs, const char *what)
+{
+    vcdTime_t t;
+
+    if (g_writer == NULL)
+    {
+        return;
+    }
+    t = traceTime(timeMs);
+    (void)VCD_Pulse(g_writer, g_fault, t, SESSION_PULSE_TICKS);
+    noteAt(t, what);
+    touch(t + SESSION_PULSE_TICKS);
 }

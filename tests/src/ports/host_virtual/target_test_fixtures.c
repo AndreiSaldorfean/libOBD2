@@ -7,6 +7,7 @@
 #include "iso9141_pbt_test.h"
 #include "dl_pbt_test.h"
 #include "dl_test.h"
+#include "fault_injection_test.h"
 #include "libobd2_pbt_test.h"
 #include "libobd2_test.h"
 #include "unity_internals.h"
@@ -52,6 +53,15 @@ void targetRunTests()
     RUN_TEST(test_UART_BitBang_000);
     RUN_TEST(test_UART_FaultHook_OnRead);
     RUN_TEST(test_UART_Init_Null);
+
+    RUN_TEST(test_FAULT_Attach_InvalidArgs);
+    RUN_TEST(test_FAULT_Uart_WriteWindow);
+    RUN_TEST(test_FAULT_Uart_ReadFromByte);
+    RUN_TEST(test_FAULT_Uart_XorOnlyAndInactiveRule);
+    RUN_TEST(test_FAULT_Uart_Detach);
+    RUN_TEST(test_FAULT_Tmr_FailWindow);
+    RUN_TEST(test_FAULT_Tmr_FailInit);
+    RUN_TEST(test_FAULT_Tmr_ExpireAndShift);
     /* ---- DRIVER TESTS ---- */
 
     /* ---- DATALINK TESTS ---- */
