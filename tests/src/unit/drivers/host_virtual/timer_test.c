@@ -3,6 +3,7 @@
 #include "datalink.h"
 #include "iso9141.h"
 #include "libobd2_timer_port.h"
+#include "uart_trace.h"
 #include "unity.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -212,5 +213,7 @@ void test_TMR_FaultHook_InitFails(void)
  ******************************************************************/
 void test_TMR_Init_Null(void)
 {
+    UART_TRACE_Begin("test_TMR_Init_Null.vcd");
     TEST_ASSERT_EQUAL(OBD_TMR_ERR_INVALID_ARG, TMR_Init(NULL));
+    UART_TRACE_End();
 }

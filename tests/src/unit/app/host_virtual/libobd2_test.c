@@ -423,10 +423,12 @@ void test_LIBOBD2_RequestService_NullDataLink(void)
     uint8_t response[RESPONSE_BUF_LEN] = {0};
     size_t responseLen = 0;
 
+    UART_TRACE_Begin("test_LIBOBD2_RequestService_NullDataLink.vcd");
     obd_status_t status = LibOBD2_RequestService(&noLinkCtx, OBD_GET_VIN, response, &responseLen);
 
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, status.response);
     TEST_ASSERT_EQUAL_size_t(0, responseLen);
+    UART_TRACE_End();
 }
 
 /******************************************************************
@@ -448,6 +450,7 @@ void test_LIBOBD2_DecodeResponse_Unsupported(void)
     uint8_t response[RESPONSE_BUF_LEN] = {0};
     size_t responseLen = 0xA5u;
 
+    UART_TRACE_Begin("test_LIBOBD2_DecodeResponse_Unsupported.vcd");
     /* 1. */
     TEST_ASSERT_EQUAL_HEX16(OBD_NOT_SUPPORTED, LibOBD2_DecodeResponse(answers, 0u, response, &responseLen).response);
     TEST_ASSERT_EQUAL_size_t(0, responseLen);
@@ -459,6 +462,7 @@ void test_LIBOBD2_DecodeResponse_Unsupported(void)
         TEST_ASSERT_EQUAL_HEX16(OBD_NOT_SUPPORTED, LibOBD2_DecodeResponse(&answers[idx], 1u, response, &responseLen).response);
         TEST_ASSERT_EQUAL_size_t(0, responseLen);
     }
+    UART_TRACE_End();
 }
 
 /******************************************************************
@@ -479,6 +483,7 @@ void test_LIBOBD2_DispatchSid_TransferSteps(void)
     libobd2_data_t responseBuffer[2] = {0};
     size_t respLen = 0;
 
+    UART_TRACE_Begin("test_LIBOBD2_DispatchSid_TransferSteps.vcd");
     setUpLine();
     (void)ecuQueueFrame(REQ_DURATION(2u), ecuResp, sizeof(ecuResp));
 
@@ -488,4 +493,6 @@ void test_LIBOBD2_DispatchSid_TransferSteps(void)
     TEST_ASSERT_EQUAL_size_t(1, respLen);
     TEST_ASSERT_EQUAL_HEX8(ecuResp[0], responseBuffer[0].data.sid);
     TEST_ASSERT_EQUAL_size_t(sizeof(ecuResp), responseBuffer[0].dataLen);
+    UART_TRACE_End();
 }
+

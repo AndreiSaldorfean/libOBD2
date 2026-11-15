@@ -156,12 +156,14 @@ void test_UART_FaultHook_OnRead(void)
     virtUartLinkCtx_t ctx = { .tmrHandle = &timer, .faults = { .onRead = injectOverrun } };
     uint8_t received = 0u;
 
+    UART_TRACE_Begin("test_UART_FaultHook_OnRead.vcd");
     TEST_ASSERT_TRUE(UART_Init(&ctx));
     UART_WriteByte(&ctx, 0x55u);
     timer.timeNow = 1u;
 
     TEST_ASSERT_EQUAL(OBD_UART_RX_OVERRUN_ERR, UART_RecvByte(&ctx, &received));
     TEST_ASSERT_EQUAL_HEX8(0x55u, received);
+    UART_TRACE_End();
 }
 
 /******************************************************************
@@ -169,5 +171,7 @@ void test_UART_FaultHook_OnRead(void)
  ******************************************************************/
 void test_UART_Init_Null(void)
 {
+    UART_TRACE_Begin("test_UART_Init_Null.vcd");
     TEST_ASSERT_FALSE(UART_Init(NULL));
+    UART_TRACE_End();
 }
