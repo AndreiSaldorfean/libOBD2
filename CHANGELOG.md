@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `LibOBD2_Init` no longer reports a connection when no ECU answers: the stubbed KWP2000 StartCommunication (tried after ISO9141 fails) returned OK; it now returns `OBD_NOT_SUPPORTED` until KWP2000 is implemented.
+
 ### Changed
 
 - **Breaking:** the `host` platform is renamed to `host_virtual` (`ports/host_virtual/`, `tests/src/**/host_virtual/`, define `PLATFORM_HOST_VIRTUAL`). Set `"PLATFORM": "host_virtual"` in `build_config.json` and delete `builds/library` once, since its CMake cache still points at the old toolchain path.
