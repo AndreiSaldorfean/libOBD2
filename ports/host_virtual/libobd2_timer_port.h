@@ -15,7 +15,8 @@ typedef enum
     VIRT_TMR_OP_DELAY,             /* value: delay applied */
     VIRT_TMR_OP_START_TIMEOUT,     /* value: timeout armed; status: returned to the caller */
     VIRT_TMR_OP_STOP_TIMEOUT,      /* status: returned to the caller */
-    VIRT_TMR_OP_IS_TIMEOUT_EXPIRED /* expired: returned to the caller */
+    VIRT_TMR_OP_IS_TIMEOUT_EXPIRED, /* expired: returned to the caller */
+    VIRT_TMR_OP_COUNT               /* number of operations */
 }virtTmrOp_t;
 
 /* What an operation is about to do; a fault hook may change value, status and

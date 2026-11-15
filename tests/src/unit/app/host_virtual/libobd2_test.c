@@ -2,6 +2,7 @@
 #include "libobd2_test.h"
 #include "datalink.h"
 #include "iso15031_5.h"
+#include "fault_injection.h"
 #include "iso9141.h"
 #include "libobd2.h"
 #include "libobd2_services.h"
@@ -423,10 +424,12 @@ void test_LIBOBD2_RequestService_NullDataLink(void)
     uint8_t response[RESPONSE_BUF_LEN] = {0};
     size_t responseLen = 0;
 
+    UART_TRACE_Begin("test_LIBOBD2_RequestService_NullDataLink.vcd");
     obd_status_t status = LibOBD2_RequestService(&noLinkCtx, OBD_GET_VIN, response, &responseLen);
 
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, status.response);
     TEST_ASSERT_EQUAL_size_t(0, responseLen);
+    UART_TRACE_End();
 }
 
 /******************************************************************
@@ -448,6 +451,7 @@ void test_LIBOBD2_DecodeResponse_Unsupported(void)
     uint8_t response[RESPONSE_BUF_LEN] = {0};
     size_t responseLen = 0xA5u;
 
+    UART_TRACE_Begin("test_LIBOBD2_DecodeResponse_Unsupported.vcd");
     /* 1. */
     TEST_ASSERT_EQUAL_HEX16(OBD_NOT_SUPPORTED, LibOBD2_DecodeResponse(answers, 0u, response, &responseLen).response);
     TEST_ASSERT_EQUAL_size_t(0, responseLen);
@@ -459,6 +463,7 @@ void test_LIBOBD2_DecodeResponse_Unsupported(void)
         TEST_ASSERT_EQUAL_HEX16(OBD_NOT_SUPPORTED, LibOBD2_DecodeResponse(&answers[idx], 1u, response, &responseLen).response);
         TEST_ASSERT_EQUAL_size_t(0, responseLen);
     }
+    UART_TRACE_End();
 }
 
 /******************************************************************
@@ -479,6 +484,7 @@ void test_LIBOBD2_DispatchSid_TransferSteps(void)
     libobd2_data_t responseBuffer[2] = {0};
     size_t respLen = 0;
 
+    UART_TRACE_Begin("test_LIBOBD2_DispatchSid_TransferSteps.vcd");
     setUpLine();
     (void)ecuQueueFrame(REQ_DURATION(2u), ecuResp, sizeof(ecuResp));
 
@@ -488,4 +494,32 @@ void test_LIBOBD2_DispatchSid_TransferSteps(void)
     TEST_ASSERT_EQUAL_size_t(1, respLen);
     TEST_ASSERT_EQUAL_HEX8(ecuResp[0], responseBuffer[0].data.sid);
     TEST_ASSERT_EQUAL_size_t(sizeof(ecuResp), responseBuffer[0].dataLen);
+    UART_TRACE_End();
+}
+
+/******************************************************************
+ * A framing error inside the 3rd VIN message stops the request with
+ * OBD_ERR_UART_FRAMING and returns no data.
+ *   Line bytes: count answer 0..6, VIN messages 7..17, 18..28, 29..39;
+ *   byte 34 (message number of the 3rd message) gets the error.
+ ******************************************************************/
+void test_LIBOBD2_RequestService_VIN_FramingError(void)
+{
+    const uint8_t vin[VIN_MSG_CNT * 4u] = { 0x00, 0x00, 0x00, '1', 'H', 'G', 'C', 'M', '8', '2',
+                                            '6', '3', '3', 'A', '0', '0', '4', '3', '5', '2' };
+    faultUartInjector_t inj = { .onWrite = { .error = OBD_UART_RX_FRAMING_ERR, .firstByte = 34u, .count = 1u } };
+    uint8_t response[RESPONSE_BUF_LEN] = {0};
+    size_t responseLen = 0;
+
+    UART_TRACE_Begin("test_LIBOBD2_RequestService_VIN_FramingError.vcd");
+    setUpLine();
+    TEST_ASSERT_TRUE(FAULT_UartAttach(&uartCtx, &inj));
+    ecuQueueVehicleInfo(PID_09_VIN_MESSAGE_COUNT, PID_09_VIN, vin, VIN_MSG_CNT);
+
+    obd_status_t status = LibOBD2_RequestService(&ctx, OBD_GET_VIN, response, &responseLen);
+    UART_TRACE_End();
+
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_UART_FRAMING, status.response);
+    TEST_ASSERT_EQUAL_size_t(0, responseLen);
+    TEST_ASSERT_EQUAL_UINT32(1u, inj.injected);
 }

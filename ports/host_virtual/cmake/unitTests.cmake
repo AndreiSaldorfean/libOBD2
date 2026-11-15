@@ -8,10 +8,12 @@ set(TEST_PLATFORM_SOURCES
     "${CMAKE_SOURCE_DIR}/src/unit/drivers/host_virtual/uart_pbt_test.c"
     "${CMAKE_SOURCE_DIR}/src/unit/drivers/host_virtual/uart_test.c"
     "${CMAKE_SOURCE_DIR}/src/unit/drivers/host_virtual/timer_test.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/drivers/host_virtual/fault_injection_test.c"
     "${CMAKE_SOURCE_DIR}/src/unit/datalink/host_virtual/specific/iso9141/iso9141_pbt_test.c"
     "${CMAKE_SOURCE_DIR}/src/unit/datalink/host_virtual/specific/iso9141/iso9141_test.c"
     "${CMAKE_SOURCE_DIR}/src/unit/datalink/host_virtual/common/dl_pbt_test.c"
     "${CMAKE_SOURCE_DIR}/src/unit/datalink/host_virtual/common/dl_test.c"
+    "${CMAKE_SOURCE_DIR}/src/unit/datalink/host_virtual/common/dl_fault_test.c"
     "${CMAKE_SOURCE_DIR}/src/unit/app/host_virtual/libobd2_pbt_test.c"
     "${CMAKE_SOURCE_DIR}/src/unit/app/host_virtual/libobd2_test.c"
 )

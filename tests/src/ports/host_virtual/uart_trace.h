@@ -14,6 +14,7 @@
  *   kline.rx_waiting  1 while reads come back empty, 0 once a byte is read
  *   kline.session     short pulse at each UART_Init(), i.e. at every PBT trial
  *   kline.uart_error  high during a frame that carries an error from the onWrite fault hook
+ *   kline.fault       short pulse at every fault the fault injector (fault_injection.h) applies
  *
  * PulseView: Import -> Value Change Dump, then add a UART decoder with RX = line and TX = rx_data at
  * UART_TRACE_BAUD: RX rows show what was on the wire, TX rows what the library read.
@@ -62,6 +63,9 @@ void UART_TRACE_OnWrite(uint8_t byte, uint32_t timeMs, uint8_t error);
 void UART_TRACE_OnRead(uint8_t byte, uint32_t timeMs, bool received);
 void UART_TRACE_OnPulse(bool level, uint32_t timeMs);
 void UART_TRACE_OnMode(uint8_t mode, uint32_t timeMs);
+
+/* Hook called by the fault injector: a fault was applied at 'timeMs' ('what' becomes a note). */
+void UART_TRACE_OnFault(uint32_t timeMs, const char *what);
 
 /* Hook called by the host timer port: an explicit delay keeps its real length (it is not shortened to
  * UART_TRACE_MAX_GAP_MS like idle gaps are). */

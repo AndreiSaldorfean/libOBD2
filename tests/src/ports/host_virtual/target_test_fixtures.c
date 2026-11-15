@@ -7,6 +7,8 @@
 #include "iso9141_pbt_test.h"
 #include "dl_pbt_test.h"
 #include "dl_test.h"
+#include "dl_fault_test.h"
+#include "fault_injection_test.h"
 #include "libobd2_pbt_test.h"
 #include "libobd2_test.h"
 #include "unity_internals.h"
@@ -52,6 +54,15 @@ void targetRunTests()
     RUN_TEST(test_UART_BitBang_000);
     RUN_TEST(test_UART_FaultHook_OnRead);
     RUN_TEST(test_UART_Init_Null);
+
+    RUN_TEST(test_FAULT_Attach_InvalidArgs);
+    RUN_TEST(test_FAULT_Uart_WriteWindow);
+    RUN_TEST(test_FAULT_Uart_ReadFromByte);
+    RUN_TEST(test_FAULT_Uart_XorOnlyAndInactiveRule);
+    RUN_TEST(test_FAULT_Uart_Detach);
+    RUN_TEST(test_FAULT_Tmr_FailWindow);
+    RUN_TEST(test_FAULT_Tmr_FailInit);
+    RUN_TEST(test_FAULT_Tmr_ExpireAndShift);
     /* ---- DRIVER TESTS ---- */
 
     /* ---- DATALINK TESTS ---- */
@@ -75,6 +86,18 @@ void targetRunTests()
     RUN_TEST(test_DL_UartRxStatusToResponse);
     RUN_TEST(test_DL_StartTimeout_TimerError);
     RUN_TEST(test_DL_Connect_NoProtocol);
+
+    /* Fault injection scenarios */
+    RUN_TEST(test_DLFAULT_RecvResponse_FramingError);
+    RUN_TEST(test_DLFAULT_RecvResponse_OverrunOnFormatByte);
+    RUN_TEST(test_DLFAULT_RecvResponse_CorruptedByte);
+    RUN_TEST(test_DLFAULT_Connect_ParityOnKeyByte);
+    RUN_TEST(test_DLFAULT_Connect_NoiseOnSyncByte);
+    RUN_TEST(test_DLFAULT_Connect_TimerInitFails);
+    RUN_TEST(test_DLFAULT_SendRequest_TimerStartFails);
+    RUN_TEST(test_DLFAULT_RecvResponse_TimerStopFails);
+    RUN_TEST(test_DLFAULT_RecvResponse_TimeoutExpiresEarly);
+    RUN_TEST(test_DLFAULT_RecvResponse_ClockJumpsBack);
 
     /* ISO9141 */
     RUN_TEST(test_ISO9141_SendRecvMessage_000);
@@ -107,6 +130,7 @@ void targetRunTests()
     RUN_TEST(test_LIBOBD2_RequestService_NullDataLink);
     RUN_TEST(test_LIBOBD2_DecodeResponse_Unsupported);
     RUN_TEST(test_LIBOBD2_DispatchSid_TransferSteps);
+    RUN_TEST(test_LIBOBD2_RequestService_VIN_FramingError);
     /* ---- APP TESTS ---- */
     /*================= SANITY TESTS =================*/
 

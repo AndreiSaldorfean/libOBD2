@@ -523,6 +523,7 @@ void test_DL_Api_IncompleteLink(void)
     obd_data_t data = { .sid = 0x01u };
     size_t len = 0u;
 
+    UART_TRACE_Begin("test_DL_Api_IncompleteLink.vcd");
     for (uint8_t missing = 0u; missing < 4u; missing++)
     {
         setUpLine();
@@ -539,6 +540,7 @@ void test_DL_Api_IncompleteLink(void)
         TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, DL_RecvResponse(&dataLink, &data, &len).response);
         TEST_ASSERT_EQUAL_UINT32(0u, timer.timeNow);
     }
+    UART_TRACE_End();
 }
 
 /******************************************************************
@@ -547,6 +549,7 @@ void test_DL_Api_IncompleteLink(void)
  ******************************************************************/
 void test_DL_UartRxStatusToResponse(void)
 {
+    UART_TRACE_Begin("test_DL_UartRxStatusToResponse.vcd");
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK,        DL_UartRxStatusToResponse(OBD_UART_RX_OK));
     TEST_ASSERT_EQUAL_HEX16(OBD_RECV_NOT_READY,   DL_UartRxStatusToResponse(OBD_UART_RX_NO_DATA));
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_UART_PARITY,  DL_UartRxStatusToResponse(OBD_UART_RX_PARITY_ERR));
@@ -554,6 +557,7 @@ void test_DL_UartRxStatusToResponse(void)
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_UART_OVERRUN, DL_UartRxStatusToResponse(OBD_UART_RX_OVERRUN_ERR));
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_UART_NOISE,   DL_UartRxStatusToResponse(OBD_UART_RX_NOISE_ERR));
     TEST_ASSERT_EQUAL_HEX16(OBD_GENERIC_ERROR,    DL_UartRxStatusToResponse((obd_uart_rx_status_t)0xFFu));
+    UART_TRACE_End();
 }
 
 /******************************************************************
@@ -561,6 +565,7 @@ void test_DL_UartRxStatusToResponse(void)
  ******************************************************************/
 void test_DL_StartTimeout_TimerError(void)
 {
+    UART_TRACE_Begin("test_DL_StartTimeout_TimerError.vcd");
     setUpLine();
     timer.faults.onOp = failStartTimeout;
 
@@ -568,6 +573,7 @@ void test_DL_StartTimeout_TimerError(void)
     timer.faults.onOp = NULL;
 
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_TMR_START_FAILED, status.response);
+    UART_TRACE_End();
 }
 
 /* timer_init op that succeeds only on its first call (DL_Connect's own init) */
@@ -595,6 +601,7 @@ void test_DL_Connect_NoProtocol(void)
         kwp_ctx_t kwp;
     } anyCtx;
 
+    UART_TRACE_Begin("test_DL_Connect_NoProtocol.vcd");
     setUpLine();
     dataLink.pProtocolCtx  = &anyCtx;
     dataLink.connect       = NULL;
@@ -613,4 +620,5 @@ void test_DL_Connect_NoProtocol(void)
 #endif /* LIBOBD2_SPT_KWP2000 */
     TEST_ASSERT_NULL(dataLink.send_request);
     TEST_ASSERT_NULL(dataLink.recv_response);
+    UART_TRACE_End();
 }

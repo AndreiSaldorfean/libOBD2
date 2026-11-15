@@ -293,6 +293,7 @@ void test_ISO9141_Api_NullArgs(void)
     obd_data_t data = {0};
     size_t len = 0u;
 
+    UART_TRACE_Begin("test_ISO9141_Api_NullArgs.vcd");
     tmr_ctx_tester.timeNow = 0u;
 
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, ISO9141_Connect(&dl_tester, NULL).response);
@@ -300,6 +301,7 @@ void test_ISO9141_Api_NullArgs(void)
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, ISO9141_RecvResponse(&dl_tester, NULL, &len).response);
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NULL_PTR, ISO9141_RecvResponse(&dl_tester, &data, NULL).response);
     TEST_ASSERT_EQUAL_UINT32(0u, tmr_ctx_tester.timeNow);
+    UART_TRACE_End();
 }
 
 /******************************************************************
@@ -312,6 +314,7 @@ void test_ISO9141_RecvResponse_NegativeResponse(void)
     obd_data_t resp = {0};
     size_t len = 0u;
 
+    UART_TRACE_Begin("test_ISO9141_RecvResponse_NegativeResponse.vcd");
     setUpLine();
     lineQueueEcuFrame(frame, sizeof(frame));
 
@@ -319,6 +322,7 @@ void test_ISO9141_RecvResponse_NegativeResponse(void)
 
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_COMM_ECU_RESPONSE_7F, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
+    UART_TRACE_End();
 }
 
 /******************************************************************
@@ -332,6 +336,7 @@ void test_ISO9141_RecvResponse_EmptyFrame(void)
     obd_data_t resp = {0};
     size_t len = 0u;
 
+    UART_TRACE_Begin("test_ISO9141_RecvResponse_EmptyFrame.vcd");
     setUpLine();
     lineQueueEcuFrame(frame, sizeof(frame));
 
@@ -339,6 +344,7 @@ void test_ISO9141_RecvResponse_EmptyFrame(void)
 
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_COMM_RECV_MSG_FAILED, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
+    UART_TRACE_End();
 }
 
 /******************************************************************
@@ -352,6 +358,7 @@ void test_ISO9141_RecvResponse_NoChecksum(void)
     obd_data_t resp = {0};
     size_t len = 0u;
 
+    UART_TRACE_Begin("test_ISO9141_RecvResponse_NoChecksum.vcd");
     for (size_t idx = 3u; idx < sizeof(frame); idx++)
     {
         frame[idx] = 0x01u;
@@ -364,6 +371,7 @@ void test_ISO9141_RecvResponse_NoChecksum(void)
 
     TEST_ASSERT_EQUAL_HEX16(OBD_ERR_COMM_RECV_MSG_FAILED, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
+    UART_TRACE_End();
 }
 
 /******************************************************************
@@ -375,6 +383,7 @@ void test_ISO9141_5BaudInit_KwpKeyBytes(void)
 {
     uint8_t protocol = 0xFFu;
 
+    UART_TRACE_Begin("test_ISO9141_5BaudInit_KwpKeyBytes.vcd");
     setUpLine();
 
     /* Same timing as test_ISO9141_5BaudInit_000, only the keyword bytes differ */
@@ -395,6 +404,7 @@ void test_ISO9141_5BaudInit_KwpKeyBytes(void)
     TEST_ASSERT_EQUAL_HEX8(0xC0u, lineProto.header.fmt);
     TEST_ASSERT_EQUAL_HEX8(0x33u, lineProto.header.trgAddr);
     TEST_ASSERT_EQUAL_HEX8(0x94u, lineProto.kb1);
+    UART_TRACE_End();
 }
 
 /******************************************************************
@@ -403,6 +413,7 @@ void test_ISO9141_5BaudInit_KwpKeyBytes(void)
  ******************************************************************/
 void test_ISO9141_Connect_Verify_NoHeader(void)
 {
+    UART_TRACE_Begin("test_ISO9141_Connect_Verify_NoHeader.vcd");
     setUpLine();
     lineProto.header = (header_t){0};
 
@@ -410,4 +421,5 @@ void test_ISO9141_Connect_Verify_NoHeader(void)
 
     lineProto.header = header_tester;
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, ISO9141_Connect_Verify(&lineLink).response);
+    UART_TRACE_End();
 }
