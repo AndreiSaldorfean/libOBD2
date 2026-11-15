@@ -33,8 +33,9 @@ Your user needs access to the port (on most distros, membership of the `dialout`
 | `send_pulse(low / high)`          | serial BREAK on / off: TX held low, then released to idle high      |
 | `switch_mode(*_BEGIN / *_START)`  | waits for TX to finish, line idle high                              |
 | `switch_mode(*_END)`              | releases BREAK and drops the echo the wake-up left on RX            |
-| `flush_rx`                        | waits for TX, gives the K-line echo `flushSettleMs` (default 5 ms) to come back, drops RX |
-| `recv_byte`                       | waits up to 1 ms for a byte; per-byte parity/framing errors are not reported |
+| `send_byte`                       | sends the byte and remembers it: its K-line echo is skipped on RX   |
+| `flush_rx`                        | waits for TX, drops stale RX bytes and the echoes already in; does not wait for late echoes |
+| `recv_byte`                       | waits up to 1 ms for a byte, skipping the echo of the bytes sent; per-byte parity/framing errors are not reported |
 
 `UART_Init` sets `ASYNC_LOW_LATENCY` on the port. Without it, FTDI adapters hold received
 bytes for up to 16 ms, and the ISO9141 inter-byte timing checks (e.g. W2 ≥ 5 ms) then fail.

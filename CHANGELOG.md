@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `LibOBD2_Init` no longer reports a connection when no ECU answers: the stubbed KWP2000 StartCommunication (tried after ISO9141 fails) returned OK; it now returns `OBD_NOT_SUPPORTED` until KWP2000 is implemented.
+- host_serial: the 5-baud init failed with `OBD_ERR_5BAUD_WRONG_INV_ADDR` on USB adapters with a few ms of latency (e.g. CP210x): `flush_rx` waited a fixed 5 ms for the K-line echo, so a late echo of `~KB2` was read as the inverted address. The port now remembers the bytes it sends and skips their echo whenever it arrives; the `flushSettleMs` setting is removed (#52).
 
 ### Changed
 

@@ -17,7 +17,7 @@
 
 /* ================================================= MACROS ================================================ */
 #define SERIAL_UART_DEFAULT_BAUD      (10400)  /* ISO9141-2 / KWP2000 K-line baud rate */
-#define SERIAL_UART_DEFAULT_SETTLE_MS (5U)     /* time FlushRx gives the echo of the last byte to come back */
+#define SERIAL_UART_ECHO_QUEUE_LEN    (264U)   /* sent bytes whose K-line echo is still expected (> one KWP2000 frame) */
 
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
@@ -25,11 +25,16 @@ typedef struct
     /* Set by the integrator */
     const char *portName;   /* OS name of the port, e.g. "/dev/ttyUSB0" */
     int baudRate;           /* 0 selects SERIAL_UART_DEFAULT_BAUD */
-    uint32_t flushSettleMs; /* 0 selects SERIAL_UART_DEFAULT_SETTLE_MS */
 
     /* Owned by the port */
     struct sp_port *port;   /* opened by UART_Init, closed by UART_Deinit */
     bool breakActive;       /* TX held low (BREAK) by UART_SendPulse */
+
+    /* Bytes sent whose echo has not come back yet. The K-line is a single wire, so every byte sent is
+     * received again, after the adapter's USB latency (several ms on a CP210x / FTDI). */
+    uint8_t  echo[SERIAL_UART_ECHO_QUEUE_LEN];
+    uint16_t echoHead;      /* oldest expected echo */
+    uint16_t echoCnt;       /* expected echoes */
 }serialUartCtx_t;
 
 /* ============================================ INLINE FUNCTIONS =========================================== */

@@ -5,8 +5,6 @@
 #include "uart_if.h"
 #include "utils.h"
 #include <stddef.h>
-#include <time.h>
-#include <errno.h>
 #if defined(__linux__)
 #include <sys/ioctl.h>
 #include <linux/serial.h>
@@ -17,12 +15,12 @@
 #define SERIAL_STOP_BITS      (1)
 #define SERIAL_RX_POLL_MS     (1U)   /* longest UART_RecvByte waits for a byte */
 #define SERIAL_TX_TIMEOUT_MS  (100U) /* longest UART_WriteByte waits for room in the OS buffer */
-#define SERIAL_NS_PER_MS      (1000000L)
 
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-static void UART_SleepMs(uint32_t ms);
+static void UART_EchoPush(serialUartCtx_t *ctx, uint8_t byte);
+static bool UART_EchoPop(serialUartCtx_t *ctx, uint8_t byte);
 static void UART_SetLowLatency(struct sp_port *port);
 static void UART_SetBreak(serialUartCtx_t *ctx, bool active);
 static bool UART_Configure(serialUartCtx_t *ctx);
@@ -32,18 +30,42 @@ static bool UART_Init_Execute(serialUartCtx_t *ctx);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /******************************************
-* title: UART_SleepMs
-* brief: Sleeps ms milliseconds, resuming after a signal.
+* title: UART_EchoPush
+* brief: Remembers a byte just sent: its K-line echo will come back on RX.
+*        A full queue forgets its oldest entry.
 ******************************************/
-static void UART_SleepMs(uint32_t ms)
+static void UART_EchoPush(serialUartCtx_t *ctx, uint8_t byte)
 {
-    struct timespec req = { .tv_sec = (time_t)(ms / 1000U), .tv_nsec = (long)(ms % 1000U) * SERIAL_NS_PER_MS };
-    struct timespec rem = {0};
+    uint16_t tail = 0;
 
-    while ((0 != nanosleep(&req, &rem)) && (EINTR == errno))
+    if (SERIAL_UART_ECHO_QUEUE_LEN == ctx->echoCnt)
     {
-        req = rem;
+        ctx->echoHead = (uint16_t)((ctx->echoHead + 1U) % SERIAL_UART_ECHO_QUEUE_LEN);
+        ctx->echoCnt--;
     }
+
+    tail = (uint16_t)((ctx->echoHead + ctx->echoCnt) % SERIAL_UART_ECHO_QUEUE_LEN);
+    ctx->echo[tail] = byte;
+    ctx->echoCnt++;
+}
+
+/******************************************
+* title: UART_EchoPop
+* brief: True, and the echo is taken off the queue, when byte is the echo of
+*        the oldest byte sent that has not come back yet.
+******************************************/
+static bool UART_EchoPop(serialUartCtx_t *ctx, uint8_t byte)
+{
+    bool isEcho = false;
+
+    if ((0U != ctx->echoCnt) && (ctx->echo[ctx->echoHead] == byte))
+    {
+        ctx->echoHead = (uint16_t)((ctx->echoHead + 1U) % SERIAL_UART_ECHO_QUEUE_LEN);
+        ctx->echoCnt--;
+        isEcho = true;
+    }
+
+    return isEcho;
 }
 
 /******************************************
@@ -103,6 +125,8 @@ static bool UART_Configure(serialUartCtx_t *ctx)
     ctx->breakActive = true; /* force the release below */
     UART_SetBreak(ctx, false);
     OBD2_IF_COND_GOTO_EXIT(SP_OK != sp_flush(ctx->port, SP_BUF_BOTH));
+    ctx->echoHead = 0U;
+    ctx->echoCnt  = 0U;
 
     ok = true;
 exit:
@@ -188,6 +212,7 @@ exit:
 /******************************************
 * title: UART_WriteByte
 * brief: Sends one byte and waits until the OS has handed it to the adapter.
+*        The byte is remembered so that UART_RecvByte skips its echo.
 ******************************************/
 void UART_WriteByte(void* handle, uint8_t data)
 {
@@ -195,15 +220,22 @@ void UART_WriteByte(void* handle, uint8_t data)
 
     OBD2_DEBUG_ASSERT((NULL != ctx) && (NULL != ctx->port));
 
-    (void)sp_blocking_write(ctx->port, &data, 1U, SERIAL_TX_TIMEOUT_MS);
+    if (1 == sp_blocking_write(ctx->port, &data, 1U, SERIAL_TX_TIMEOUT_MS))
+    {
+        UART_EchoPush(ctx, data);
+    }
     (void)sp_drain(ctx->port);
 }
 
 /******************************************
 * title: UART_RecvByte
-* brief: Waits up to SERIAL_RX_POLL_MS for one byte. libserialport does not
-*        report per-byte line errors, so a received byte is always OK; a read
-*        error is reported as no data.
+* brief: Waits up to SERIAL_RX_POLL_MS for one byte, skipping the echo of
+*        the bytes sent. Bytes come back in order and the ECU only answers
+*        after the tester's last byte, so expected echoes always come first;
+*        a byte that is not the expected echo (adapter without echo, or a
+*        collision on the line) is data and drops the expected echoes.
+*        libserialport does not report per-byte line errors, so a received
+*        byte is always OK; a read error is reported as no data.
 ******************************************/
 obd_uart_rx_status_t UART_RecvByte(void* handle, uint8_t *recv_buffer)
 {
@@ -214,10 +246,14 @@ obd_uart_rx_status_t UART_RecvByte(void* handle, uint8_t *recv_buffer)
     OBD2_DEBUG_ASSERT((NULL != ctx) && (NULL != ctx->port));
     OBD2_DEBUG_ASSERT(NULL != recv_buffer);
 
-    if (1 == sp_blocking_read(ctx->port, &byte, 1U, SERIAL_RX_POLL_MS))
+    while ((OBD_UART_RX_NO_DATA == rxStatus) && (1 == sp_blocking_read(ctx->port, &byte, 1U, SERIAL_RX_POLL_MS)))
     {
-        *recv_buffer = byte;
-        rxStatus     = OBD_UART_RX_OK;
+        if (!UART_EchoPop(ctx, byte))
+        {
+            ctx->echoCnt = 0U;
+            *recv_buffer = byte;
+            rxStatus     = OBD_UART_RX_OK;
+        }
     }
 
     return rxStatus;
@@ -225,24 +261,31 @@ obd_uart_rx_status_t UART_RecvByte(void* handle, uint8_t *recv_buffer)
 
 /******************************************
 * title: UART_FlushRx
-* brief: Lets the echo of the bytes just sent come back from the K-line,
-*        then drops everything pending on the receive side.
+* brief: Drops the stale bytes received before the echo of the bytes just
+*        sent, and the echoes that are already in. Does not wait: echoes still
+*        on their way through the adapter are skipped later by UART_RecvByte,
+*        and an ECU answer right behind the last echo is kept.
 ******************************************/
 void UART_FlushRx(void* handle)
 {
     serialUartCtx_t *ctx = (serialUartCtx_t *)handle;
-    uint32_t settleMs = SERIAL_UART_DEFAULT_SETTLE_MS;
+    uint8_t byte = 0;
 
     OBD2_DEBUG_ASSERT((NULL != ctx) && (NULL != ctx->port));
 
-    if (0U != ctx->flushSettleMs)
-    {
-        settleMs = ctx->flushSettleMs;
-    }
-
     (void)sp_drain(ctx->port);
-    UART_SleepMs(settleMs);
-    (void)sp_flush(ctx->port, SP_BUF_INPUT);
+
+    if (0U == ctx->echoCnt)
+    {
+        (void)sp_flush(ctx->port, SP_BUF_INPUT);
+    }
+    else
+    {
+        while ((0U != ctx->echoCnt) && (1 == sp_nonblocking_read(ctx->port, &byte, 1U)))
+        {
+            (void)UART_EchoPop(ctx, byte); /* not the echo: a stale byte, dropped */
+        }
+    }
 }
 
 /******************************************
@@ -284,6 +327,7 @@ void UART_SwitchMode(void* handle, uint8_t mode)
         {
             UART_SetBreak(ctx, false);
             (void)sp_flush(ctx->port, SP_BUF_INPUT);
+            ctx->echoCnt = 0U;
             break;
         }
         default:
