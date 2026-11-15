@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **host_serial** port (`ports/host_serial/`): K-line on x86 Linux through a serial / USB adapter (KKL, FTDI), on top of libserialport. 5-baud and fast-init wake-ups use the serial BREAK condition; the port asks the driver for low latency so USB adapters do not batch received bytes.
+- `examples/host_serial/`: `obd2_reader` command-line example that connects and reads VIN, CALID and coolant temperature.
+- libserialport submodule (`examples/libs/libserialport`), built with CMake (`ports/host_serial/cmake/libserialport.cmake`).
+
 ### Fixed
 
 - `LibOBD2_Init` no longer reports a connection when no ECU answers: the stubbed KWP2000 StartCommunication (tried after ISO9141 fails) returned OK; it now returns `OBD_NOT_SUPPORTED` until KWP2000 is implemented.
