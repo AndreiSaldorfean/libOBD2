@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `datalink.h` no longer includes `utils.h` and `trace.h`; include them directly where their macros are used.
 - **Breaking:** the `host` platform is renamed to `host_virtual` (`ports/host_virtual/`, `tests/src/**/host_virtual/`, define `PLATFORM_HOST_VIRTUAL`). Set `"PLATFORM": "host_virtual"` in `build_config.json` and delete `builds/library` once, since its CMake cache still points at the old toolchain path.
 
 ## [0.0.0](https://github.com/AndreiSaldorfean/libOBD2/releases/tag/v0.0.0) - 2026-06-24

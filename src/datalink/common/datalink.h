@@ -7,10 +7,6 @@
 #include "uart_if.h"
 #include <stddef.h>
 #include <string.h>
-#include "utils.h"
-#if defined(SPT_TRACING)
-#include "trace.h"
-#endif /* SPT_TRACING */
 
 /* ================================================= MACROS ================================================ */
 // Feature flags
