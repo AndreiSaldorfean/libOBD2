@@ -10,6 +10,12 @@
 static const header_t header_ecu    = { .fmt = 0x48, .trgAddr = 0x6B, .srcAddr = 0x12 };
 static const header_t header_tester = { .fmt = 0x68, .trgAddr = 0x6A, .srcAddr = 0xF1 };
 
+/* Placeholders behind the driver pointers of APPFX_MockLink(); never called */
+static obd_timing_ops_t  unusedTmrOps;
+static obd_uart_ops_t    unusedUartOps;
+static virtTmrCtx_t      unusedTimer;
+static virtUartLinkCtx_t unusedUart;
+
 /* ============================================ GLOBAL VARIABLES =========================================== */
 appFixture_t appFx;
 
@@ -87,6 +93,35 @@ void APPFX_SetUpLine(void)
         .recv_response    = ISO9141_RecvResponse,
     };
     appFx.ctx = (obd_ctx_t){ .pDataLink = &appFx.link, .connectionStatus = 0 };
+}
+
+bool APPFX_HasEarlyChecksum(const uint8_t *data, size_t dataLen)
+{
+    uint8_t sum = (uint8_t)(header_ecu.fmt + header_ecu.trgAddr + header_ecu.srcAddr);
+
+    for (size_t idx = 0u; idx < dataLen; idx++)
+    {
+        if (data[idx] == sum)
+        {
+            return true;
+        }
+        sum = (uint8_t)(sum + data[idx]);
+    }
+    return false;
+}
+
+dataLink_if_t APPFX_MockLink(void *ctx, dl_send_request_t send, dl_recv_response_t recv)
+{
+    return (dataLink_if_t)
+    {
+        .pProtocolCtx     = ctx,
+        .pTimingOps       = &unusedTmrOps,
+        .pTimingHandle    = &unusedTimer,
+        .pUartOps         = &unusedUartOps,
+        .pTransportHandle = &unusedUart,
+        .send_request     = send,
+        .recv_response    = recv,
+    };
 }
 
 void APPFX_SuppressEcho(void)

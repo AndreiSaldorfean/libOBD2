@@ -10,5 +10,6 @@
 void test_pos_pbt_UART_RecvByte_0(void);
 void test_pos_pbt_UART_RecvByte_1(void);
 void test_pos_pbt_UART_RecvByte_2(void);
+void test_pos_pbt_UART_RecvByte_3(void);
 
 #endif /* UART_PBT_TEST_H */

@@ -14,6 +14,7 @@
 #include "libobd2.h"
 #include "libobd2_timer_port.h"
 #include "libobd2_uart_port.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -50,6 +51,14 @@ extern const uint8_t appFxVin[APPFX_VIN_MSG_CNT * 4u];
 /* Clock at 0, empty line, tester connected over ISO9141 with timer/transport inits that keep both
  * (DL_Connect would otherwise zero timeStep and drop the queued ECU bytes). */
 void APPFX_SetUpLine(void);
+
+/* True when one of the 'dataLen' data bytes of an ECU frame 48 6B 12 <data> <cs> equals the sum of the
+ * bytes before it: a receiver that frames by checksum ends the frame there (PROPERTY_TESTS.md, F1) */
+bool APPFX_HasEarlyChecksum(const uint8_t *data, size_t dataLen);
+
+/* A data link whose send/recv are test doubles: 'ctx' becomes pProtocolCtx, and the driver pointers are
+ * set to placeholders the doubles never use (DL_ValidateLink rejects a link without them). */
+dataLink_if_t APPFX_MockLink(void *ctx, dl_send_request_t send, dl_recv_response_t recv);
 
 /* Makes the tester's transceiver suppress its own echo until the next APPFX_SetUpLine(): sent bytes are
  * still drawn on the trace's wire, but never land in the receive queue. The virtual line is a loopback

@@ -8,5 +8,10 @@
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 void test_neg_pbt_LIBOBD2_RequestService_0(void);
+void test_neg_pbt_LIBOBD2_RequestService_1(void);
+void test_neg_pbt_LIBOBD2_RequestService_2(void);
+void test_neg_pbt_LIBOBD2_RequestService_3(void);
+void test_neg_pbt_LIBOBD2_RequestService_4(void);
+void test_neg_pbt_LIBOBD2_RequestService_5(void);
 
 #endif /* LIBOBD2_PBT_NEG_TEST_H */
