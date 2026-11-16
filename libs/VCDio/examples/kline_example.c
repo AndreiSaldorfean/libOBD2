@@ -54,6 +54,8 @@ int main(int argc, char **argv)
     vcdTime_t requestEnd;
     vcdTime_t responseEnd;
     vcdTime_t errorEnd;
+    vcdPulseViewUart_t decoders[2];
+    char pvsPath[512];
 
     VCD_WriterConfigDefault(&cfg);
     cfg.timescale.magnitude = 1u;
@@ -110,5 +112,14 @@ int main(int argc, char **argv)
 
     CHECKED(VCD_WriterClose(w, errorEnd + MS(50)));
     printf("wrote %s\n", path);
+
+    /* ---- PulseView setup next to the trace: both directions decoded, plus the 5-baud address ---- */
+    VCD_PulseViewUartFromConfig(&decoders[0], &fastTx, cfg.timescale, "rx", "tx");
+    decoders[0].name = "K-line 10400";
+    VCD_PulseViewUartFromConfig(&decoders[1], &slowTx, cfg.timescale, NULL, "tx");
+    decoders[1].name = "5-baud init";
+    (void)VCD_PulseViewSetupPath(path, pvsPath, sizeof pvsPath);
+    CHECKED(VCD_PulseViewWriteSetup(pvsPath, decoders, 2u));
+    printf("wrote %s\n", pvsPath);
     return 0;
 }

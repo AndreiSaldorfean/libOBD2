@@ -11,11 +11,13 @@
  *   vcd_writer.h - produce .vcd files, in time order or sorted for you
  *   vcd_reader.h - load .vcd files and query values over time
  *   vcd_uart.h   - draw UART frames into a writer and decode UART frames from a reader
+ *   vcd_pulseview.h - PulseView session setups (.pvs) with preconfigured UART decoders
  *
  * Including this header pulls in all of them.
  *************************************************************************************************************/
 
 /* ================================================ INCLUDES =============================================== */
+#include "vcd_pulseview.h"
 #include "vcd_reader.h"
 #include "vcd_types.h"
 #include "vcd_uart.h"

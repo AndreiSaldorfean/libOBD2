@@ -24,6 +24,7 @@ add_library(VCDio STATIC
     src/vcd_writer.c
     src/vcd_reader.c
     src/vcd_uart.c
+    src/vcd_pulseview.c
 )
 add_library(VCDio::VCDio ALIAS VCDio)
 
