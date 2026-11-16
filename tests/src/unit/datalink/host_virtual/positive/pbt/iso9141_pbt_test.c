@@ -415,7 +415,7 @@ void test_pos_pbt_ISO9141_RecvResponse_0(void)
         .trials    = PBT_TRIALS_LINE,
     };
     PBT_KNOWN_BUG(&cfg, "test_pos_pbt_ISO9141_RecvResponse_0.vcd",
-                  "F1: a data byte equal to the running checksum ends the frame early (PROPERTY_TESTS.md)");
+                  "F1 (#62): a data byte equal to the running checksum ends the frame early (PROPERTY_TESTS.md)");
 }
 
 /******************************************************************

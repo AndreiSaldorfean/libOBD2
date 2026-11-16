@@ -282,7 +282,7 @@ void test_neg_pbt_DL_ReadByteInTimeframe_1(void)
         .type_info = { &missedInfo },
     };
     PBT_KNOWN_BUG(&cfg, "test_neg_pbt_DL_ReadByteInTimeframe_1.vcd",
-                  "F2: on a timeout *timeElapsed is 0 - timeStart, not the time taken (PROPERTY_TESTS.md)");
+                  "F2 (#63): on a timeout *timeElapsed is 0 - timeStart, not the time taken (PROPERTY_TESTS.md)");
 }
 
 /******************************************************************

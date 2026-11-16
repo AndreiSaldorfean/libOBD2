@@ -461,7 +461,7 @@ void test_neg_pbt_LIBOBD2_RequestService_1(void)
         .trials    = PBT_TRIALS_LINE,
     };
     PBT_KNOWN_BUG(&cfg, "test_neg_pbt_LIBOBD2_RequestService_1.vcd",
-                  "F5: message numbers are ignored, data is joined in arrival order (PROPERTY_TESTS.md)");
+                  "F5 (#66): message numbers are ignored, data is joined in arrival order (PROPERTY_TESTS.md)");
 }
 
 /******************************************************************
@@ -483,7 +483,7 @@ void test_neg_pbt_LIBOBD2_RequestService_2(void)
         .trials    = PBT_TRIALS_LINE,
     };
     PBT_KNOWN_BUG(&cfg, "test_neg_pbt_LIBOBD2_RequestService_2.vcd",
-                  "F6: sid and PID of $09 answers are not checked against the request (PROPERTY_TESTS.md)");
+                  "F6 (#67): sid and PID of $09 answers are not checked against the request (PROPERTY_TESTS.md)");
 }
 
 /******************************************************************
@@ -505,7 +505,7 @@ void test_neg_pbt_LIBOBD2_RequestService_3(void)
         .trials    = PBT_TRIALS_LINE,
     };
     PBT_KNOWN_BUG(&cfg, "test_neg_pbt_LIBOBD2_RequestService_3.vcd",
-                  "F7: a missing data byte decodes as A = 0, i.e. -40 degC (PROPERTY_TESTS.md)");
+                  "F7 (#68): a missing data byte decodes as A = 0, i.e. -40 degC (PROPERTY_TESTS.md)");
 }
 
 /******************************************************************

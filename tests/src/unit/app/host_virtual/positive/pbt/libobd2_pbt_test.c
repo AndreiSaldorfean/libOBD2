@@ -391,5 +391,5 @@ void test_pos_pbt_LIBOBD2_RequestService_3(void)
         .type_info = { &infoInfo },
     };
     PBT_KNOWN_BUG(&cfg, "test_pos_pbt_LIBOBD2_RequestService_3.vcd",
-                  "F1 at app level: VINs/CALIDs/coolant values with a byte equal to the running sum cannot be read");
+                  "F1 at app level (#62): VINs/CALIDs/coolant values with a byte equal to the running sum cannot be read");
 }

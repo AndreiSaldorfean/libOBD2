@@ -120,9 +120,9 @@ A failing property prints its shrunk counter-example, and the seed to rerun it w
 
 ## Findings
 
-Each finding is a `PBT_KNOWN_BUG` property; the counter-examples are the shrunk ones theft reports.
+Each finding is a `PBT_KNOWN_BUG` property and has a bug ticket (#62 to #68); the counter-examples are the shrunk ones theft reports.
 
-### F1: a data byte equal to the running checksum ends the frame early
+### F1 (#62): a data byte equal to the running checksum ends the frame early
 - **Where:** `src/datalink/specific/iso9141/iso9141_recv.c:99`. `ISO9141_RecvMessage` frames a response
   by reading until a byte equals the sum of the bytes before it.
 - **Counter-examples:**
@@ -137,7 +137,7 @@ Each finding is a `PBT_KNOWN_BUG` property; the counter-examples are the shrunk 
   follows within P1 max (or once P2 min passes). Then verify the last byte as the checksum. A
   checksum match should confirm a frame, not end it.
 
-### F2: a timed-out read reports a wrong elapsed time
+### F2 (#63): a timed-out read reports a wrong elapsed time
 - **Where:** `src/datalink/common/datalink_utils.h:122`. On the timeout path `lTimeElapsed = timeEnd
   - timeStart` runs while `timeEnd` is still 0.
 - **Counter-example:** start 0, window `[0, 0]`, no byte: the call takes 2 ms and reports 0. With the
@@ -146,7 +146,7 @@ Each finding is a `PBT_KNOWN_BUG` property; the counter-examples are the shrunk 
   from it would go wrong.
 - **Fix direction:** read the clock on the timeout path too.
 
-### F3: the response header is never checked
+### F3 (#64): the response header is never checked
 - **Where:** `ISO9141_RecvMessage` / `ISO9141_RecvResponse_Verify` only look at the checksum and sid `7F`.
 - **Counter-example:** `49 6B 00 00 B4` (format byte `49` instead of `48`) is returned as OK.
 - **Impact:** frames that aren't ECU responses to the tester are accepted. The loopback echo of the
@@ -154,14 +154,14 @@ Each finding is a `PBT_KNOWN_BUG` property; the counter-examples are the shrunk 
   "answer itself".
 - **Fix direction:** accept only `48 6B <src>` (store the ECU address from the first response).
 
-### F4: frames with more than 7 data bytes are accepted
+### F4 (#65): frames with more than 7 data bytes are accepted
 - **Where:** `src/datalink/specific/iso9141/iso9141_priv.h:17`. `ISO9141_MAX_DATA_FIELD_LEN` is
   `sizeof(obd_data_t) + 1` (13), not 7 + checksum.
 - **Counter-example:** `48 6B 00` + 8 × `00` + `B3` is returned as OK with 8 data bytes.
 - **Impact:** over-long frames are passed up; the app decoders then read params the spec doesn't define.
 - **Fix direction:** limit the data field to 7 bytes (+ checksum) and report `RECV_MSG_FAILED` beyond.
 
-### F5: $09 message numbers are ignored
+### F5 (#66): $09 message numbers are ignored
 - **Where:** `src/app/libobd2_formulas.h:36`. `LibOBD2_FormulaMultiFrame` joins messages in arrival
   order and skips the message-number byte without checking it.
 - **Counter-example:** VIN messages numbered `2 1 3 4 5` are joined in that order and returned OK.
@@ -169,7 +169,7 @@ Each finding is a `PBT_KNOWN_BUG` property; the counter-examples are the shrunk 
 - **Fix direction:** place each message by its number and fail on a duplicate, a gap or a number
   outside `1..count`.
 
-### F6: $09 answers are not matched to the request
+### F6 (#67): $09 answers are not matched to the request
 - **Where:** `src/app/libobd2.c:96`. `TP_MSG_CNT` takes the count from `param[1]` of any answer, and
   `TP_MSGS` stores whatever comes next. Only the first message's sid/PID is looked at, when decoding.
 - **Counter-example:** a count answer `48 01 05` (sid `48`, PID `01`) is taken as "5 VIN messages" and
@@ -178,7 +178,7 @@ Each finding is a `PBT_KNOWN_BUG` property; the counter-examples are the shrunk 
 - **Fix direction:** check sid = request + `0x40` and PID = requested PID on every answer, including
   the count answer.
 
-### F7: a coolant answer without its data byte decodes anyway
+### F7 (#68): a coolant answer without its data byte decodes anyway
 - **Where:** `src/app/libobd2.c:148`, `LibOBD2_FormulaCoolantTemp`: `param[1]` is read without checking
   `dataLen`.
 - **Counter-example:** the answer `41 05` returns OK, 1 byte, `0 − 40` = −40 °C.

@@ -444,7 +444,7 @@ void test_neg_pbt_ISO9141_RecvResponse_0(void)
         .trials    = PBT_TRIALS_LINE,
     };
     PBT_KNOWN_BUG(&cfg, "test_neg_pbt_ISO9141_RecvResponse_0.vcd",
-                  "F1: a byte changed to the running sum is taken as the checksum, a cut frame is OK (PROPERTY_TESTS.md)");
+                  "F1 (#62): a byte changed to the running sum is taken as the checksum, a cut frame is OK (PROPERTY_TESTS.md)");
 }
 
 /******************************************************************
@@ -466,7 +466,7 @@ void test_neg_pbt_ISO9141_RecvResponse_1(void)
         .trials    = PBT_TRIALS_LINE,
     };
     PBT_KNOWN_BUG(&cfg, "test_neg_pbt_ISO9141_RecvResponse_1.vcd",
-                  "F3: the response header is never checked (PROPERTY_TESTS.md)");
+                  "F3 (#64): the response header is never checked (PROPERTY_TESTS.md)");
 }
 
 /******************************************************************
@@ -487,7 +487,7 @@ void test_neg_pbt_ISO9141_RecvResponse_2(void)
         .trials    = PBT_TRIALS_LINE,
     };
     PBT_KNOWN_BUG(&cfg, "test_neg_pbt_ISO9141_RecvResponse_2.vcd",
-                  "F4: frames up to 12 data bytes are accepted (PROPERTY_TESTS.md)");
+                  "F4 (#65): frames up to 12 data bytes are accepted (PROPERTY_TESTS.md)");
 }
 
 /******************************************************************
