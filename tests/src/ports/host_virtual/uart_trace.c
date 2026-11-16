@@ -4,7 +4,10 @@
 #include "datalink.h"
 #include "datalink_utils.h"
 #include "vcd_io.h"
+#include <errno.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
 
 /* ================================================= MACROS ================================================ */
 #define TICKS_PER_MS        1000u /* trace timescale is 1 us */
@@ -12,11 +15,16 @@
 #define SESSION_PULSE_TICKS 10u   /* width of the session pulse */
 #define NOTE_HOLD_TICKS     500u  /* how long a note stays visible (extra signals only) */
 #define NOTE_MAX_LEN        64u
+#define TRACE_PATH_MAX      512u
+#define INIT_BAUD           5.0   /* ISO9141 5-baud wake-up address */
+#define ROW_COLOR_KLINE     0xFF2E86C1u
+#define ROW_COLOR_INIT      0xFFE67E22u
 
 /* ============================================ LOCAL VARIABLES ============================================ */
 static vcdWriter_t    *g_writer = NULL;
 static vcdUartConfig_t g_lineUart; /* frames on the wire */
 static vcdUartConfig_t g_rxUart;   /* frames on rx_data, same baud as the wire */
+static vcdTimescale_t  g_lineTimescale;
 
 static vcdSignal_t g_line;
 static vcdSignal_t g_rxData;
@@ -39,12 +47,17 @@ static vcdTime_t g_lineFree;  /* end of the last frame on the wire */
 static vcdTime_t g_readFree;  /* end of the last frame on rx_data */
 static vcdTime_t g_traceMax;  /* latest time anything was drawn at */
 static bool      g_bitbang;   /* between DIGITAL_MODE_BEGIN and DIGITAL_MODE_END */
+static bool      g_sawBitbang; /* the trace holds a 5-baud bit-banged byte */
+static char      g_path[TRACE_PATH_MAX]; /* where the running trace goes */
 
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 static void touch(vcdTime_t t);
 static void noteAt(vcdTime_t t, const char *text);
 static void startSession(void);
 static vcdTime_t traceTime(uint32_t timeMs);
+static bool makeTracePath(const char *name, char *path, size_t size);
+static bool makeParentDirs(char *path);
+static void writePulseViewSetup(void);
 #if UART_TRACE_EXTRA_SIGNALS
 static const char *errorName(uint8_t error);
 #endif
@@ -129,6 +142,73 @@ static vcdTime_t traceTime(uint32_t timeMs)
     return g_traceLast;
 }
 
+/* 'name' relative to UART_TRACE_DIR (a leading "./" is dropped); absolute paths are kept as they are */
+static bool makeTracePath(const char *name, char *path, size_t size)
+{
+    int len;
+
+    while ((name[0] == '.') && (name[1] == '/'))
+    {
+        name += 2;
+    }
+    if ((name[0] == '/') || (UART_TRACE_DIR[0] == '\0'))
+    {
+        len = snprintf(path, size, "%s", name);
+    }
+    else
+    {
+        len = snprintf(path, size, "%s/%s", UART_TRACE_DIR, name);
+    }
+    return (len > 0) && ((size_t)len < size);
+}
+
+/* mkdir -p for every directory in front of the file name */
+static bool makeParentDirs(char *path)
+{
+    bool ok = true;
+
+    for (char *sep = strchr(path + 1, '/'); ok && (sep != NULL); sep = strchr(sep + 1, '/'))
+    {
+        *sep = '\0';
+        ok = (mkdir(path, 0777) == 0) || (errno == EEXIST);
+        *sep = '/';
+    }
+    return ok;
+}
+
+/* <trace>.pvs next to <trace>.vcd: PulseView loads it with the trace and the UART rows come up decoded.
+ * The 5-baud row is only added when there is a bit-banged byte to decode, it turns 10400 baud traffic
+ * into noise otherwise. */
+static void writePulseViewSetup(void)
+{
+    vcdPulseViewUart_t uarts[2];
+    char pvsPath[TRACE_PATH_MAX];
+    size_t count = 1u;
+    vcdStatus_t st;
+
+    VCD_PulseViewUartFromConfig(&uarts[0], &g_lineUart, g_lineTimescale, "line", "rx_data");
+    uarts[0].name  = "K-line (RX: line, TX: rx_data)";
+    uarts[0].color = ROW_COLOR_KLINE;
+    if (g_sawBitbang)
+    {
+        VCD_PulseViewUartDefault(&uarts[1], "line", NULL, INIT_BAUD);
+        uarts[1].name  = "5-baud init (line)";
+        uarts[1].color = ROW_COLOR_INIT;
+        count++;
+    }
+
+    if (VCD_PulseViewSetupPath(g_path, pvsPath, sizeof pvsPath) >= sizeof pvsPath)
+    {
+        fprintf(stderr, "uart_trace: path too long for the PulseView setup of %s\n", g_path);
+        return;
+    }
+    st = VCD_PulseViewWriteSetup(pvsPath, uarts, count);
+    if (st != VCD_OK)
+    {
+        fprintf(stderr, "uart_trace: cannot write %s: %s\n", pvsPath, VCD_StatusStr(st));
+    }
+}
+
 #if UART_TRACE_EXTRA_SIGNALS
 static const char *errorName(uint8_t error)
 {
@@ -155,12 +235,18 @@ bool UART_TRACE_Begin(const char *path)
 
     UART_TRACE_End();
 
+    if ((path == NULL) || !makeTracePath(path, g_path, sizeof g_path) || !makeParentDirs(g_path))
+    {
+        fprintf(stderr, "uart_trace: cannot create the trace %s\n", (path != NULL) ? path : "(null)");
+        return false;
+    }
+
     VCD_WriterConfigDefault(&cfg);
     cfg.timescale.magnitude = 1u;
     cfg.timescale.unit = VCD_UNIT_US;
     cfg.order = VCD_ORDER_SORTED; /* frames are drawn ahead of the reads that consume them */
     cfg.comment = "libOBD2 host test: virtual K-line";
-    if (VCD_WriterOpenFile(&g_writer, path, &cfg) != VCD_OK)
+    if (VCD_WriterOpenFile(&g_writer, g_path, &cfg) != VCD_OK)
     {
         g_writer = NULL;
         return false;
@@ -181,6 +267,7 @@ bool UART_TRACE_Begin(const char *path)
 #endif
     (void)VCD_ScopeEnd(g_writer);
 
+    g_lineTimescale = cfg.timescale;
     VCD_UartConfigDefault(&g_lineUart, cfg.timescale, (double)UART_TRACE_BAUD);
     VCD_UartConfigDefault(&g_rxUart, cfg.timescale, (double)UART_TRACE_BAUD);
 #if UART_TRACE_EXTRA_SIGNALS
@@ -196,6 +283,7 @@ bool UART_TRACE_Begin(const char *path)
     g_readFree = 0u;
     g_traceMax = 0u;
     g_bitbang = false;
+    g_sawBitbang = false;
 
     (void)VCD_UartWriteIdle(g_writer, g_line, 0u, &g_lineUart);
     (void)VCD_UartWriteIdle(g_writer, g_rxData, 0u, &g_rxUart);
@@ -226,6 +314,7 @@ void UART_TRACE_End(void)
         fprintf(stderr, "uart_trace: trace incomplete: %s\n", VCD_StatusStr(st));
     }
     g_writer = NULL;
+    writePulseViewSetup();
 }
 
 void UART_TRACE_Note(const char *text)
@@ -360,6 +449,7 @@ void UART_TRACE_OnMode(uint8_t mode, uint32_t timeMs)
     {
         case DIGITAL_MODE_BEGIN:
             g_bitbang = true;
+            g_sawBitbang = true;
             noteAt(t, "BITBANG_BEGIN");
             break;
         case DIGITAL_MODE_END:

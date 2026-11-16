@@ -16,8 +16,15 @@
  *   kline.uart_error  high during a frame that carries an error from the onWrite fault hook
  *   kline.fault       short pulse at every fault the fault injector (fault_injection.h) applies
  *
- * PulseView: Import -> Value Change Dump, then add a UART decoder with RX = line and TX = rx_data at
- * UART_TRACE_BAUD: RX rows show what was on the wire, TX rows what the library read.
+ * Files: a relative path given to UART_TRACE_Begin() lands under UART_TRACE_DIR (test_results/, relative
+ * to the directory the test binary runs in; missing directories are created). Next to every <name>.vcd
+ * a <name>.pvs PulseView session setup is written (see vcd_pulseview.h).
+ *
+ * PulseView: Open or Import -> Value Change Dump. PulseView picks up the .pvs on its own, so the trace
+ * comes up with its UART decoders already set:
+ *   "K-line"       RX = line, TX = rx_data at UART_TRACE_BAUD, 8N1: RX rows show what was on the wire,
+ *                  TX rows what the library read
+ *   "5-baud init"  RX = line at 5 baud, only in traces with a bit-banged wake-up address
  *
  * Build with -DUART_TRACE_EXTRA_SIGNALS=1 to also get tx_byte/rx_byte vectors, a trial counter and text
  * notes (errors, mode switches, skipped time) for GTKWave/Surfer. Older sigrok versions (0.5.x) stop
@@ -38,6 +45,10 @@
 #define UART_TRACE_BAUD        10400u  /* baud rate of kline.line and kline.rx_data */
 #define UART_TRACE_MAX_GAP_MS  50u     /* idle time longer than this is shortened to it */
 
+#ifndef UART_TRACE_DIR
+#define UART_TRACE_DIR "test_results"  /* where relative trace paths go, "" for the working directory */
+#endif
+
 #ifndef UART_TRACE_EXTRA_SIGNALS
 #define UART_TRACE_EXTRA_SIGNALS 0     /* 1: add vector/string signals for GTKWave/Surfer */
 #endif
@@ -47,11 +58,12 @@
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
 
-/* Starts tracing into 'path' (a .vcd file). A trace already running is finished first.
- * Returns false if the file cannot be created; tracing then stays off. */
+/* Starts tracing into 'path' (a .vcd file, relative paths go under UART_TRACE_DIR). A trace already
+ * running is finished first. Returns false if the file cannot be created; tracing then stays off. */
 bool UART_TRACE_Begin(const char *path);
 
-/* Finishes the running trace and closes its file. No-op when nothing is traced. */
+/* Finishes the running trace, closes its file and writes the PulseView setup next to it.
+ * No-op when nothing is traced. */
 void UART_TRACE_End(void);
 
 /* Shows 'text' on kline.note (only with UART_TRACE_EXTRA_SIGNALS). */
