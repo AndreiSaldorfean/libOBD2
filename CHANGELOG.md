@@ -13,10 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `examples/host_serial/`: `obd2_reader` command-line example that connects and reads VIN, CALID and coolant temperature.
 - libserialport submodule (`examples/libs/libserialport`), built with CMake (`ports/host_serial/cmake/libserialport.cmake`).
 - Fault injector for the `host_virtual` UART and timer ports (`ports/host_virtual/fault_injection.h`): declarative rules for UART errors / flipped bits on chosen bytes and failing, early-expiring or shifted timer operations; applied faults show on `kline.fault` in the VCD trace. First part of #46, still under review.
+- ECU simulator: `ECU_SetRequestHook` (callback before every answer) and `ECU_SetResponseParam` (change one response byte), so a simulation can change values such as coolant temperature while it runs.
 
 ### Fixed
 
 - `LibOBD2_Init` no longer reports a connection when no ECU answers: the stubbed KWP2000 StartCommunication (tried after ISO9141 fails) returned OK; it now returns `OBD_NOT_SUPPORTED` until KWP2000 is implemented.
+- ECU simulator: drops the echo of `~0x33` after the 5-baud init; with echo on, it was read as the format byte of the first request.
+- ECU simulator: waits 3 ms more than the minimum of W1, W2 and P2, so a tester on a real-time line no longer sees it answer too early.
+- ECU simulator: `ECU_Listen` ignores requests whose SID or PID is outside the response table instead of reading past it.
 
 ### Changed
 
