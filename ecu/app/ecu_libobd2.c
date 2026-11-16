@@ -12,8 +12,11 @@
 #include "ecu_libobd2_services.h"
 
 /* ================================================= MACROS ================================================ */
+#define ECU_MAX_SIDS (10U) /* rows of ecuResponses, indexed by sid */
+#define ECU_MAX_PIDS (10U) /* columns of ecuResponses, indexed by pid */
+
 /* ============================================ LOCAL VARIABLES ============================================ */
-ecu_libobd2_service_t ecuResponses[10][10] = {ECU_SRV_RESP};
+ecu_libobd2_service_t ecuResponses[ECU_MAX_SIDS][ECU_MAX_PIDS] = {ECU_SRV_RESP};
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
@@ -43,6 +46,11 @@ obd_status_t ECU_Listen(obd_ctx_t* ctx)
 
     status = ECU_DL_RecvResponse(ctx->pDataLink, &resp, &dataLen);
     OBD2_ASSERT_OK(status);
+
+    // Requests outside the response table get no answer (a real ECU stays silent too)
+    status.response = OBD_NOT_SUPPORTED;
+    OBD2_IF_COND_GOTO_EXIT((resp.sid >= ECU_MAX_SIDS) || (resp.param[0] >= ECU_MAX_PIDS));
+    status.response = OBD_STATUS_OK;
 
     for (size_t idx = 0; idx < ecuResponses[resp.sid][resp.param[0]].sreqLen; idx++)
     {
