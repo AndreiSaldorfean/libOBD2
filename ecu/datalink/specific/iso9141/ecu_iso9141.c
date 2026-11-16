@@ -11,6 +11,10 @@
 #include <sys/unistd.h>
 
 /* ================================================= MACROS ================================================ */
+/* The tester times each init byte from the moment it saw the previous one, which is a little after the ECU
+ * sent it. Answering exactly at the minimum of a window can then look early, so the ECU adds this margin. */
+#define ECU_ISO9141_TIMING_MARGIN (3U)
+
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
@@ -90,7 +94,7 @@ OBD2_STATIC obd_status_t ECU_ISO9141_SendMessage(dataLink_if_t *self, uint8_t *m
 {
     obd_status_t status = {0};
 
-    LIBOBD2_TMR_Delay(self, 26);
+    LIBOBD2_TMR_Delay(self, P2_TIME_MIN + ECU_ISO9141_TIMING_MARGIN);
 
     for (size_t idx = 0; idx < len; idx++)
     {
@@ -168,7 +172,7 @@ OBD2_STATIC obd_status_t ECU_ISO9141_5BaudInit(dataLink_if_t *self)
     }
 
     OBD2_ASSERT_EQUAL_OR_EXIT(0x33, syncByte);
-    LIBOBD2_TMR_Delay(self, ISO9141_W1_TIME_MIN);
+    LIBOBD2_TMR_Delay(self, ISO9141_W1_TIME_MIN + ECU_ISO9141_TIMING_MARGIN);
 
     // Send sync byte
     LIBOBD2_UART_SendByte(self, 0x55);
@@ -176,7 +180,7 @@ OBD2_STATIC obd_status_t ECU_ISO9141_5BaudInit(dataLink_if_t *self)
 
     // Send KB1
     YIELD;
-    LIBOBD2_TMR_Delay(self, ISO9141_W2_TIME_MIN);
+    LIBOBD2_TMR_Delay(self, ISO9141_W2_TIME_MIN + ECU_ISO9141_TIMING_MARGIN);
     LIBOBD2_UART_SendByte(self, 0x08);
     LIBOBD2_UART_FlushRx(self);
 
