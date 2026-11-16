@@ -9,34 +9,57 @@
 #include <string.h>
 
 /* ================================================= MACROS ================================================ */
-// Feature flags
+// Feature flags: define LIBOBD2_SPT_<PROTOCOL> before including to pick the
+// protocols. With none defined, ISO 9141-2 is built.
+#if !defined(LIBOBD2_SPT_ISO9141) && !defined(LIBOBD2_SPT_KWP2000)
 #define LIBOBD2_SPT_ISO9141
-// #define LIBOBD2_SPT_KWP2000 /* Not supported yet */
+#endif
+// LIBOBD2_SPT_KWP2000: not supported yet
 
-// Timing
-#if 0
-#define P1_TIME_MIN      (0U)
-#define P1_TIME_MAX      (20U)
-#define P2_TIME_MIN      (25U)
-#define P2_TIME_MAX      (50U)
-#define P2_STAR_TIME_MIN (25U)
-#define P2_STAR_TIME_MAX (5000U)
-#define P3_TIME_MIN      (55U)
-#define P3_TIME_MAX      (5000U)
-#define P4_TIME_MIN      (5U)
-#define P4_TIME_MAX      (20U)
+// Timing limits in ms. LIBOBD2_STRICT_TIMING selects the values from the
+// standard; by default the maximum limits are relaxed to 5 s. Each limit can be
+// overridden on its own by defining it before including.
+#if defined(LIBOBD2_STRICT_TIMING)
+#define LIBOBD2_P1_MAX_DEFAULT      (20U)
+#define LIBOBD2_P2_MAX_DEFAULT      (50U)
+#define LIBOBD2_P2_STAR_MIN_DEFAULT (25U)
+#define LIBOBD2_P4_MAX_DEFAULT      (20U)
 #else
-// NO TIMEOUT
+#define LIBOBD2_P1_MAX_DEFAULT      (5000U)
+#define LIBOBD2_P2_MAX_DEFAULT      (5000U)
+#define LIBOBD2_P2_STAR_MIN_DEFAULT (0U)
+#define LIBOBD2_P4_MAX_DEFAULT      (5000U)
+#endif /* LIBOBD2_STRICT_TIMING */
+
+#ifndef P1_TIME_MIN
 #define P1_TIME_MIN      (0U)
-#define P1_TIME_MAX      (5000U)
+#endif
+#ifndef P1_TIME_MAX
+#define P1_TIME_MAX      LIBOBD2_P1_MAX_DEFAULT
+#endif
+#ifndef P2_TIME_MIN
 #define P2_TIME_MIN      (25U)
-#define P2_TIME_MAX      (5000U)
-#define P2_STAR_TIME_MIN (0U)
+#endif
+#ifndef P2_TIME_MAX
+#define P2_TIME_MAX      LIBOBD2_P2_MAX_DEFAULT
+#endif
+#ifndef P2_STAR_TIME_MIN
+#define P2_STAR_TIME_MIN LIBOBD2_P2_STAR_MIN_DEFAULT
+#endif
+#ifndef P2_STAR_TIME_MAX
 #define P2_STAR_TIME_MAX (5000U)
+#endif
+#ifndef P3_TIME_MIN
 #define P3_TIME_MIN      (55U)
+#endif
+#ifndef P3_TIME_MAX
 #define P3_TIME_MAX      (5000U)
+#endif
+#ifndef P4_TIME_MIN
 #define P4_TIME_MIN      (5U)
-#define P4_TIME_MAX      (5000U)
+#endif
+#ifndef P4_TIME_MAX
+#define P4_TIME_MAX      LIBOBD2_P4_MAX_DEFAULT
 #endif
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
