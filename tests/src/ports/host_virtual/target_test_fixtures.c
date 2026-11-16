@@ -1,16 +1,23 @@
 /* ================================================ INCLUDES =============================================== */
 #include "target_test_fixtures.h"
 #include "timer_test.h"
-#include "iso9141_test.h"
 #include "uart_test.h"
 #include "uart_pbt_test.h"
-#include "iso9141_pbt_test.h"
-#include "dl_pbt_test.h"
-#include "dl_test.h"
-#include "dl_fault_test.h"
 #include "fault_injection_test.h"
-#include "libobd2_pbt_test.h"
+#include "dl_test.h"
+#include "dl_pbt_test.h"
+#include "iso9141_test.h"
+#include "iso9141_pbt_test.h"
 #include "libobd2_test.h"
+#include "libobd2_pbt_test.h"
+#include "timer_neg_test.h"
+#include "uart_neg_test.h"
+#include "fault_injection_neg_test.h"
+#include "dl_neg_test.h"
+#include "dl_fault_test.h"
+#include "iso9141_neg_test.h"
+#include "libobd2_neg_test.h"
+#include "libobd2_pbt_neg_test.h"
 #include "unity_internals.h"
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -31,126 +38,150 @@ void targetPreTestsInit()
 
 }
 
+/* Tests run grouped by type: positive (expected use) first, then negative (invalid input, faults,
+ * timeouts). Each group goes driver -> datalink -> app. Traces land in test_results/ (uart_trace.h). */
 void targetRunTests()
 {
     UNITY_BEGIN();
 
-    /*================= SANITY TESTS =================*/
-    /* ---- DRIVER TESTS ---- */
-    RUN_TEST(test_TMR_Init_000);
-    RUN_TEST(test_TMR_GetTimeMs_000);
-    RUN_TEST(test_TMR_DelayMs_000);
-    RUN_TEST(test_TMR_StartTimeout_000);
-    RUN_TEST(test_TMR_StartTimeout_001);
-    RUN_TEST(test_TMR_IsTimeoutExpired_000);
-    RUN_TEST(test_TMR_StopTimeout_000);
-    RUN_TEST(test_TMR_FaultHook_000);
-    RUN_TEST(test_TMR_StopTimeout_NotExpired);
-    RUN_TEST(test_TMR_FaultHook_InitFails);
-    RUN_TEST(test_TMR_Init_Null);
+    /*================= POSITIVE TESTS =================*/
+    /* ---- DRIVER ---- */
+    RUN_TEST(test_pos_TMR_Init_0);
+    RUN_TEST(test_pos_TMR_GetTimeMs_0);
+    RUN_TEST(test_pos_TMR_DelayMs_0);
+    RUN_TEST(test_pos_TMR_StartTimeout_0);
+    RUN_TEST(test_pos_TMR_StartTimeout_1);
+    RUN_TEST(test_pos_TMR_IsTimeoutExpired_0);
+    RUN_TEST(test_pos_TMR_StopTimeout_0);
+    RUN_TEST(test_pos_TMR_FaultHook_0);
+    RUN_TEST(test_pos_TMR_StopTimeout_1);
+    RUN_TEST(test_pos_UART_WriteByte_0);
+    RUN_TEST(test_pos_UART_WriteByte_1);
+    RUN_TEST(test_pos_UART_BitBang_0);
+    RUN_TEST(test_pos_FAULT_Uart_0);
+    RUN_TEST(test_pos_FAULT_Uart_1);
+    RUN_TEST(test_pos_FAULT_Uart_2);
+    RUN_TEST(test_pos_FAULT_Uart_3);
+    RUN_TEST(test_pos_FAULT_Tmr_0);
+    RUN_TEST(test_pos_FAULT_Tmr_1);
+    RUN_TEST(test_pos_FAULT_Tmr_2);
 
-    RUN_TEST(test_UART_WriteByte_0);
-    RUN_TEST(test_UART_WriteByte_1);
-    RUN_TEST(test_UART_BitBang_000);
-    RUN_TEST(test_UART_FaultHook_OnRead);
-    RUN_TEST(test_UART_Init_Null);
+    /* ---- DATALINK ---- */
+    RUN_TEST(test_pos_DL_ReadByteInTimeframe_0);
+    RUN_TEST(test_pos_DL_RecvByteBlocking_0);
+    RUN_TEST(test_pos_DL_SendByteBitBanged_0);
+    RUN_TEST(test_pos_DL_Connect_0);
+    RUN_TEST(test_pos_DL_SendRecv_0);
+    RUN_TEST(test_pos_DL_SendRequest_0);
+    RUN_TEST(test_pos_DL_TimeSample_0);
+    RUN_TEST(test_pos_DL_UartRxStatusToResponse_0);
+    RUN_TEST(test_pos_ISO9141_SendRecvMessage_0);
+    RUN_TEST(test_pos_ISO9141_5BaudInit_0);
+    RUN_TEST(test_pos_ISO9141_5BaudInit_1);
+    RUN_TEST(test_pos_ISO9141_SendRequest_0);
 
-    RUN_TEST(test_FAULT_Attach_InvalidArgs);
-    RUN_TEST(test_FAULT_Uart_WriteWindow);
-    RUN_TEST(test_FAULT_Uart_ReadFromByte);
-    RUN_TEST(test_FAULT_Uart_XorOnlyAndInactiveRule);
-    RUN_TEST(test_FAULT_Uart_Detach);
-    RUN_TEST(test_FAULT_Tmr_FailWindow);
-    RUN_TEST(test_FAULT_Tmr_FailInit);
-    RUN_TEST(test_FAULT_Tmr_ExpireAndShift);
-    /* ---- DRIVER TESTS ---- */
+    /* ---- APP ---- */
+    RUN_TEST(test_pos_LIBOBD2_Init_0);
+    RUN_TEST(test_pos_LIBOBD2_RequestService_0);
+    RUN_TEST(test_pos_LIBOBD2_RequestService_1);
+    RUN_TEST(test_pos_LIBOBD2_RequestService_2);
+    RUN_TEST(test_pos_LIBOBD2_DispatchSid_0);
+    RUN_TEST(test_pos_LIBOBD2_DispatchSid_1);
+    /*================= POSITIVE TESTS =================*/
 
-    /* ---- DATALINK TESTS ---- */
-    /* COMMON */
-    RUN_TEST(test_DL_ReadByteInTimeframe_000);
-    RUN_TEST(test_DL_ReadByteInTimeframe_TooEarly);
-    RUN_TEST(test_DL_ReadByteInTimeframe_NoByte);
-    RUN_TEST(test_DL_ReadByteInTimeframe_UartError);
-    RUN_TEST(test_DL_ReadByteInTimeframe_TimerError);
-    RUN_TEST(test_DL_SendRequest_FlushesRx);
-    RUN_TEST(test_DL_TimeSample_PerLink);
-    RUN_TEST(test_DL_RecvByteBlocking_000);
-    RUN_TEST(test_DL_RecvByteBlocking_NoByte);
-    RUN_TEST(test_DL_SendByteBitBanged_000);
-    RUN_TEST(test_DL_Connect_000);
-    RUN_TEST(test_DL_Connect_001);
-    RUN_TEST(test_DL_SendRecv_000);
-    RUN_TEST(test_DL_Api_NullLink);
-    RUN_TEST(test_DL_Api_NotConnected);
-    RUN_TEST(test_DL_Api_IncompleteLink);
-    RUN_TEST(test_DL_UartRxStatusToResponse);
-    RUN_TEST(test_DL_StartTimeout_TimerError);
-    RUN_TEST(test_DL_Connect_NoProtocol);
+    /*================= NEGATIVE TESTS =================*/
+    /* ---- DRIVER ---- */
+    RUN_TEST(test_neg_TMR_FaultHook_0);
+    RUN_TEST(test_neg_TMR_Init_0);
+    RUN_TEST(test_neg_TMR_IsTimeoutExpired_0);
+    RUN_TEST(test_neg_TMR_StartTimeout_0);
+    RUN_TEST(test_neg_TMR_StopTimeout_0);
+    RUN_TEST(test_neg_UART_FaultHook_0);
+    RUN_TEST(test_neg_UART_Init_0);
+    RUN_TEST(test_neg_UART_RecvByte_0);
+    RUN_TEST(test_neg_UART_RecvByte_1);
+    RUN_TEST(test_neg_UART_BitBang_0);
+    RUN_TEST(test_neg_UART_BitBang_1);
+    RUN_TEST(test_neg_UART_Init_1);
+    RUN_TEST(test_neg_FAULT_Attach_0);
+    RUN_TEST(test_neg_FAULT_Tmr_0);
+    RUN_TEST(test_neg_FAULT_Uart_0);
 
-    /* Fault injection scenarios */
-    RUN_TEST(test_DLFAULT_RecvResponse_FramingError);
-    RUN_TEST(test_DLFAULT_RecvResponse_OverrunOnFormatByte);
-    RUN_TEST(test_DLFAULT_RecvResponse_CorruptedByte);
-    RUN_TEST(test_DLFAULT_Connect_ParityOnKeyByte);
-    RUN_TEST(test_DLFAULT_Connect_NoiseOnSyncByte);
-    RUN_TEST(test_DLFAULT_Connect_TimerInitFails);
-    RUN_TEST(test_DLFAULT_SendRequest_TimerStartFails);
-    RUN_TEST(test_DLFAULT_RecvResponse_TimerStopFails);
-    RUN_TEST(test_DLFAULT_RecvResponse_TimeoutExpiresEarly);
-    RUN_TEST(test_DLFAULT_RecvResponse_ClockJumpsBack);
+    /* ---- DATALINK ---- */
+    RUN_TEST(test_neg_DL_ReadByteInTimeframe_0);
+    RUN_TEST(test_neg_DL_ReadByteInTimeframe_1);
+    RUN_TEST(test_neg_DL_ReadByteInTimeframe_2);
+    RUN_TEST(test_neg_DL_ReadByteInTimeframe_3);
+    RUN_TEST(test_neg_DL_RecvByteBlocking_0);
+    RUN_TEST(test_neg_DL_RecvByteBlocking_1);
+    RUN_TEST(test_neg_DL_RecvByteBlocking_2);
+    RUN_TEST(test_neg_DL_Connect_0);
+    RUN_TEST(test_neg_DL_Connect_1);
+    RUN_TEST(test_neg_DL_Connect_2);
+    RUN_TEST(test_neg_DL_Api_0);
+    RUN_TEST(test_neg_DL_Api_1);
+    RUN_TEST(test_neg_DL_Api_2);
+    RUN_TEST(test_neg_DL_StartTimeout_0);
+    RUN_TEST(test_neg_DLFAULT_RecvResponse_0);
+    RUN_TEST(test_neg_DLFAULT_RecvResponse_1);
+    RUN_TEST(test_neg_DLFAULT_RecvResponse_2);
+    RUN_TEST(test_neg_DLFAULT_Connect_0);
+    RUN_TEST(test_neg_DLFAULT_Connect_1);
+    RUN_TEST(test_neg_DLFAULT_Connect_2);
+    RUN_TEST(test_neg_DLFAULT_SendRequest_0);
+    RUN_TEST(test_neg_DLFAULT_RecvResponse_3);
+    RUN_TEST(test_neg_DLFAULT_RecvResponse_4);
+    RUN_TEST(test_neg_DLFAULT_RecvResponse_5);
+    RUN_TEST(test_neg_ISO9141_RecvMessage_0);
+    RUN_TEST(test_neg_ISO9141_SendRequest_0);
+    RUN_TEST(test_neg_ISO9141_5BaudInit_0);
+    RUN_TEST(test_neg_ISO9141_Connect_0);
+    RUN_TEST(test_neg_ISO9141_Connect_1);
+    RUN_TEST(test_neg_ISO9141_Connect_2);
+    RUN_TEST(test_neg_ISO9141_Connect_3);
+    RUN_TEST(test_neg_ISO9141_Connect_4);
+    RUN_TEST(test_neg_ISO9141_Connect_5);
+    RUN_TEST(test_neg_ISO9141_Api_0);
+    RUN_TEST(test_neg_ISO9141_RecvResponse_0);
+    RUN_TEST(test_neg_ISO9141_RecvResponse_1);
+    RUN_TEST(test_neg_ISO9141_RecvResponse_2);
+    RUN_TEST(test_neg_ISO9141_RecvResponse_3);
+    RUN_TEST(test_neg_ISO9141_RecvResponse_4);
+    RUN_TEST(test_neg_ISO9141_RecvResponse_5);
+    RUN_TEST(test_neg_ISO9141_Connect_Verify_0);
 
-    /* ISO9141 */
-    RUN_TEST(test_ISO9141_SendRecvMessage_000);
-    RUN_TEST(test_ISO9141_5BaudInit_000);
-    RUN_TEST(test_ISO9141_RecvMessage_TargetByteTimeout);
-    RUN_TEST(test_ISO9141_SendRequest_InvalidDataLen);
-    RUN_TEST(test_ISO9141_5BaudInit_WrongKeyBytes);
-    RUN_TEST(test_ISO9141_Api_NullArgs);
-    RUN_TEST(test_ISO9141_RecvResponse_NegativeResponse);
-    RUN_TEST(test_ISO9141_RecvResponse_EmptyFrame);
-    RUN_TEST(test_ISO9141_RecvResponse_NoChecksum);
-    RUN_TEST(test_ISO9141_5BaudInit_KwpKeyBytes);
-    RUN_TEST(test_ISO9141_Connect_Verify_NoHeader);
-    /* ---- DATALINK TESTS ---- */
-
-
-    /* ---- APP TESTS ---- */
-    RUN_TEST(test_LIBOBD2_Init_NullCtx);
-    RUN_TEST(test_LIBOBD2_Init_NullDataLink);
-    RUN_TEST(test_LIBOBD2_Init_000);
-    RUN_TEST(test_LIBOBD2_RequestService_NullResponse);
-    RUN_TEST(test_LIBOBD2_RequestService_NullResponseLen);
-    RUN_TEST(test_LIBOBD2_RequestService_InvalidSid);
-    RUN_TEST(test_LIBOBD2_RequestService_VIN_000);
-    RUN_TEST(test_LIBOBD2_RequestService_CALID_000);
-    RUN_TEST(test_LIBOBD2_RequestService_CoolantTemp_000);
-    RUN_TEST(test_LIBOBD2_RequestService_NullCtx);
-    RUN_TEST(test_LIBOBD2_RequestService_TooManyMsgs);
-    RUN_TEST(test_LIBOBD2_DispatchSid_SingleMsgLen);
-    RUN_TEST(test_LIBOBD2_RequestService_NullDataLink);
-    RUN_TEST(test_LIBOBD2_DecodeResponse_Unsupported);
-    RUN_TEST(test_LIBOBD2_DispatchSid_TransferSteps);
-    RUN_TEST(test_LIBOBD2_RequestService_VIN_FramingError);
-    /* ---- APP TESTS ---- */
-    /*================= SANITY TESTS =================*/
+    /* ---- APP ---- */
+    RUN_TEST(test_neg_LIBOBD2_Init_0);
+    RUN_TEST(test_neg_LIBOBD2_Init_1);
+    RUN_TEST(test_neg_LIBOBD2_Init_2);
+    RUN_TEST(test_neg_LIBOBD2_RequestService_0);
+    RUN_TEST(test_neg_LIBOBD2_RequestService_1);
+    RUN_TEST(test_neg_LIBOBD2_RequestService_2);
+    RUN_TEST(test_neg_LIBOBD2_RequestService_3);
+    RUN_TEST(test_neg_LIBOBD2_RequestService_4);
+    RUN_TEST(test_neg_LIBOBD2_RequestService_5);
+    RUN_TEST(test_neg_LIBOBD2_RequestService_6);
+    RUN_TEST(test_neg_LIBOBD2_DecodeResponse_0);
+    RUN_TEST(test_neg_LIBOBD2_RequestService_7);
+    RUN_TEST(test_neg_LIBOBD2_RequestService_8);
+    RUN_TEST(test_neg_LIBOBD2_RequestService_9);
+    RUN_TEST(test_neg_LIBOBD2_RequestService_10);
+    RUN_TEST(test_neg_LIBOBD2_RequestService_11);
+    /*================= NEGATIVE TESTS =================*/
 
     /*================= STRESS TESTS =================*/
-    // RUN_TEST(test_UART_PBT_WriteReadRoundtrip);
-    // RUN_TEST(test_UART_PBT_ByteNotReadyBeforeTimestamp);
-    // RUN_TEST(test_UART_PBT_IncTimeOnByteRead);
-    //
-    // RUN_TEST(test_DL_PBT_ReadByteInTimeframe_ReturnsByteWithinWindow);
-    // RUN_TEST(test_DL_PBT_ReadByteInTimeframe_TimesOutWhenByteNeverArrives);
-    // RUN_TEST(test_DL_PBT_RecvByteBlocking_ReturnsPushedByte);
-    //
-    // RUN_TEST(test_ISO9141_PBT_ComputeCheckSum);
-    // RUN_TEST(test_ISO9141_PBT_SerializeMessageWireLayout);
-    // RUN_TEST(test_ISO9141_PBT_SendThenRecvRoundtrip);
-    //
-    // RUN_TEST(test_LIBOBD2_PBT_VinRoundtripAcrossMultiFrameResponse);
-    // RUN_TEST(test_LIBOBD2_PBT_SendFailurePropagatesStatusUntouched);
+    // RUN_TEST(test_pos_UART_PBT_RecvByte_0);
+    // RUN_TEST(test_pos_UART_PBT_RecvByte_1);
+    // RUN_TEST(test_pos_UART_PBT_RecvByte_2);
+    // RUN_TEST(test_pos_DL_PBT_ReadByteInTimeframe_0);
+    // RUN_TEST(test_pos_DL_PBT_ReadByteInTimeframe_1);
+    // RUN_TEST(test_pos_DL_PBT_RecvByteBlocking_0);
+    // RUN_TEST(test_pos_ISO9141_PBT_ComputeChecksum_0);
+    // RUN_TEST(test_pos_ISO9141_PBT_SerializeMessage_0);
+    // RUN_TEST(test_pos_ISO9141_PBT_RecvMessage_0);
+    // RUN_TEST(test_pos_LIBOBD2_PBT_RequestService_0);
+    // RUN_TEST(test_neg_LIBOBD2_PBT_RequestService_0);
     /*================= STRESS TESTS =================*/
 
     UNITY_END();
-
 }
