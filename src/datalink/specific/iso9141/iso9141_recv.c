@@ -61,7 +61,9 @@ exit:
 ******************************************/
 OBD2_STATIC obd_status_t ISO9141_RecvMessage(dataLink_if_t *self, message_t *recvdMsg, size_t* len)
 {
+#ifdef LIBOBD2_SPT_KWP2000
     const iso9141_ctx_t *ctx = NULL;
+#endif /* LIBOBD2_SPT_KWP2000 */
     uint8_t *pMsg       = (uint8_t *)recvdMsg;
     obd_status_t status = {0};
     obd_status_t restartStatus = {0};
@@ -74,8 +76,6 @@ OBD2_STATIC obd_status_t ISO9141_RecvMessage(dataLink_if_t *self, message_t *rec
     OBD2_DEBUG_ASSERT((NULL != self) && (NULL != self->pProtocolCtx));
     OBD2_DEBUG_ASSERT((NULL != recvdMsg) && (NULL != len));
 
-    ctx = (const iso9141_ctx_t *)(self->pProtocolCtx);
-
     status = ISO9141_WaitForResponseStart(self, &byteRead);
     OBD2_ASSERT_BYTE_RECVD(status, OBD_ERR_COMM_FMT_BYTE_NOT_RECVD);
 
@@ -83,6 +83,7 @@ OBD2_STATIC obd_status_t ISO9141_RecvMessage(dataLink_if_t *self, message_t *rec
     pMsg[byteReadIdx++] = byteRead;
 
     #ifdef LIBOBD2_SPT_KWP2000
+    ctx = (const iso9141_ctx_t *)(self->pProtocolCtx);
     // Only KWP2000 frames with no length in the format byte carry a length byte
     hasLenByte = (KWP2000 == ctx->protocol) && (0U == (recvdMsg->header.fmt & ISO9141_FMT_LEN_MASK));
     #endif /* LIBOBD2_SPT_KWP2000 */

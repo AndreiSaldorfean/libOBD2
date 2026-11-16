@@ -14,8 +14,13 @@
 #define OBD2_INLINE inline
 #endif /* UNIT_TESTS */
 
-/* Checks a precondition the caller guarantees. Compiled out with NDEBUG (Release builds). */
+/* Checks a precondition the caller guarantees. Compiled out with NDEBUG (Release builds);
+ * sizeof keeps the operands "used" there without evaluating them. */
+#if defined(NDEBUG)
+#define OBD2_DEBUG_ASSERT(cond) ((void)sizeof(cond))
+#else
 #define OBD2_DEBUG_ASSERT(cond) assert(cond)
+#endif /* NDEBUG */
 
 #define LIBOBD_DEC(var) (if ((var - 1) != 0) var--)
 #define LIBOBD_INC(var) (var++)

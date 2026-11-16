@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Release (`NDEBUG`) builds no longer warn about parameters only used in `OBD2_DEBUG_ASSERT`; an unused-variable warning in `ISO9141_RecvMessage` is gone.
 - `LibOBD2_Init` no longer reports a connection when no ECU answers: the stubbed KWP2000 StartCommunication (tried after ISO9141 fails) returned OK; it now returns `OBD_NOT_SUPPORTED` until KWP2000 is implemented.
 
 ### Changed
