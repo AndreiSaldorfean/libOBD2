@@ -192,6 +192,8 @@ OBD2_STATIC obd_status_t ECU_ISO9141_5BaudInit(dataLink_if_t *self)
     YIELD;
     LIBOBD2_TMR_Delay(self, ISO9141_W4_TIME_MIN);
     LIBOBD2_UART_SendByte(self, ~0x33);
+    // Drop the echo, or it would be read as the format byte of the first request
+    LIBOBD2_UART_FlushRx(self);
 
     ctx->header.fmt = 0x48;
     ctx->header.trgAddr = 0x6B;
