@@ -12,31 +12,48 @@ make cc      # coverage build + run + report
 
 ## Layout
 
-Every layer keeps its tests in two folders, next to the fixture both of them share:
+Every layer keeps its tests in `<type>/<category>/`, next to the fixture they share:
 
 ```text
 drivers/host_virtual/
-    positive/   timer_test, uart_test, fault_injection_test, uart_pbt_test
-    negative/   timer_neg_test, uart_neg_test, fault_injection_neg_test
+    positive/ex/    timer_test, uart_test, fault_injection_test
+    positive/pbt/   uart_pbt_test
+    negative/ex/    timer_neg_test, uart_neg_test, fault_injection_neg_test
 datalink/host_virtual/
-    dl_fixture.c/.h       virtual line + ECU byte queueing for both folders
-    positive/   dl_test, iso9141_test, dl_pbt_test, iso9141_pbt_test
-    negative/   dl_neg_test, dl_fault_test, iso9141_neg_test
+    dl_fixture.c/.h       virtual line + ECU byte queueing for all folders
+    positive/ex/    dl_test, iso9141_test
+    positive/pbt/   dl_pbt_test, iso9141_pbt_test
+    negative/ex/    dl_neg_test, dl_fault_test, iso9141_neg_test
 app/host_virtual/
     libobd2_fixture.c/.h  connected tester + ECU frame / SID $09 queueing
-    positive/   libobd2_test, libobd2_pbt_test
-    negative/   libobd2_neg_test, libobd2_pbt_neg_test
+    positive/ex/    libobd2_test
+    positive/pbt/   libobd2_pbt_test
+    negative/ex/    libobd2_neg_test
+    negative/pbt/   libobd2_pbt_neg_test
 ```
+
+Type (what is expected of the code):
 
 - **positive**: the code is used as intended and must succeed (valid requests, correct ECU answers,
   boundary values that are still allowed).
 - **negative**: the code must fail cleanly: invalid arguments, a missing or wrong ECU answer, timing
   violations, UART errors and timer faults (see `ports/host_virtual/fault_injection.h`).
 
+Category (how the test checks it):
+
+- **ex** (example-based): one chosen input and its expected output, e.g. "the ECU answers
+  `55 08 08 CC`, so Connect returns OK".
+- **pbt** (property-based, [theft](../../theft)): a rule that must hold for every input, checked on
+  many generated inputs, e.g. "any byte written can be read back unchanged".
+
+The two are independent: a property test is still positive or negative. Only create a folder when it
+holds tests.
+
 `ports/host_virtual/cmake/unitTests.cmake` compiles every `.c` in these folders, so a new test file only
 needs its functions added to `targetRunTests()` in `tests/src/ports/host_virtual/target_test_fixtures.c`
-(positive tests first, then negative, each group driver -> datalink -> app). Name negative files
-`<module>_neg_test.c`.
+(positive tests first, then negative, each group driver -> datalink -> app). File names carry the type
+and category too (`<module>_test`, `<module>_neg_test`, `<module>_pbt_test`, `<module>_pbt_neg_test`):
+all test folders share one include path, so every header name must be unique.
 
 ## Test header
 
@@ -54,24 +71,23 @@ Every test function starts with this header. Number the steps and mark them in t
  *     2. Call under test and its expected result
  *     3. Side effects that must (not) have happened
  ******************************************************************/
-void test_neg_DL_Connect_0(void)
+void test_neg_ex_DL_Connect_0(void)
 ```
 
 The folder gives the type, so the header does not repeat it.
 
 ## Test names
 
-`test_<pos|neg>_<MODULE>_<Function>_<n>`, e.g. `test_pos_DL_Connect_0`, `test_neg_DL_Connect_0`,
-`test_neg_ISO9141_Connect_0`.
+`test_<type>_<category>_<MODULE>_<Function>_<n>`, e.g. `test_pos_ex_DL_Connect_0`,
+`test_neg_ex_DL_Connect_0`, `test_pos_pbt_UART_RecvByte_0`.
 
-- `pos` / `neg` matches the folder the test lives in.
-- `<MODULE>` is the module prefix: `TMR`, `UART`, `FAULT`, `DL`, `DLFAULT`, `ISO9141`, `LIBOBD2`
-  (property tests add `_PBT`, e.g. `test_pos_UART_PBT_RecvByte_0`).
-- `<n>` counts the tests of one function and type from 0, in run order. A new test takes the next
-  free number; what it checks goes in its `brief:`.
+- `<type>` is `pos` / `neg` and `<category>` is `ex` / `pbt`, matching the folders the test lives in.
+- `<MODULE>` is the module prefix: `TMR`, `UART`, `FAULT`, `DL`, `DLFAULT`, `ISO9141`, `LIBOBD2`.
+- `<n>` counts the tests of one type, category and function from 0, in run order. A new test takes
+  the next free number; what it checks goes in its `brief:`.
 
-Name the trace after the test (`UART_TRACE_Begin("test_neg_DL_Connect_0.vcd")`), so `test_results/` sorts
-into `test_neg_*` and `test_pos_*` and each module's traces sit together.
+Name the trace after the test (`UART_TRACE_Begin("test_neg_ex_DL_Connect_0.vcd")`), so `test_results/`
+sorts by type, then category, then module.
 
 ## Waveform traces
 
@@ -84,5 +100,5 @@ automatically when you open or import `test_X.vcd`, so the UART decoders are set
 - **5-baud init**: RX = `line` at 5 baud, only in traces that contain the bit-banged wake-up address
 
 ```sh
-pulseview -i test_results/test_pos_DL_Connect_0.vcd -I vcd
+pulseview -i test_results/test_pos_ex_DL_Connect_0.vcd -I vcd
 ```
