@@ -7,4 +7,6 @@ builds/
 ./examples/STM32F401CCU/build
 *_log.txt
 *.vcd
+*.pvs
+test_results/
 .vscode/

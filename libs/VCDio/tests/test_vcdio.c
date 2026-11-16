@@ -1060,6 +1060,92 @@ static void test_sorted_stress(void)
 }
 
 /* ================================================ ENTRY POINT ============================================ */
+/* PulseView setup: INI layout, option serialization, channel mapping, path helper and argument checks */
+static void test_pulseview_setup(void)
+{
+    const uint16_t endianProbe = 1u;
+    vcdPulseViewUart_t uarts[2];
+    vcdUartConfig_t cfg;
+    memSink_t m = {0};
+    char path[64];
+
+    VCD_PulseViewUartDefault(&uarts[0], "line", "rx_data", 10400.0);
+    uarts[0].name = "K-line";
+    uarts[0].color = 0xFF2E86C1u;
+    VCD_PulseViewUartDefault(&uarts[1], "line", NULL, 5.0);
+    uarts[1].name = "init, 5 baud"; /* ',' needs quoting */
+    uarts[1].parity = VCD_UART_PARITY_EVEN;
+    uarts[1].format = VCD_PV_FORMAT_BIN;
+
+    CHECK_OK(VCD_PulseViewWriteSetupSink(memSinkWrite, &m, uarts, 2u));
+    CHECK(m.data != NULL);
+    if (m.data != NULL)
+    {
+        CHECK(strncmp(m.data, "[General]\ndecode_signals=2\nmeta_objs=0\n", 39u) == 0);
+        CHECK(strstr(m.data, "\n[decode_signal0]\nname=K-line\nenabled=true\ncolor=4281239233\n") != NULL);
+        CHECK(strstr(m.data, "decoder0\\id=uart\n") != NULL);
+        CHECK(strstr(m.data, "decoder0\\option0\\name=baudrate\ndecoder0\\option0\\type=x\n") != NULL);
+        CHECK(strstr(m.data, "decoder0\\option3\\name=stop_bits\ndecoder0\\option3\\type=d\n") != NULL);
+        /* strings carry their NUL: "none" */
+        CHECK(strstr(m.data, "decoder0\\option2\\value=@ByteArray(\\x6e\\x6f\\x6e\\x65\\x00)\n") != NULL);
+        if (*(const uint8_t *)&endianProbe == 1u)
+        {
+            /* 10400 = 0x28A0 as little endian int64 */
+            CHECK(strstr(m.data, "decoder0\\option0\\value=@ByteArray(\\xa0\\x28\\x00\\x00\\x00\\x00\\x00\\x00)\n") != NULL);
+        }
+        CHECK(strstr(m.data, "channel0\\name=RX\nchannel0\\initial_pin_state=2\nchannel0\\assigned_signal_name=line\n") != NULL);
+        CHECK(strstr(m.data, "channel1\\assigned_signal_name=rx_data\n") != NULL);
+        CHECK(strstr(m.data, "\n[decode_signal1]\nname=\"init, 5 baud\"\nenabled=true\ndecoders=1\n") != NULL);
+        /* "even", "bin"; no TX mapping for the second decoder */
+        CHECK(strstr(m.data, "@ByteArray(\\x65\\x76\\x65\\x6e\\x00)") != NULL);
+        CHECK(strstr(m.data, "@ByteArray(\\x62\\x69\\x6e\\x00)") != NULL);
+        CHECK(strstr(strstr(m.data, "[decode_signal1]"), "channel1\\assigned_signal_name") == NULL);
+    }
+    memSinkFree(&m);
+
+    /* framing taken from a writer config: 7E2 MSB first at 1 us ticks */
+    VCD_UartConfigDefault(&cfg, (vcdTimescale_t){1u, VCD_UNIT_US}, 9600.0);
+    cfg.dataBits = 7u;
+    cfg.parity = VCD_UART_PARITY_EVEN;
+    cfg.stopBits = VCD_UART_STOP_2;
+    cfg.msbFirst = true;
+    VCD_PulseViewUartFromConfig(&uarts[0], &cfg, (vcdTimescale_t){1u, VCD_UNIT_US}, NULL, "tx");
+    CHECK(fabs(uarts[0].baud - 9600.0) < 1e-6);
+    CHECK((uarts[0].dataBits == 7u) && (uarts[0].parity == VCD_UART_PARITY_EVEN));
+    CHECK((uarts[0].stopBits == VCD_UART_STOP_2) && uarts[0].msbFirst && (uarts[0].rx == NULL));
+
+    /* setup path next to the trace */
+    CHECK(VCD_PulseViewSetupPath("test_results/a.vcd", path, sizeof path) == 18u);
+    CHECK_STR(path, "test_results/a.pvs");
+    CHECK(VCD_PulseViewSetupPath("dir.d/trace", path, sizeof path) == 15u);
+    CHECK_STR(path, "dir.d/trace.pvs");
+    CHECK(VCD_PulseViewSetupPath("./.hidden", path, sizeof path) == 13u);
+    CHECK_STR(path, "./.hidden.pvs");
+    CHECK(VCD_PulseViewSetupPath("abc.vcd", path, 4u) == 7u); /* truncated, but tells the size */
+    CHECK_STR(path, "abc");
+
+    /* rejected decoders */
+    VCD_PulseViewUartDefault(&uarts[0], NULL, NULL, 10400.0);
+    CHECK_ST(VCD_PulseViewWriteSetupSink(memSinkWrite, &m, uarts, 1u), VCD_ERR_ARG); /* no channel */
+    VCD_PulseViewUartDefault(&uarts[0], "line", NULL, 0.0);
+    CHECK_ST(VCD_PulseViewWriteSetupSink(memSinkWrite, &m, uarts, 1u), VCD_ERR_ARG); /* no baud */
+    VCD_PulseViewUartDefault(&uarts[0], "li\tne", NULL, 10400.0);
+    CHECK_ST(VCD_PulseViewWriteSetupSink(memSinkWrite, &m, uarts, 1u), VCD_ERR_ARG); /* control char */
+    VCD_PulseViewUartDefault(&uarts[0], "line", NULL, 10400.0);
+    uarts[0].dataBits = 10u;
+    CHECK_ST(VCD_PulseViewWriteSetupSink(memSinkWrite, &m, uarts, 1u), VCD_ERR_ARG);
+    CHECK_ST(VCD_PulseViewWriteSetupSink(memSinkWrite, &m, uarts, 0u), VCD_ERR_ARG);
+    CHECK_ST(VCD_PulseViewWriteSetupSink(NULL, &m, uarts, 1u), VCD_ERR_ARG);
+    CHECK_ST(VCD_PulseViewWriteSetup(NULL, uarts, 1u), VCD_ERR_ARG);
+    CHECK(m.len == 0u); /* nothing written for a rejected setup */
+
+    /* sink failure */
+    VCD_PulseViewUartDefault(&uarts[0], "line", NULL, 10400.0);
+    m.fail = true;
+    CHECK_ST(VCD_PulseViewWriteSetupSink(memSinkWrite, &m, uarts, 1u), VCD_ERR_IO);
+    memSinkFree(&m);
+}
+
 int main(void)
 {
     RUN(test_ids_unique);
@@ -1080,6 +1166,7 @@ int main(void)
     RUN(test_uart_data_signal_and_break);
     RUN(test_uart_round_trip_random);
     RUN(test_sorted_stress);
+    RUN(test_pulseview_setup);
 
     printf("\n%d checks, %d failed\n", g_checks, g_failed);
     return (g_failed == 0) ? 0 : 1;

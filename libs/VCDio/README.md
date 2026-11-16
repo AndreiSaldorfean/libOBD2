@@ -12,6 +12,8 @@ read them back, for example to assert in a test that a trace decodes to the expe
 - **Reader**: loads VCD from VCDio, GTKWave, Icarus, Verilator, GHDL, sigrok and others; value-at-time lookups by binary search.
 - **UART**: draws frames (5–9 data bits, parity, 1/1.5/2 stop bits, MSB/LSB first, inverted lines, error
   injection) and decodes frames from a trace like a logic analyzer.
+- **PulseView setups**: writes a `.pvs` next to the trace with UART decoders already configured, so
+  PulseView opens the `.vcd` with the bytes decoded.
 - **`vcdio` tool**: `info`, `dump` and `uart` decoding from the command line.
 - No dependencies beyond the C standard library (and `libm`). Allocator replaceable. Warning-clean with
   `-Wall -Wextra -Wpedantic -Wconversion`, tested under ASan/UBSan.
@@ -104,9 +106,34 @@ Fractional bit periods are fine: every edge is placed at `round(frameStart + n *
 frames don't drift. In strict mode frames on different lines must not overlap in time; use sorted mode for
 full-duplex traffic.
 
-Open the result in **PulseView** (Import → Value Change Dump, then add a UART decoder on `tx`/`rx`) to see
-decoded bytes, or in **GTKWave/Surfer**, where `dataSignal` and string signals show the values directly.
-PulseView only imports 1-bit signals; it skips string and vector signals with a warning.
+Open the result in **PulseView** (Import → Value Change Dump) to see decoded bytes, or in
+**GTKWave/Surfer**, where `dataSignal` and string signals show the values directly. PulseView only imports
+1-bit signals; it skips string and vector signals with a warning.
+
+### Preconfigured PulseView decoders
+
+PulseView keeps decoder settings in a session setup file (`.pvs`), and when it opens or imports
+`trace.vcd` it loads `trace.pvs` from the same directory on its own. Write one and the UART rows are there
+without configuring anything:
+
+```c
+vcdPulseViewUart_t uarts[2];
+char pvs[256];
+
+VCD_PulseViewUartFromConfig(&uarts[0], &uart, cfg.timescale, "rx", "tx"); /* framing + baud of 'uart' */
+uarts[0].name = "K-line";
+VCD_PulseViewUartDefault(&uarts[1], "tx", NULL, 5.0);                     /* RX, TX, baud; 8N1 */
+uarts[1].name = "5-baud init";
+
+VCD_PulseViewSetupPath("trace.vcd", pvs, sizeof pvs);                    /* "trace.pvs" */
+VCD_PulseViewWriteSetup(pvs, uarts, 2);
+```
+
+Channels are matched by the name PulseView gives the imported signal: the bare `$var` name (`tx`, not
+`kline.tx`). Each entry becomes one decoder row with RX and/or TX, baud rate, data bits, parity, stop
+bits, bit order, inversion, display format (`hex` by default) and an optional row colour. The file is
+the same Qt INI format PulseView writes with *Save session setup*; it was checked against PulseView 0.4.2
+with libsigrokdecode 0.5.3. Option values are stored in host byte order, as PulseView does.
 
 ## Reading a trace
 
