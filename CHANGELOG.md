@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Single-header build** (#60): `scripts/amalgamate.py` and the `amalgamate` CMake target (`make amalgamate`) generate an stb-style `dist/libobd2.h`; define `LIBOBD2_IMPLEMENTATION` in one `.c` file. The script fails when two sources would clash in the single translation unit. Smoke test in `tests/amalgamation/` (`make amalgamate_check`, run by `scripts/test-on-pr.sh`); `-DLIBOBD2_USE_AMALGAMATION=ON` builds the `OBD2` library, and so the unit tests, from the generated header.
 - Configurable protocols and timing: `LIBOBD2_SPT_ISO9141` / `LIBOBD2_SPT_KWP2000` can be defined by the user (ISO9141 stays the default), `LIBOBD2_STRICT_TIMING` selects the standard P1..P4 limits, and each `P*_TIME_*` limit can be overridden.
 - **host_serial** port (`ports/host_serial/`): K-line on x86 Linux through a serial / USB adapter (KKL, FTDI), on top of libserialport. 5-baud and fast-init wake-ups use the serial BREAK condition; the port asks the driver for low latency so USB adapters do not batch received bytes.
 - `examples/host_serial/`: `obd2_reader` command-line example that connects and reads VIN, CALID and coolant temperature.

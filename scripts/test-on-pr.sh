@@ -14,6 +14,9 @@ git submodule update --init --recursive
 
 make && make b
 
+# Single header: regenerate dist/libobd2.h and fail if it does not compile
+make amalgamate_check
+
 cd $PROJECT_ROOT/examples/libs/libopencm3/ && make TARGETS='stm32/f4'
 
 cd $PROJECT_ROOT && make test_r && make test_rb
