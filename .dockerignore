@@ -1,0 +1,4 @@
+# Only the release agent image is built from the repo root; keep its context small.
+*
+!tools/release-agent/
+!scripts/changelog.py
