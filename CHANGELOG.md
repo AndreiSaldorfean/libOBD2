@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- ISO 15031-5 services: all 81 `$01` PIDs from `$00` to `$50` (supported-PID masks, monitor status, fuel system, load, fuel trims, RPM, speed, MAF, temperatures, pressures, conventional and wide-range O2 sensors, throttle / pedal positions, distances, times...), `$02` freeze frame (DTC, fuel system, load, fuel trims, MAP, RPM, speed, coolant, IAT), `$03` / `$07` / `$0A` DTCs, `$04` clear DTCs and the `$09` CVN and in-use performance tracking. Each service's output type is listed in `libobd2_sid_t`; `LibOBD2_DtcToString` formats a DTC as `P0143`.
+- `LibOBD2_RequestRaw`: ELM327-style passthrough. Sends any request (any service, PID or manufacturer service) and returns every answer of every ECU until the line stays silent.
+- Services `$05`, `$06` and `$08`: `LibOBD2_RequestSupportedTids`, `LibOBD2_RequestO2SensorTest` (Annex C scaling, limits, pass/fail), `LibOBD2_RequestMonitorTests` (every component and limit, pass/fail) and `LibOBD2_RequestControl`.
+- Readiness: PID `$01` decodes its monitor bytes B-D, PID `$41` returns the same `libobd2_monitors_t` for the drive cycle, `LibOBD2_IsReady` tells whether every supported monitor has completed. PIDs `$4F` / `$50` (full scales) with `LibOBD2_Rescale`.
+- `TP_READ_UNTIL_TO` transfer protocol step: reads answers until none starts within P2 max, so the ECU(s) may send any number of them (DTC services).
+- PID formula table (`LIBOBD2_PID_FORMULAS`, `src/app/libobd2_formulas.h`): adding a `$01` / `$02` PID is one row there plus one in `OBD_SUPPORTED_SERVICES`.
+- ECU simulator answers every library service; `ECU_LibOBD2_GetAnswer` exposes its table and the `host_virtual` app tests replay it (`APPFX_QueueEcuExchange`).
+
+### Fixed
+
+- A `$01` answer with fewer data bytes than its PID needs is rejected with `OBD_ERR_APP_SHORT_MSG` instead of decoding missing bytes as 0 (F7, #68).
+- A `$01` / `$02` / `$09` answer for another service or PID than the one asked is no longer decoded (`OBD_NOT_SUPPORTED`).
+- ECU simulator: VIN reported as ISO 9141-2 requires (count 5, 3 fill bytes first) and with its own message-count answer; requests outside its table get no answer instead of reading past the table.
+
+### Changed
+
+- **Breaking:** `OBD_GET_COOLANT_TEMP` returns an `int16_t` (2 bytes) instead of one byte, so temperatures below 0 degC come out right. Decoded values are written into `response` in their own type (see `libobd2_sid_t`); read them back with `memcpy`.
+- **Breaking:** `libobd2_sid_t` values are renumbered (new services); use the names.
+
 ## [0.1.0](https://github.com/AndreiSaldorfean/libOBD2/releases/tag/v0.1.0) - 2026-11-17
 
 ### Added

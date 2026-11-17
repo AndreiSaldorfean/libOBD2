@@ -143,10 +143,10 @@ void test_pos_ex_LIBOBD2_RequestService_1(void)
 /******************************************************************
  * - brief:       Read the engine coolant temperature (SID $01 PID $05)
  * - description: A single-message live data request decoded with the
- *                A - 40 formula.
+ *                A - 40 formula into an int16_t.
  * - steps:
  *     1. Tester: 68 6A F1 01 05 CS        ECU: 48 6B 12 41 05 7B CS
- *     2. The response is one byte, A - 40: 0x7B (123) -> 83 degC
+ *     2. The response is an int16_t, A - 40: 0x7B (123) -> 83 degC
  ******************************************************************/
 void test_pos_ex_LIBOBD2_RequestService_2(void)
 {
@@ -154,6 +154,7 @@ void test_pos_ex_LIBOBD2_RequestService_2(void)
     uint8_t response[APPFX_RESPONSE_BUF_LEN] = {0};
     size_t responseLen = 0;
     obd_status_t status = {0};
+    int16_t temp = 0;
 
     APPFX_SetUpLine();
     (void)APPFX_QueueEcuFrame(APPFX_REQ_DURATION(2u), ecuResp, sizeof(ecuResp));
@@ -166,8 +167,9 @@ void test_pos_ex_LIBOBD2_RequestService_2(void)
     /* 2. */
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
-    TEST_ASSERT_EQUAL_size_t(1, responseLen);
-    TEST_ASSERT_EQUAL_UINT8(83u, response[0]);
+    TEST_ASSERT_EQUAL_size_t(sizeof(temp), responseLen);
+    memcpy(&temp, response, sizeof(temp));
+    TEST_ASSERT_EQUAL_INT16(83, temp);
 }
 
 /******************************************************************
@@ -198,11 +200,11 @@ void test_pos_ex_LIBOBD2_DispatchSid_0(void)
 
 /******************************************************************
  * - brief:       Transfer protocol steps no table service uses yet
- * - description: TP_SEND, TP_RECV (one message), TP_READ_UNTIL_TO (not
- *                implemented, does nothing) and an unknown step
- *                (ignored), then TP_END.
+ * - description: TP_SEND, TP_RECV (one message), TP_READ_UNTIL_TO (the
+ *                ECU stays silent, so it ends after P2 max with nothing
+ *                more) and an unknown step (ignored), then TP_END.
  * - steps:
- *     1. ECU: 48 6B 12 41 05 7B CS
+ *     1. ECU: 48 6B 12 41 05 7B CS, no echo of the request
  *     2. DispatchSid with { SEND, RECV, READ_UNTIL_TO, 0x7F, END }
  *     3. OK with the one received message
  ******************************************************************/
@@ -223,6 +225,7 @@ void test_pos_ex_LIBOBD2_DispatchSid_1(void)
 
     /* 1. */
     APPFX_SetUpLine();
+    APPFX_SuppressEcho();
     (void)APPFX_QueueEcuFrame(APPFX_REQ_DURATION(2u), ecuResp, sizeof(ecuResp));
 
     /* 2. */

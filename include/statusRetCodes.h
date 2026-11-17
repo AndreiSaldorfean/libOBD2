@@ -61,6 +61,7 @@
 // App status codes
 #define SRV_STATUS_APP                     (0x06)
 #define OBD_ERR_APP_TOO_MANY_MSGS          (OBD_MAKE_ERROR(SRV_STATUS_APP, (uint16_t)0x1U))
+#define OBD_ERR_APP_SHORT_MSG              (OBD_MAKE_ERROR(SRV_STATUS_APP, (uint16_t)0x2U)) /* answer lacks data bytes */
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
 {
