@@ -24,7 +24,6 @@ int main()
 {
     targetPreTestsInit();
 
-    targetRunTests();
-
-    return 0;
+    /* Non-zero exit when a test fails, so CI can tell */
+    return targetRunTests();
 }

@@ -9,7 +9,9 @@
 /* =============================================== MODULE API ============================================== */
 void targetSetUp();
 void targetTearDown();
-void preTestsInit();
+void targetPreTestsInit();
+/* Starts the test task and the scheduler; does not return on the target. */
+int targetRunTests(void);
 
 #endif /* TARGET_TEST_FIXTURES_H */
 

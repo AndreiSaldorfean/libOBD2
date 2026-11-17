@@ -25,7 +25,7 @@ list(APPEND TEST_PLATFORM_SOURCES
 )
 
 list(APPEND TEST_PLATFORM_INCLUDES
-    ./src/ports/os/
+    ./src/ports/stm32f4/os/
     ../examples/libs/libopencm3/include/
     ../examples/libs/FreeRTOS-Kernel/include/
     ../examples/libs/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/

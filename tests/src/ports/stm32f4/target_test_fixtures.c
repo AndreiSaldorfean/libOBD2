@@ -106,7 +106,7 @@ void targetPreTestsInit()
 
     gpio_setup();
 }
-void targetRunTests()
+int targetRunTests(void)
 {
     xTaskCreate(
         TestTask,

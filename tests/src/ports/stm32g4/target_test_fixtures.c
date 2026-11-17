@@ -19,6 +19,7 @@ void targetPreTestsInit()
 {
 
 }
-void targetRunTests()
+int targetRunTests(void)
 {
+    return 0;
 }
