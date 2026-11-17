@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `scripts/gen.py --platform / --memory / --type / --logging / --set KEY=VALUE / --build-root`: build any combination without editing `build_config.json`.
 - **Single-header build** (#60): `scripts/amalgamate.py` and the `amalgamate` CMake target (`make amalgamate`) generate an stb-style `dist/libobd2.h`; define `LIBOBD2_IMPLEMENTATION` in one `.c` file. The script fails when two sources would clash in the single translation unit. Smoke test in `tests/amalgamation/` (`make amalgamate_check`, run by `scripts/test-on-pr.sh`); `-DLIBOBD2_USE_AMALGAMATION=ON` builds the `OBD2` library, and so the unit tests, from the generated header.
 - Configurable protocols and timing: `LIBOBD2_SPT_ISO9141` / `LIBOBD2_SPT_KWP2000` can be defined by the user (ISO9141 stays the default), `LIBOBD2_STRICT_TIMING` selects the standard P1..P4 limits, and each `P*_TIME_*` limit can be overridden.
 - **host_serial** port (`ports/host_serial/`): K-line on x86 Linux through a serial / USB adapter (KKL, FTDI), on top of libserialport. 5-baud and fast-init wake-ups use the serial BREAK condition; the port asks the driver for low latency so USB adapters do not batch received bytes.
@@ -22,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - STM32 test builds no longer try to build `theft` (it needs POSIX `poll.h`); it is built for `host_virtual` only.
 - `examples/stm32g4` builds again: it forces `SPT_FREERTOS=ON` like `examples/stm32f4`, and the stm32g4 toolchain uses `-std=gnu99` so TinyUSB's `asm` compiles.
 - `examples/libs/cmsis_device_g4` and `ports/stm32g4/RTT` are listed in `.gitmodules`, so `git submodule update --init` works on a fresh clone.
+- `scripts/gen.py` runs on Python 3.8 to 3.11 (no nested quotes in f-strings).
 - Release (`NDEBUG`) builds no longer warn about parameters only used in `OBD2_DEBUG_ASSERT`; an unused-variable warning in `ISO9141_RecvMessage` is gone.
 - `LibOBD2_Init` no longer reports a connection when no ECU answers: the stubbed KWP2000 StartCommunication (tried after ISO9141 fails) returned OK; it now returns `OBD_NOT_SUPPORTED` until KWP2000 is implemented.
 
