@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
-project(OBD2 VERSION 0.0.0 LANGUAGES C)
+# version.txt is bumped by release-please; do not edit it by hand.
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version.txt" LIBOBD2_VERSION LIMIT_COUNT 1)
+project(OBD2 VERSION ${LIBOBD2_VERSION} LANGUAGES C)
 
 # --- FreeRTOS Configuration Setup ---
 # This MUST be defined before adding the FreeRTOS subdirectory
