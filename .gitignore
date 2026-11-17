@@ -10,3 +10,6 @@ builds/
 *.pvs
 test_results/
 .vscode/
+
+# ISO / SAE standards kept locally; copyrighted, never committed
+doc/obd2/
