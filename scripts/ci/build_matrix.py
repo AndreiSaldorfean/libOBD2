@@ -53,11 +53,7 @@ CELLS = {
 # Cells that do not build yet, each with the issue that tracks it. They are still built on every run
 # and reported as skipped; a failure here does not fail the matrix. When one builds again, the run
 # says so: remove it from this list in the PR that fixed it.
-KNOWN_BROKEN = {
-    "stm32f4-tests-flash-Debug": "#73",
-    "stm32f4-tests-ram-Debug": "#73",
-    "stm32g4-tests-flash-Debug": "#73",
-}
+KNOWN_BROKEN = {}
 
 LIBOPENCM3 = ROOT / "examples" / "libs" / "libopencm3"
 LIBOPENCM3_LIBS = {"stm32f4": "libopencm3_stm32f4.a", "stm32g4": "libopencm3_stm32g4.a"}

@@ -3,6 +3,10 @@ set(TEST_USE_LEGACY_SOURCES ON)
 set(TEST_USE_ECU ON)
 set(TEST_ADD_BIN_POST_BUILD ON)
 
+# The STM32G4 vector table routes the core exception handlers through
+# FreeRTOS, so the test image needs the kernel just like the example image.
+set(SPT_FREERTOS "ON" CACHE STRING "Support for FreeRTOS" FORCE)
+
 set(TINYUSB_ROOT ${CMAKE_SOURCE_DIR}/../examples/libs/tinyusb)
 
 file(GLOB TEST_PLATFORM_STARTUP_SOURCES
@@ -11,6 +15,8 @@ file(GLOB TEST_PLATFORM_STARTUP_SOURCES
 
 list(APPEND TEST_PLATFORM_SOURCES
 	"${CMAKE_SOURCE_DIR}/../examples/libs/cmsis_device_g4/Source/Templates/system_stm32g4xx.c"
+	"${CMAKE_SOURCE_DIR}/../examples/stm32g4/src/usb_descriptors.c"
+	"${CMAKE_SOURCE_DIR}/../ports/stm32g4/startup/startup.S"
 	${TEST_PLATFORM_STARTUP_SOURCES}
 	${TINYUSB_ROOT}/src/tusb.c
 	${TINYUSB_ROOT}/src/common/tusb_fifo.c

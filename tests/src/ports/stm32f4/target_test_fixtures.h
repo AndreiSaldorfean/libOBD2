@@ -10,7 +10,7 @@
 void targetSetUp();
 void targetTearDown();
 void targetPreTestsInit();
-/* Starts the test task and the scheduler; does not return on the target. */
+/* Returns the number of failed tests (0 = all passed). */
 int targetRunTests(void);
 
 #endif /* TARGET_TEST_FIXTURES_H */
