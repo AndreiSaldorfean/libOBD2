@@ -18,8 +18,23 @@
     path = "examples/libs/cmsis_device_f4"
     url = "https://github.com/STMicroelectronics/cmsis_device_f4.git"
 
+[submodule "examples/libs/cmsis_device_g4"]
+    path = "examples/libs/cmsis_device_g4"
+    url = "https://github.com/STMicroelectronics/cmsis_device_g4.git"
+
 [submodule "examples/libs/tinyusb"]
     path = "examples/libs/tinyusb"
     url = "https://github.com/hathach/tinyusb.git"
 
 
+[submodule "tests/theft"]
+	path = tests/theft
+	url = https://github.com/silentbicycle/theft.git
+
+[submodule "examples/libs/libserialport"]
+	path = examples/libs/libserialport
+	url = https://github.com/sigrokproject/libserialport.git
+
+[submodule "ports/stm32g4/RTT"]
+	path = ports/stm32g4/RTT
+	url = https://github.com/SEGGERMicro/RTT.git

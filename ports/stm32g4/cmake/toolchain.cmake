@@ -5,7 +5,7 @@ set(CMAKE_C_FLAGS
     "-mcpu=cortex-m4 \
     -mfpu=fpv4-sp-d16 \
     -mthumb \
-    -std=c99 \
+    -std=gnu99 \
     -mfloat-abi=hard \
     -nostartfiles \
     -nodefaultlibs \

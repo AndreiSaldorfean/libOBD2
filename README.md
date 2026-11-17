@@ -100,6 +100,44 @@ Full wiring: see `examples/stm32f4/` and `ports/stm32f4/`.
 
 ---
 
+## 📄 Single-header usage
+
+libOBD2 can also be used as one stb-style header, `libobd2.h`, with no CMake on your side (bare-metal, RTOS or host).
+
+**Generate it:**
+
+```bash
+make amalgamate                                   # -> builds/amalgamation/dist/libobd2.h
+# or, from any configured build dir:
+cmake --build <build dir> --target amalgamate     # -> <build dir>/dist/libobd2.h
+```
+
+**Use it:**
+
+```c
+/* in exactly ONE .c file */
+#define LIBOBD2_IMPLEMENTATION
+#include "libobd2.h"
+```
+
+Every other file just does `#include "libobd2.h"` and gets only the declarations. You still provide the UART and timer ops (`obd_uart_ops_t`, `obd_timing_ops_t`) as in the example above; `ports/` is not part of the header.
+
+**Configuration** — define before the include, the same way in every file (a compiler flag is easiest):
+
+| Macro | Effect |
+|-------|--------|
+| `LIBOBD2_SPT_ISO9141` | ISO 9141-2 support (default when no `LIBOBD2_SPT_*` is defined) |
+| `LIBOBD2_SPT_KWP2000` | KWP2000 support (not implemented yet) |
+| `LIBOBD2_STRICT_TIMING` | P1..P4 limits from the standard instead of the relaxed 5 s maximums |
+| `P1_TIME_MIN` … `P4_TIME_MAX` | Override a single timing limit (ms) |
+| `SPT_FREERTOS` | FreeRTOS build, needs the FreeRTOS headers on the include path |
+| `SPT_TRACING` | Timing trace hooks, needs a `trace.h` (see `ports/<platform>/trace.h`) |
+| `NDEBUG` | Compiles out the internal precondition asserts |
+
+`make amalgamate_check` builds the header and compiles a two-file smoke test (`tests/amalgamation/`) with `gcc` and `arm-none-eabi-gcc` (`-Wall -Wextra -Werror -std=c99`). To run the unit tests against the single header instead of the `OBD2` sources, set `"LIBOBD2_USE_AMALGAMATION": "ON"` under `tests` in `build_config.json` (CMake option `-DLIBOBD2_USE_AMALGAMATION=ON`).
+
+---
+
 ## 📊 Stats
 
 | | |

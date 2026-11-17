@@ -2,7 +2,10 @@ cmake_minimum_required(VERSION 3.14)
 project(demo LANGUAGES C ASM)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
-option(SPT_FREERTOS "Support for FreeRTOS" ON)
+# The demo always runs on FreeRTOS (main.c creates tasks, isr_vector.c routes SysTick/SVC/PendSV
+# to the FreeRTOS port), so force it ON even if build_config.json passes -DSPT_FREERTOS=OFF,
+# as examples/stm32f4 does. option() would not override a value given on the command line.
+set(SPT_FREERTOS "ON" CACHE STRING "Support for FreeRTOS" FORCE)
 
 get_filename_component(TINYUSB_ROOT "${CMAKE_CURRENT_LIST_DIR}/../libs/tinyusb" ABSOLUTE)
 
@@ -34,10 +37,10 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 target_include_directories(${PROJECT_NAME}
     PRIVATE
     ../../include/data_link/
-    ../../include/data_link/l2_kwp/
+    ../../include/data_link/kwp/
     ../../include/freertos/
     ../../include/app
-    ../../include/data_link/l2_iso9141/
+    ../../include/data_link/iso9141/
     ../../interface/
     ../../utils/
     ../../include/app/

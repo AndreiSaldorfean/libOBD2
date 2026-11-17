@@ -18,6 +18,16 @@
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 
 /**
+ * @brief Result of timer_init, start_timeout and stop_timeout
+ */
+typedef enum
+{
+    OBD_TMR_OK = 0U,           /* the operation was done */
+    OBD_TMR_ERR_INVALID_ARG,   /* NULL or unusable handle */
+    OBD_TMR_ERR_HW,            /* the timer hardware or OS timer service failed */
+} obd_tmr_status_t;
+
+/**
  * @brief Callback function type for timer expiration
  * @param pUserData User-provided context data
  */
@@ -32,16 +42,11 @@ typedef void (*timing_callback_t)(void *pUserData);
 typedef struct
 {
     /**
-     * @brief Buffer for saving timing samples with get_time_ms
-     */
-    uint32_t timeSample;
-
-    /**
-     * @brief Get current timestamp in milliseconds
+     * @brief Prepare the timer for use (start the time base, clear any timeout)
      * @param pHandle Platform-specific handle (e.g., timer peripheral)
-     * @return Current time in milliseconds (can wrap around)
+     * @return OBD_TMR_OK on success, or the reason it failed
      */
-    bool (*timer_init)(void *pHandle);
+    obd_tmr_status_t (*timer_init)(void *pHandle);
 
     /**
      * @brief Get current timestamp in milliseconds
@@ -54,7 +59,6 @@ typedef struct
      * @brief Blocking delay
      * @param pHandle Platform-specific handle
      * @param delay_ms Delay duration in milliseconds
-     * @return OBD_STATUS_OK on success
      *
      * Implementation examples:
      *   - Bare metal: busy-wait or hardware timer
@@ -64,29 +68,30 @@ typedef struct
     void (*delay_ms)(void *pHandle, uint32_t delay_ms);
 
     /**
-     * @brief Start a one-shot timeout timer
+     * @brief Start a one-shot timeout timer, replacing any running one
      * @param pHandle Platform-specific handle
      * @param timeout_ms Timeout duration in milliseconds
      * @param callback Function to call on timeout (can be NULL for polling)
      * @param pUserData User data passed to callback
-     * @return OBD_STATUS_OK on success
+     * @return OBD_TMR_OK on success, or the reason it failed
      *
      * If callback is NULL, use is_timeout_expired() to poll.
      */
-    bool (*start_timeout)(void *pHandle, uint32_t timeout_ms,
-                                  timing_callback_t callback, void *pUserData);
+    obd_tmr_status_t (*start_timeout)(void *pHandle, uint32_t timeout_ms,
+                                      timing_callback_t callback, void *pUserData);
 
     /**
      * @brief Stop/cancel the current timeout
      * @param pHandle Platform-specific handle
-     * @return OBD_STATUS_OK on success
+     * @return OBD_TMR_OK on success, or the reason it failed
      */
-    bool (*stop_timeout)(void *pHandle);
+    obd_tmr_status_t (*stop_timeout)(void *pHandle);
 
     /**
      * @brief Check if timeout has expired (polling mode)
      * @param pHandle Platform-specific handle
-     * @return true if timeout expired, false otherwise
+     * @return true if a started timeout has run out, false otherwise
+     *         (always false once stop_timeout was called)
      */
     bool (*is_timeout_expired)(void *pHandle);
 

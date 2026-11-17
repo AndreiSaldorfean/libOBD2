@@ -5,7 +5,7 @@
 #include "datalink.h"
 #include "ecu_libobd2.h"
 #include "iso15031_5.h"
-#include "l2_iso9141.h"
+#include "iso9141.h"
 #include "libobd2_service_requests.h"
 #include "libobd2_services.h"
 #include "task.h"
@@ -15,10 +15,10 @@
 #include "libobd2_uart_port.h"
 #include "libobd2_timer_port.h"
 #include "libobd2.h"
-#include "l2_kwp2000.h"
+#include "kwp2000.h"
 #include "usbd.h"
 #include "utils.h"
-#include "ecu_l2_iso9141.h"
+#include "ecu_iso9141.h"
 #include "libopencm3/cm3/nvic.h"
 #include "libopencm3/stm32/f4/timer.h"
 
@@ -44,12 +44,12 @@ static timerCtx_t tmrCtx =
 
 static obd_timing_ops_t timerOps =
 {
-        .timer_init         = LIBOBD2_TMR_Init,
-        .delay_ms           = LIBOBD2_TMR_DelayMs,
-        .get_time_ms        = LIBOBD2_TMR_GetTimeMs,
-        .is_timeout_expired = LIBOBD2_TMR_IsTimeoutExpired,
-        .start_timeout      = LIBOBD2_TMR_StartTimeout,
-        .stop_timeout       = LIBOBD2_TMR_StopTimeout,
+        .timer_init         = TMR_Init,
+        .delay_ms           = TMR_DelayMs,
+        .get_time_ms        = TMR_GetTimeMs,
+        .is_timeout_expired = TMR_IsTimeoutExpired,
+        .start_timeout      = TMR_StartTimeout,
+        .stop_timeout       = TMR_StopTimeout,
 };
 
 static uart_ctx_t uartCtx =
@@ -71,14 +71,15 @@ static uart_ctx_t uartCtx =
 
 static obd_uart_ops_t transportOps =
 {
-    .init        = LIBOBD2_UART_Init,
-    .send_byte   = LIBOBD2_UART_WriteByte,
-    .recv_byte   = LIBOBD2_UART_RecvByte,
-    .send_pulse  = LIBOBD2_UART_SendPulse,
-    .switch_mode = LIBOBD2_UART_SwitchMode,
+    .init        = UART_Init,
+    .send_byte   = UART_WriteByte,
+    .recv_byte   = UART_RecvByte,
+    .send_pulse  = UART_SendPulse,
+    .switch_mode = UART_SwitchMode,
+    .flush_rx    = UART_FlushRx,
 };
 
-static l2_iso9141_ctx_t ctx =
+static iso9141_ctx_t ctx =
 {
     .header =
     {
@@ -95,9 +96,9 @@ static dataLink_if_t dataLink =
     .pTimingHandle    = &tmrCtx,
     .pTransportHandle = &uartCtx,
     .pUartOps    = &transportOps,
-    .connect          = ecu_l2_iso9141_connect,
-    .send_request     = ecu_l2_iso9141_send_request,
-    .recv_response    = ecu_l2_iso9141_recv_response
+    .connect          = ECU_ISO9141_Connect,
+    .send_request     = ECU_ISO9141_SendRequest,
+    .recv_response    = ECU_ISO9141_RecvResponse
 };
 
 static obd_ctx_t libobd2Ctx =

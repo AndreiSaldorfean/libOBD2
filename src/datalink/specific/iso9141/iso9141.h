@@ -1,0 +1,52 @@
+#ifndef ISO9141_H
+#define ISO9141_H
+
+/* ================================================ INCLUDES =============================================== */
+#include "statusRetCodes.h"
+#include "datalink.h"
+/* ================================================= MACROS ================================================ */
+
+#define ISO9141_W0_TIME_MIN (2U)
+#define ISO9141_W1_TIME_MIN (60U)
+#define ISO9141_W1_TIME_MAX (300U)
+#define ISO9141_W2_TIME_MIN (5U)
+#define ISO9141_W2_TIME_MAX (20U)
+#define ISO9141_W3_TIME_MIN (0U)
+#define ISO9141_W3_TIME_MAX (20U)
+#define ISO9141_W4_TIME_MIN (25U)
+#define ISO9141_W4_TIME_MAX (50U)
+#define ISO9141_W4_INV_ADDR_TIME_MAX (200U)
+#define ISO9141_W5_TIME_MIN (300U)
+
+/* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
+typedef struct
+{
+    header_t header;
+    uint8_t protocol;
+    uint8_t kb1;
+    uint8_t kb2;
+}iso9141_ctx_t;
+
+/* ============================================ INLINE FUNCTIONS =========================================== */
+/* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
+/* =============================================== MODULE API ============================================== */
+/******************************************
+* title: ISO9141_Connect
+* brief: Opens an ISO9141-2 connection to the ECU (5-baud init) and stores
+*        the header to use in the protocol context.
+******************************************/
+obd_status_t ISO9141_Connect(dataLink_if_t *self, uint8_t* protocol);
+
+/******************************************
+* title: ISO9141_SendRequest
+* brief: Sends an OBD service request to the ECU over ISO9141-2.
+******************************************/
+obd_status_t ISO9141_SendRequest(dataLink_if_t *self, const obd_data_t *serviceRequests, size_t dataLen);
+
+/******************************************
+* title: ISO9141_RecvResponse
+* brief: Receives the ECU response to the last request over ISO9141-2.
+******************************************/
+obd_status_t ISO9141_RecvResponse(dataLink_if_t *self, obd_data_t *resp, size_t* dataLen);
+
+#endif /* ISO9141_H */
