@@ -1,0 +1,66 @@
+# Thin wrapper: every step runs inside the release-agent container (tools/release-agent/).
+# Jenkins or a cron job on any machine can run the same image with the same commands.
+name: release-agent
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, edited, synchronize, reopened]
+  push:
+    branches: [develop]
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC: release if RELEASE_MIN_CHANGES feat/fix/perf/breaking changes are unreleased
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "release-agent command (status, release-pr, publish, weekly, finish X.Y.Z)"
+        default: status
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  # one release run at a time; PR checks run per PR and cancel older runs
+  group: release-agent-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || 'release' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tools/release-agent
+            scripts/changelog.py
+          sparse-checkout-cone-mode: false
+
+      - name: Build image
+        run: docker build -f tools/release-agent/Dockerfile -t libobd2-release-agent .
+
+      - name: Run
+        env:
+          # A PAT or GitHub App token lets release PRs trigger other workflows; GITHUB_TOKEN works otherwise.
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.number }}
+          DISPATCH_COMMAND: ${{ inputs.command }}
+          RELEASE_MIN_CHANGES: ${{ vars.RELEASE_MIN_CHANGES || '3' }}
+          RELEASE_MIN_AGE_DAYS: ${{ vars.RELEASE_MIN_AGE_DAYS || '0' }}
+          RELEASE_REQUIRED_CHECKS: ${{ vars.RELEASE_REQUIRED_CHECKS || 'ci/build-matrix,ci/unit-tests,ci/coverage' }}
+          RELEASE_CHECKS_TIMEOUT_MIN: ${{ vars.RELEASE_CHECKS_TIMEOUT_MIN || '30' }}
+        run: |
+          case "$EVENT" in
+            pull_request) set -- check-pr "$PR_NUMBER" ;;
+            push)         set -- on-push ;;
+            schedule)     set -- weekly ;;
+            *)            read -r -a args <<< "$DISPATCH_COMMAND"; set -- "${args[@]}" ;;
+          esac
+          docker run --rm \
+            -e GH_TOKEN -e ANTHROPIC_API_KEY -e CLAUDE_CODE_OAUTH_TOKEN -e REPO -e RELEASE_MIN_CHANGES -e RELEASE_MIN_AGE_DAYS -e RELEASE_REQUIRED_CHECKS -e RELEASE_CHECKS_TIMEOUT_MIN \
+            libobd2-release-agent "$@"
