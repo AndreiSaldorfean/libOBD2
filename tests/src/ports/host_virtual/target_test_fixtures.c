@@ -44,7 +44,7 @@ void targetPreTestsInit()
 /* Tests run grouped by type: positive (expected use) first, then negative (invalid input, faults,
  * timeouts); inside each, example-based before property-based, driver -> datalink -> app.
  * Traces land in test_results/ (uart_trace.h). */
-void targetRunTests()
+int targetRunTests(void)
 {
     UNITY_BEGIN();
 
@@ -220,5 +220,5 @@ void targetRunTests()
     RUN_TEST(test_neg_pbt_LIBOBD2_RequestService_5);
 
     /*================= NEGATIVE TESTS =================*/
-    UNITY_END();
+    return UNITY_END();
 }

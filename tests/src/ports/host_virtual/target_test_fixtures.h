@@ -10,7 +10,8 @@
 void targetSetUp();
 void targetTearDown();
 void targetPreTestsInit();
-void targetRunTests();
+/* Returns the number of failed tests (0 = all passed). */
+int targetRunTests(void);
 
 #endif /* TARGET_TEST_FIXTURES_H */
 
