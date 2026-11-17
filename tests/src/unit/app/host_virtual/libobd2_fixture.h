@@ -12,6 +12,7 @@
 #include "datalink.h"
 #include "iso9141.h"
 #include "libobd2.h"
+#include "libobd2_services.h"
 #include "libobd2_timer_port.h"
 #include "libobd2_uart_port.h"
 #include <stdbool.h>
@@ -74,5 +75,16 @@ uint32_t APPFX_QueueEcuFrame(uint32_t reqEnd, const uint8_t *data, size_t dataLe
 /* Queues the ECU side of a SID $09 exchange: the count answer 49 <cntPid> <msgCnt>, then the first
  * 'sentCnt' of the data messages 49 <pid> <msgNr> D1..D4 (payload: 4 bytes per message). */
 void APPFX_QueueVehicleInfo(uint8_t cntPid, uint8_t pid, const uint8_t *payload, uint8_t msgCnt, uint8_t sentCnt);
+
+/* Queues what the simulated ECU (the answer table in ecu/app/ecu_libobd2_services.h) sends back for every
+ * request of 'service', each answer after the tester's request, the way the ECU of the stm32 examples
+ * answers. Requests the ECU does not answer get nothing. Returns the virtual time at which the tester has
+ * read the last answer. Services that read until P2 max expires also need APPFX_SuppressEcho(): with the
+ * echo the tester would read its own request back as one more answer. */
+uint32_t APPFX_QueueEcuExchange(const libobd2_service_t *service);
+
+/* True when one of the simulated ECU's answers to 'service' has a data byte equal to the running sum
+ * (APPFX_HasEarlyChecksum): the tester cuts that frame short (PROPERTY_TESTS.md, F1) */
+bool APPFX_EcuExchangeHitsF1(const libobd2_service_t *service);
 
 #endif /* LIBOBD2_FIXTURE_H */
