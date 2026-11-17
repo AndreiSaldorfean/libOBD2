@@ -19,8 +19,10 @@ endif
 
 # Coverage build of the tests (host_virtual only), kept apart from the normal build
 cc_dir=$(dir)_cc
+# Single-header build (dist/libobd2.h), independent of build_config.json
+amal_dir=builds/amalgamation
 
-.PHONY: all b r cc clean
+.PHONY: all b r cc clean amalgamate amalgamate_check
 
 all: clean
 	python scripts/gen.py --app $(app)
@@ -35,6 +37,13 @@ cc:
 	python scripts/coverage.py --reset builds/$(cc_dir)
 	./builds/$(cc_dir)/test
 	python scripts/coverage.py builds/$(cc_dir)
+# Single header: generate $(amal_dir)/dist/libobd2.h
+amalgamate:
+	cmake -S . -B $(amal_dir) -DSPT_FREERTOS=OFF
+	cmake --build $(amal_dir) --target amalgamate
+# Single header: generate it, then compile + link the smoke test with gcc and arm-none-eabi-gcc
+amalgamate_check: amalgamate
+	./tests/amalgamation/check.sh $(amal_dir)/dist
 clean:
-	rm -rf builds/$(dir) builds/$(cc_dir)
+	rm -rf builds/$(dir) builds/$(cc_dir) $(amal_dir)
 
