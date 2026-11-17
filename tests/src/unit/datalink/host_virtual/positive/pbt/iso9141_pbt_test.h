@@ -10,6 +10,8 @@
 void test_pos_pbt_ISO9141_ComputeChecksum_0(void);
 void test_pos_pbt_ISO9141_SerializeMessage_0(void);
 void test_pos_pbt_ISO9141_RecvMessage_0(void);
+void test_pos_pbt_ISO9141_SendRequest_0(void);
+void test_pos_pbt_ISO9141_RecvResponse_0(void);
+void test_pos_pbt_ISO9141_Connect_0(void);
 
 #endif /* ISO9141_PBT_TEST_H */
-

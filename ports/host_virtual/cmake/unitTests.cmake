@@ -7,6 +7,7 @@ set(TEST_ADD_BIN_POST_BUILD OFF)
 #   category ex/ (example-based) or pbt/ (property-based)
 # New test files are picked up automatically.
 set(UNIT_TEST_LAYER_DIRS
+    "${CMAKE_SOURCE_DIR}/src/unit/common/host_virtual"   # helpers shared by all layers (pbt_support)
     "${CMAKE_SOURCE_DIR}/src/unit/drivers/host_virtual"
     "${CMAKE_SOURCE_DIR}/src/unit/datalink/host_virtual"
     "${CMAKE_SOURCE_DIR}/src/unit/app/host_virtual"
