@@ -14,7 +14,6 @@ file(GLOB TEST_PLATFORM_STARTUP_SOURCES
 
 list(APPEND TEST_PLATFORM_SOURCES
     "${CMAKE_SOURCE_DIR}/../examples/libs/cmsis_device_f4/Source/Templates/system_stm32f4xx.c"
-    "${CMAKE_SOURCE_DIR}/src/ports/stm32f4/os/tasks.c"
     ${TEST_PLATFORM_STARTUP_SOURCES}
     ${TINYUSB_ROOT}/src/tusb.c
     ${TINYUSB_ROOT}/src/common/tusb_fifo.c

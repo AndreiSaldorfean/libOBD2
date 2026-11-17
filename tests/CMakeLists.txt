@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(test LANGUAGES C)
+project(test LANGUAGES C ASM)
 
 option(SPT_FREERTOS "Support for FreeRTOS" ON)
 option(COVERAGE "Instrument the unit tests and the code under test for gcov coverage (host_virtual only)" OFF)

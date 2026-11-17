@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- STM32F4 and STM32G4 on-target test images build again with current fixtures, startup code, FreeRTOS handlers and USB descriptors.
+
 ## [0.1.0](https://github.com/AndreiSaldorfean/libOBD2/releases/tag/v0.1.0) - 2026-11-17
 
 ### Added
