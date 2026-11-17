@@ -34,12 +34,16 @@ STM32 on-target test builds (#73).
 ## Coverage only goes up
 
 `tests/coverage_baseline.json` holds the lowest allowed totals. A PR that adds untested code fails
-`ci/coverage`. When a PR raises coverage, the check says so; raise the baseline in the same PR:
+`ci/coverage`. When a PR raises coverage, raise the baseline in the same PR, **to the totals CI
+measured**: the `ci/coverage` status on the PR shows them ("lines ..%, branches ..%, functions ..%"),
+and so do the `builds/ci/coverage.txt` / `coverage.json` artifacts of the Jenkins run. Copy them into
+`tests/coverage_baseline.json` and push.
 
-```sh
-scripts/ci/coverage.sh --update     # never lowers a value
-git add tests/coverage_baseline.json
-```
+Do not take the values from a local run. gcov counts branches differently from one gcc version to
+the next: on `ea80505` the same code measures 82.20% branch coverage with gcc 15 and 82.06% on the CI
+server. A baseline from a newer local gcc can sit above what CI reaches, and `ci/coverage` then fails
+on correct code (#84). `scripts/ci/coverage.sh --update` (never lowers a value) only gives CI's
+numbers when run with the CI server's compiler.
 
 Lowering the baseline by hand is a reviewed decision, never a way to make the check pass.
 The same applies to `tests/ignored_baseline.txt`: an `IGNORE` is only for a `PBT_KNOWN_BUG`

@@ -2,7 +2,9 @@
 # Coverage ratchet (#69): line, branch and function coverage of the library (host_virtual tests)
 # may never drop below tests/coverage_baseline.json. Same command locally and in Jenkins:
 #   scripts/ci/coverage.sh            # check
-#   scripts/ci/coverage.sh --update   # after adding tests: raise the baseline, then commit it
+#   scripts/ci/coverage.sh --update   # raise the baseline to this run's totals (never lowers them)
+# Raise the committed baseline to the totals CI measured (the ci/coverage status of the PR), not to a
+# local run: other gcc versions count branches differently (scripts/ci/README.md, #84).
 # Output: builds/ci/coverage.txt (report), builds/ci/coverage.json (totals + per file)
 set -euo pipefail
 cd "$(dirname "$0")/../.."
