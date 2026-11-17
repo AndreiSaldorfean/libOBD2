@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0](https://github.com/AndreiSaldorfean/libOBD2/releases/tag/v0.1.0) - 2026-11-17
+
 ### Added
 
 - **Automated releases** (#70): release-please computes the next SemVer version from conventional PR titles and keeps a `chore(release): vX.Y.Z` PR open on `develop`; merging it tags the release, publishes notes from this changelog with `libobd2.h` attached, merges the tag into `main` and comments on and closes the released issues. Every Monday it releases by itself when at least `RELEASE_MIN_CHANGES` (3) `feat`/`fix`/`perf`/breaking changes are waiting and the release PR's `ci/*` checks are green. Runs from one container (`tools/release-agent/`) in GitHub Actions, Jenkins or cron; an optional Claude step reviews PRs for breaking changes and drafts release highlights (`.claude/skills/release/`); `/commit-changes` writes commits and opens PRs in the format it expects. See `CONTRIBUTING.md`.
