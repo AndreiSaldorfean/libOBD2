@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The unit-test binary now exits with the number of failed tests instead of always 0.
+- STM32 test builds no longer try to build `theft` (it needs POSIX `poll.h`); it is built for `host_virtual` only.
 - `examples/libs/cmsis_device_g4` and `ports/stm32g4/RTT` are listed in `.gitmodules`, so `git submodule update --init` works on a fresh clone.
 - Release (`NDEBUG`) builds no longer warn about parameters only used in `OBD2_DEBUG_ASSERT`; an unused-variable warning in `ISO9141_RecvMessage` is gone.
 - `LibOBD2_Init` no longer reports a connection when no ECU answers: the stubbed KWP2000 StartCommunication (tried after ISO9141 fails) returned OK; it now returns `OBD_NOT_SUPPORTED` until KWP2000 is implemented.

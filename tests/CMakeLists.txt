@@ -101,8 +101,6 @@ if(LOGGING STREQUAL "ON")
     target_compile_definitions(${PROJECT_NAME} PRIVATE LOGGING)
 endif()
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/cmake/theft ${CMAKE_BINARY_DIR}/theft)
-
 if(TEST_USE_ECU)
     # ECU CMake pulls in libOBD2 as a dependency and defines OBD2/OBD2_ECU.
     add_subdirectory(${CMAKE_SOURCE_DIR}/../ecu ${CMAKE_BINARY_DIR}/ecu)
@@ -129,13 +127,11 @@ if(TEST_USE_ECU)
     target_link_libraries(${PROJECT_NAME} PUBLIC
         OBD2
         OBD2_ECU
-        theft
         ${TEST_PLATFORM_LINK_LIBS}
     )
 else()
     target_link_libraries(${PROJECT_NAME} PUBLIC
         OBD2
-        theft
         ${TEST_PLATFORM_LINK_LIBS}
     )
 endif()
