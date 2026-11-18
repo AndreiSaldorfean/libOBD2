@@ -13,9 +13,21 @@
 // run and only the GitHub statuses are skipped.
 
 // The commit GitHub shows the PR with: for a PR built as a merge with its target, the PR head.
+// Jenkins checks out the PR head and merges the target into it, so the merge's parents are
+// [PR head, target]: take the parent that is not the target's tip (#86).
 def headSha() {
     def parents = sh(script: 'git rev-list --parents -n 1 HEAD', returnStdout: true).trim().split(' ')
-    return (env.CHANGE_ID && parents.size() > 2) ? parents[2] : parents[0]
+    if (!env.CHANGE_ID || parents.size() <= 2) {
+        return parents[0]
+    }
+    def target = sh(script: "git rev-parse --verify -q 'refs/remotes/origin/${env.CHANGE_TARGET}^{commit}' || true",
+                    returnStdout: true).trim()
+    for (int i = 1; i < parents.size(); i++) {
+        if (parents[i] != target) {
+            return parents[i]
+        }
+    }
+    return parents[1]
 }
 
 def repoSlug() {
