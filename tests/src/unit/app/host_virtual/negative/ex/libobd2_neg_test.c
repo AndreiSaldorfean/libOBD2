@@ -20,7 +20,7 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
-extern obd_status_t LibOBD2_DecodeResponse(const libobd2_data_t *buffer, size_t bufferLen, uint8_t *response, size_t* responseLen);
+extern obd_status_t LibOBD2_DecodeResponse(const libobd2_data_t *request, const libobd2_data_t *buffer, size_t bufferLen, uint8_t *response, size_t* responseLen);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */
@@ -254,18 +254,28 @@ void test_neg_ex_LIBOBD2_RequestService_6(void)
  * - description: ECU answers the decoder cannot interpret are reported
  *                as OBD_NOT_SUPPORTED with no data, never as OK.
  * - steps:
- *     1. No message at all
- *     2. An unknown service (positive response to $03)
+ *     1. No message at all for a $01 request
+ *     2. An unknown service (positive response to $05)
  *     3. An unknown $01 PID
  *     4. An unknown $09 PID
+ *     5. An answer for another service than the request ($01 asked,
+ *        $09 answered)
  ******************************************************************/
 void test_neg_ex_LIBOBD2_DecodeResponse_0(void)
 {
+    const libobd2_data_t requests[] =
+    {
+        { .data = { .sid = SID_TEST_RESULTS_O2_SENSORS, .param = { 0x01u } }, .dataLen = 2u },
+        { .data = { .sid = SID_SHOW_CURRENT_DATA,       .param = { 0xFFu } }, .dataLen = 2u },
+        { .data = { .sid = SID_REQUEST_VEHICLE_INFO,    .param = { 0xFFu } }, .dataLen = 2u },
+        { .data = { .sid = SID_SHOW_CURRENT_DATA,       .param = { PID_09_VIN } }, .dataLen = 2u },
+    };
     const libobd2_data_t answers[] =
     {
-        { .data = { .sid = SID_SHOW_STORED_DTCS + 0x40u,     .param = { 0x00u } },       .dataLen = 2u },
+        { .data = { .sid = SID_TEST_RESULTS_O2_SENSORS + 0x40u, .param = { 0x01u, 0x00u } }, .dataLen = 3u },
         { .data = { .sid = SID_SHOW_CURRENT_DATA + 0x40u,    .param = { 0xFFu, 0x00u } }, .dataLen = 3u },
         { .data = { .sid = SID_REQUEST_VEHICLE_INFO + 0x40u, .param = { 0xFFu, 0x01u } }, .dataLen = 3u },
+        { .data = { .sid = SID_REQUEST_VEHICLE_INFO + 0x40u, .param = { PID_09_VIN, 0x01u, 'W', 'V', 'W', 'Z' } }, .dataLen = 7u },
     };
     uint8_t response[APPFX_RESPONSE_BUF_LEN] = {0};
     size_t responseLen = NO_LEN;
@@ -273,14 +283,14 @@ void test_neg_ex_LIBOBD2_DecodeResponse_0(void)
     UART_TRACE_Begin("test_neg_ex_LIBOBD2_DecodeResponse_0.vcd");
 
     /* 1. */
-    TEST_ASSERT_EQUAL_HEX16(OBD_NOT_SUPPORTED, LibOBD2_DecodeResponse(answers, 0u, response, &responseLen).response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_NOT_SUPPORTED, LibOBD2_DecodeResponse(&requests[1], answers, 0u, response, &responseLen).response);
     TEST_ASSERT_EQUAL_size_t(0, responseLen);
 
-    /* 2. - 4. */
+    /* 2. - 5. */
     for (size_t idx = 0; idx < (sizeof(answers) / sizeof(answers[0])); idx++)
     {
         responseLen = NO_LEN;
-        TEST_ASSERT_EQUAL_HEX16(OBD_NOT_SUPPORTED, LibOBD2_DecodeResponse(&answers[idx], 1u, response, &responseLen).response);
+        TEST_ASSERT_EQUAL_HEX16(OBD_NOT_SUPPORTED, LibOBD2_DecodeResponse(&requests[idx], &answers[idx], 1u, response, &responseLen).response);
         TEST_ASSERT_EQUAL_size_t(0, responseLen);
     }
     UART_TRACE_End();

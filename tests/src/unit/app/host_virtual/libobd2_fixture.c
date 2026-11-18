@@ -1,5 +1,6 @@
 /* ================================================ INCLUDES =============================================== */
 #include "libobd2_fixture.h"
+#include "ecu_libobd2.h"
 #include "iso15031_5.h"
 #include "uart_trace.h"
 #include "unity.h"
@@ -175,4 +176,47 @@ void APPFX_QueueVehicleInfo(uint8_t cntPid, uint8_t pid, const uint8_t *payload,
         const uint8_t msg[] = { sid, pid, msgNr, d[0], d[1], d[2], d[3] };
         time = APPFX_QueueEcuFrame(time, msg, sizeof(msg));
     }
+}
+
+uint32_t APPFX_QueueEcuExchange(const libobd2_service_t *service)
+{
+    const ecu_libobd2_service_t *answer = NULL;
+    const libobd2_data_t *request = NULL;
+    uint32_t time = 0u;
+
+    for (size_t reqIdx = 0u; (reqIdx < LIBOBD2_MAX_SREQ) && (0u < service->serviceRequests[reqIdx].dataLen); reqIdx++)
+    {
+        request = &service->serviceRequests[reqIdx];
+        answer  = ECU_LibOBD2_GetAnswer(request->data.sid, request->data.param[0]);
+
+        /* tester sends the request, the ECU answers with every message back to back */
+        time += APPFX_REQ_DURATION((uint32_t)request->dataLen);
+        for (size_t msgIdx = 0u; (NULL != answer) && (msgIdx < answer->sreqLen); msgIdx++)
+        {
+            const libobd2_data_t *msg = &answer->serviceRequests.serviceRequests[msgIdx];
+            time = APPFX_QueueEcuFrame(time, (const uint8_t *)&msg->data, msg->dataLen);
+        }
+    }
+
+    return time;
+}
+
+bool APPFX_EcuExchangeHitsF1(const libobd2_service_t *service)
+{
+    const ecu_libobd2_service_t *answer = NULL;
+    const libobd2_data_t *request = NULL;
+    bool hits = false;
+
+    for (size_t reqIdx = 0u; (reqIdx < LIBOBD2_MAX_SREQ) && (0u < service->serviceRequests[reqIdx].dataLen); reqIdx++)
+    {
+        request = &service->serviceRequests[reqIdx];
+        answer  = ECU_LibOBD2_GetAnswer(request->data.sid, request->data.param[0]);
+        for (size_t msgIdx = 0u; (NULL != answer) && (msgIdx < answer->sreqLen); msgIdx++)
+        {
+            const libobd2_data_t *msg = &answer->serviceRequests.serviceRequests[msgIdx];
+            hits = hits || APPFX_HasEarlyChecksum((const uint8_t *)&msg->data, msg->dataLen);
+        }
+    }
+
+    return hits;
 }

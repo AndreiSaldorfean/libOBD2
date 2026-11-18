@@ -504,8 +504,7 @@ void test_neg_pbt_LIBOBD2_RequestService_3(void)
         .type_info = { &truncatedInfo },
         .trials    = PBT_TRIALS_LINE,
     };
-    PBT_KNOWN_BUG(&cfg, "test_neg_pbt_LIBOBD2_RequestService_3.vcd",
-                  "F7 (#68): a missing data byte decodes as A = 0, i.e. -40 degC (PROPERTY_TESTS.md)");
+    PBT_ASSERT_HOLDS(&cfg, "test_neg_pbt_LIBOBD2_RequestService_3.vcd");
 }
 
 /******************************************************************
