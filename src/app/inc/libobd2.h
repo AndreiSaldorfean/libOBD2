@@ -95,4 +95,11 @@ obd_status_t LibOBD2_RequestMonitorTests(obd_ctx_t *ctx, uint8_t tid, libobd2_mo
  * returns the DATA_A..E it answers with. The ECU may stay silent if conditions are not right. */
 obd_status_t LibOBD2_RequestControl(obd_ctx_t *ctx, uint8_t tid, const uint8_t *dataIn, uint8_t *dataOut);
 
+/* True for the services that report their supported PIDs ($01 $02 $05 $06 $08 $09) */
+bool LibOBD2_IsSidWithAvailablePids(uint8_t sid);
+
+/* False if LibOBD2_Init found that the ECU does not answer service sid. Only the services with PIDs are
+ * probed, so the others ($03 $04 $07 $0A) are always reported as supported. */
+bool LibOBD2_IsSidSupportedByEcu(uint8_t sid);
+
 #endif /* LIBOBD2_H */

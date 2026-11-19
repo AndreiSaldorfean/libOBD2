@@ -29,7 +29,7 @@ datalink/host_virtual/
     negative/ex/    dl_neg_test, dl_fault_test, iso9141_neg_test
     negative/pbt/   dl_pbt_neg_test, iso9141_pbt_neg_test
 app/host_virtual/
-    libobd2_fixture.c/.h  connected tester + ECU frame / SID $09 queueing, mock links
+    libobd2_fixture.c/.h  connected tester + ECU frame / SID $09 queueing, mock links, scripted ECU
     positive/ex/    libobd2_test
     positive/pbt/   libobd2_pbt_test
     negative/ex/    libobd2_neg_test

@@ -2,6 +2,7 @@
 #include "libobd2_fixture.h"
 #include "ecu_libobd2.h"
 #include "iso15031_5.h"
+#include "libobd2_priv.h"
 #include "uart_trace.h"
 #include "unity.h"
 #include <string.h>
@@ -24,9 +25,15 @@ const uint8_t appFxVin[APPFX_VIN_MSG_CNT * 4u] = { 0x00, 0x00, 0x00, '1', 'H', '
                                                    '6', '3', '3', 'A', '0', '0', '4', '3', '5', '2' };
 
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
+/* What LibOBD2_Init learnt about the ECU (libobd2.c) */
+extern uint32_t supportedPids[MAX_NUM_OF_ECUS][MAX_NUM_OF_SIDS_WITH_PIDS][LIBOBD2_PID_RANGES];
+extern bool supportedSids[MAX_NUM_OF_ECUS][MAX_NUM_OF_SIDS_WITH_PIDS];
+
 extern uint8_t ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen);
 
 static obd_tmr_status_t keepTimer(void *pHandle);
+static obd_status_t scriptedSend(dataLink_if_t *pDataLink, const obd_data_t *req, size_t dataLen);
+static obd_status_t scriptedRecv(dataLink_if_t *pDataLink, obd_data_t *resp, size_t *dataLen);
 static bool keepLine(void *handle);
 static void sendNoEcho(void *handle, uint8_t data);
 
@@ -63,6 +70,59 @@ static bool keepLine(void *handle)
     return true;
 }
 
+/* send_request of the scripted ECU: records the request */
+static obd_status_t scriptedSend(dataLink_if_t *pDataLink, const obd_data_t *req, size_t dataLen)
+{
+    appFxScriptedEcu_t *ecu = (appFxScriptedEcu_t *)pDataLink->pProtocolCtx;
+    obd_status_t status = {0};
+
+    TEST_ASSERT_TRUE_MESSAGE(ecu->reqCnt < APPFX_ECU_MAX_REQS, "scripted ECU: too many requests");
+    ecu->reqs[ecu->reqCnt]    = *req;
+    ecu->reqLens[ecu->reqCnt] = dataLen;
+    ecu->reqCnt++;
+
+    status = ecu->sendStatus;
+    return status;
+}
+
+/* recv_response of the scripted ECU: the scripted answer to the last request, else a P2 max timeout */
+static obd_status_t scriptedRecv(dataLink_if_t *pDataLink, obd_data_t *resp, size_t *dataLen)
+{
+    const appFxScriptedEcu_t *ecu = (const appFxScriptedEcu_t *)pDataLink->pProtocolCtx;
+    const ecu_libobd2_service_t *simAnswer = NULL;
+    const obd_data_t *req = NULL;
+    obd_status_t status = { .timeout = OBD_ERR_COMM_P2_TIMEOUT_MAX_TESTER_ECU,
+                            .response = OBD_ERR_COMM_FMT_BYTE_NOT_RECVD };
+
+    TEST_ASSERT_TRUE_MESSAGE(0u < ecu->reqCnt, "scripted ECU: response read before any request");
+    req = &ecu->reqs[ecu->reqCnt - 1u];
+    if (ecu->customSilence)
+    {
+        status = ecu->silentStatus;
+    }
+
+    for (size_t idx = 0u; idx < ecu->answerCnt; idx++)
+    {
+        if ((ecu->answers[idx].sid == req->sid) && (ecu->answers[idx].pid == req->param[0]))
+        {
+            *resp    = ecu->answers[idx].resp;
+            *dataLen = ecu->answers[idx].respLen;
+            status   = (obd_status_t){0};
+            return status;
+        }
+    }
+
+    simAnswer = ecu->useSimulator ? ECU_LibOBD2_GetAnswer(req->sid, req->param[0]) : NULL;
+    if (NULL != simAnswer)
+    {
+        *resp    = simAnswer->serviceRequests.serviceRequests[0].data;
+        *dataLen = simAnswer->serviceRequests.serviceRequests[0].dataLen;
+        status   = (obd_status_t){0};
+    }
+
+    return status;
+}
+
 /* send_byte of a transceiver without echo: the byte goes out on the wire (trace) but is not received back */
 static void sendNoEcho(void *handle, uint8_t data)
 {
@@ -93,7 +153,20 @@ void APPFX_SetUpLine(void)
         .send_request     = ISO9141_SendRequest,
         .recv_response    = ISO9141_RecvResponse,
     };
-    appFx.ctx = (obd_ctx_t){ .pDataLink = &appFx.link, .connectionStatus = 0 };
+    appFx.ctx = (obd_ctx_t){ .pDataLink = &appFx.link, .connectionStatus = true };
+    APPFX_SetEcuSupportsAll(true);
+}
+
+void APPFX_SetEcuSupportsAll(bool isSupported)
+{
+    for (size_t slot = 0u; slot < MAX_NUM_OF_SIDS_WITH_PIDS; slot++)
+    {
+        supportedSids[0][slot] = isSupported;
+        for (size_t range = 0u; range < LIBOBD2_PID_RANGES; range++)
+        {
+            supportedPids[0][slot][range] = isSupported ? 0xFFFFFFFFu : 0u;
+        }
+    }
 }
 
 bool APPFX_HasEarlyChecksum(const uint8_t *data, size_t dataLen)
@@ -111,6 +184,12 @@ bool APPFX_HasEarlyChecksum(const uint8_t *data, size_t dataLen)
     return false;
 }
 
+obd_ctx_t APPFX_ConnectedCtx(dataLink_if_t *link)
+{
+    APPFX_SetEcuSupportsAll(true);
+    return (obd_ctx_t){ .pDataLink = link, .connectionStatus = true };
+}
+
 dataLink_if_t APPFX_MockLink(void *ctx, dl_send_request_t send, dl_recv_response_t recv)
 {
     return (dataLink_if_t)
@@ -123,6 +202,48 @@ dataLink_if_t APPFX_MockLink(void *ctx, dl_send_request_t send, dl_recv_response
         .send_request     = send,
         .recv_response    = recv,
     };
+}
+
+void APPFX_QueueIso9141Init(void)
+{
+    /* nothing is known about the protocol before the connect */
+    appFx.proto = (iso9141_ctx_t){0};
+    appFx.link.connect       = NULL;
+    appFx.link.send_request  = NULL;
+    appFx.link.recv_response = NULL;
+
+    /* Same ECU timing as test_pos_ex_ISO9141_5BaudInit_0: W5 + 10 bits at 5 baud, then W1..W4 */
+    appFx.timer.timeNow = ISO9141_W5_TIME_MIN + 2000u + ISO9141_W1_TIME_MIN;
+    UART_WriteByte(&appFx.uart, 0x55u);
+    appFx.timer.timeNow += ISO9141_W2_TIME_MIN;
+    UART_WriteByte(&appFx.uart, 0x08u);
+    appFx.timer.timeNow += ISO9141_W3_TIME_MIN;
+    UART_WriteByte(&appFx.uart, 0x08u);
+    appFx.timer.timeNow += 3u * ISO9141_W4_TIME_MIN;
+    UART_WriteByte(&appFx.uart, (uint8_t)(~0x33u));
+    appFx.timer.timeNow = 0u;
+}
+
+void APPFX_EcuReset(appFxScriptedEcu_t *ecu)
+{
+    memset(ecu, 0, sizeof(*ecu));
+}
+
+void APPFX_EcuAnswer(appFxScriptedEcu_t *ecu, uint8_t reqSid, uint8_t reqPid, const uint8_t *resp, size_t respLen)
+{
+    TEST_ASSERT_TRUE_MESSAGE(ecu->answerCnt < APPFX_ECU_MAX_ANSWERS, "scripted ECU: too many answers");
+    TEST_ASSERT_TRUE_MESSAGE(respLen <= sizeof(obd_data_t), "scripted ECU: answer too long");
+
+    ecu->answers[ecu->answerCnt].sid     = reqSid;
+    ecu->answers[ecu->answerCnt].pid     = reqPid;
+    ecu->answers[ecu->answerCnt].respLen = respLen;
+    memcpy(&ecu->answers[ecu->answerCnt].resp, resp, respLen);
+    ecu->answerCnt++;
+}
+
+dataLink_if_t APPFX_EcuLink(appFxScriptedEcu_t *ecu)
+{
+    return APPFX_MockLink(ecu, scriptedSend, scriptedRecv);
 }
 
 void APPFX_SuppressEcho(void)

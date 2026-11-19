@@ -50,9 +50,9 @@ extern void LibOBD2_O2TestScaling(uint8_t tid, float *scale, libobd2_unit_t *uni
 static const valueCase_t valueCases[] =
 {
     { OBD_GET_COOLANT_TEMP,             VAL_I16, 114.0 },
-    { OBD_GET_PIDS_SUPPORTED_01_20,     VAL_U32, (double)0xBE3FA813u },
-    { OBD_GET_PIDS_SUPPORTED_21_40,     VAL_U32, (double)0x80000001u },
-    { OBD_GET_PIDS_SUPPORTED_41_60,     VAL_U32, (double)0x44000000u },
+    { OBD_GET_PIDS_SUPPORTED_01_20,     VAL_U32, (double)0xFFFFFFFFu },
+    { OBD_GET_PIDS_SUPPORTED_21_40,     VAL_U32, (double)0xFFFFFFFFu },
+    { OBD_GET_PIDS_SUPPORTED_41_60,     VAL_U32, (double)0xFFFF0000u },
     { OBD_GET_FREEZE_DTC,               VAL_U16, (double)0x0143u },
     { OBD_GET_ENGINE_LOAD,              VAL_F32, 127.0 * 100.0 / 255.0 },
     { OBD_GET_SHORT_FUEL_TRIM_BANK1,    VAL_F32, 3.90625 },

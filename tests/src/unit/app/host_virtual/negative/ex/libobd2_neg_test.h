@@ -23,5 +23,14 @@ void test_neg_ex_LIBOBD2_RequestService_8(void);
 void test_neg_ex_LIBOBD2_RequestService_9(void);
 void test_neg_ex_LIBOBD2_RequestService_10(void);
 void test_neg_ex_LIBOBD2_RequestService_11(void);
+void test_neg_ex_LIBOBD2_Init_3(void);
+void test_neg_ex_LIBOBD2_RequestService_12(void);
+void test_neg_ex_LIBOBD2_RequestService_13(void);
+void test_neg_ex_LIBOBD2_RequestService_14(void);
+void test_neg_ex_LIBOBD2_ReadSupportedPids_0(void);
+void test_neg_ex_LIBOBD2_ReadSupportedPids_1(void);
+void test_neg_ex_LIBOBD2_ReadSupportedPids_2(void);
+void test_neg_ex_LIBOBD2_ReadSupportedPids_3(void);
+void test_neg_ex_LIBOBD2_ReadSupportedPids_4(void);
 
 #endif /* LIBOBD2_NEG_TEST_H */

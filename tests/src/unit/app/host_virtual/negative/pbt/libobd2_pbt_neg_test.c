@@ -122,7 +122,7 @@ static enum theft_trial_res prop_send_failure_propagates(struct theft *t, void *
     uint16_t errCode = testCase.errCode;
 
     dataLink_if_t mockLink = APPFX_MockLink(&errCode, mock_send_fail, mock_recv_should_not_be_called);
-    obd_ctx_t ctx = { .pDataLink = &mockLink };
+    obd_ctx_t ctx = APPFX_ConnectedCtx(&mockLink);
 
     uint8_t response[RESPONSE_BUF_LEN] = {0};
     const size_t sentinel = (size_t)0xDEADBEEFu;

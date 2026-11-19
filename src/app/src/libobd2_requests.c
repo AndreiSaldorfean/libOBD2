@@ -1,5 +1,6 @@
 /* ================================================ INCLUDES =============================================== */
 #include "libobd2.h"
+#include "libobd2_priv.h"
 #include "datalink.h"
 #include "iso15031_5.h"
 #include "libobd2_formulas.h"
@@ -11,7 +12,6 @@
 #include <stddef.h>
 
 /* ================================================= MACROS ================================================ */
-#define LIBOBD2_POSITIVE_RESP_OFFSET  (0x40U) /* sid of a positive response = request sid + 0x40 */
 #define LIBOBD2_RESP_BUF_MSGS         (20U)   /* ECU messages one request can collect */
 #define LIBOBD2_PID_IDX               (0U)    /* param[] index of the PID */
 #define LIBOBD2_MSG_CNT_IDX           (1U)    /* param[] index of the message count in a $09 count response */
@@ -31,7 +31,7 @@
 #define LIBOBD2_CONTROL_LEN           (1U + 1U + LIBOBD2_CONTROL_DATA_LEN) /* 08/48 TID A..E */
 
 /* ============================================ LOCAL VARIABLES ============================================ */
-OBD2_STATIC const libobd2_service_t libobd2Services[OBD2_MAX_NUM_SERVICES] = {OBD_SUPPORTED_SERVICES};
+const libobd2_service_t libobd2Services[OBD2_MAX_NUM_SERVICES] = {OBD_SUPPORTED_SERVICES};
 OBD2_STATIC const libobd2_pid_formula_t libobd2PidFormulas[] = {LIBOBD2_PID_FORMULAS};
 OBD2_STATIC const size_t libobd2PidFormulaCnt = sizeof(libobd2PidFormulas) / sizeof(libobd2PidFormulas[0]);
 
@@ -50,9 +50,6 @@ OBD2_STATIC obd_status_t LibOBD2_DecodeResponse(const libobd2_data_t *request, c
 OBD2_STATIC obd_status_t LibOBD2_Exchange(obd_ctx_t *ctx, const obd_data_t *request, size_t requestLen, bool untilSilent, libobd2_data_t *answers, size_t answerCap, size_t *answerCnt);
 OBD2_STATIC bool LibOBD2_IsAnswerTo(const libobd2_data_t *answer, uint8_t sid, uint8_t tid);
 OBD2_STATIC void LibOBD2_O2TestScaling(uint8_t tid, float *scale, libobd2_unit_t *unit);
-
-OBD2_STATIC obd_status_t LibOBD2_Init_Validate(obd_ctx_t *ctx);
-OBD2_STATIC obd_status_t LibOBD2_Init_Execute(obd_ctx_t *ctx);
 
 OBD2_STATIC obd_status_t LibOBD2_RequestService_Validate(obd_ctx_t *ctx, libobd2_sid_t obdSid, uint8_t *response, size_t* responseLen);
 OBD2_STATIC obd_status_t LibOBD2_RequestService_Execute(obd_ctx_t *ctx, libobd2_sid_t obdSid, uint8_t *response, size_t* responseLen);
@@ -468,31 +465,6 @@ OBD2_STATIC void LibOBD2_O2TestScaling(uint8_t tid, float *scale, libobd2_unit_t
 }
 
 /******************************************
-* title: LibOBD2_Init_Validate
-* brief: Checks the arguments of LibOBD2_Init.
-******************************************/
-OBD2_STATIC obd_status_t LibOBD2_Init_Validate(obd_ctx_t *ctx)
-{
-    obd_status_t status = {0};
-
-    if ((NULL == ctx) || (NULL == ctx->pDataLink))
-    {
-        status.response = OBD_ERR_NULL_PTR;
-    }
-
-    return status;
-}
-
-/******************************************
-* title: LibOBD2_Init_Execute
-* brief: Connects the data link (protocol detection and init).
-******************************************/
-OBD2_STATIC obd_status_t LibOBD2_Init_Execute(obd_ctx_t *ctx)
-{
-    return DL_Connect(ctx->pDataLink);
-}
-
-/******************************************
 * title: LibOBD2_RequestService_Validate
 * brief: Checks the arguments of LibOBD2_RequestService. The data link is
 *        checked by DL_SendRequest.
@@ -508,6 +480,16 @@ OBD2_STATIC obd_status_t LibOBD2_RequestService_Validate(obd_ctx_t *ctx, libobd2
     else if (obdSid >= OBD2_MAX_NUM_SERVICES)
     {
         status.response = OBD_ERR_INVALID_PARAM;
+    }
+    // LibOBD2_Init has to connect and read the supported PIDs first
+    else if (!ctx->connectionStatus)
+    {
+        status.response = OBD_ERR_NOT_INITIALIZED;
+    }
+    // Allow only sids and pids supported by the ecu
+    else if (!LibOBD2_IsLibobd2SidSupported(obdSid))
+    {
+        status.response = OBD_SRV_NOT_SUPPORTED_BY_ECU;
     }
 
     return status;
@@ -535,22 +517,6 @@ exit:
 }
 
 /* ================================================ MODULE API ============================================= */
-/******************************************
-* title: LibOBD2_Init
-* brief: Connects to the ECU over the context's data link.
-******************************************/
-obd_status_t LibOBD2_Init(obd_ctx_t *ctx)
-{
-    obd_status_t status = {0};
-
-    status = LibOBD2_Init_Validate(ctx);
-    OBD2_ASSERT_OK(status);
-    status = LibOBD2_Init_Execute(ctx);
-
-exit:
-    return status;
-}
-
 /******************************************
 * title: LibOBD2_RequestService
 * brief: Requests one OBD service from the ECU and returns its decoded value

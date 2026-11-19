@@ -6,6 +6,7 @@
 #include "iso15031_5.h"
 #include "iso9141.h"
 #include "libobd2.h"
+#include "libobd2_priv.h"
 #include "libobd2_services.h"
 #include "libobd2_timer_port.h"
 #include "libobd2_uart_port.h"
@@ -20,6 +21,7 @@
 /* ============================================ LOCAL VARIABLES ============================================ */
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
+extern bool LibOBD2_IsPidSupportedByEcu(uint8_t sid, uint8_t pid);
 extern obd_status_t LibOBD2_DecodeResponse(const libobd2_data_t *request, const libobd2_data_t *buffer, size_t bufferLen, uint8_t *response, size_t* responseLen);
 
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
@@ -461,4 +463,367 @@ void test_neg_ex_LIBOBD2_RequestService_11(void)
 
     /* 3. */
     TEST_ASSERT_EQUAL_size_t(0, responseLen);
+}
+
+/******************************************************************
+ * - brief:       The ECU never answers 01 00: LibOBD2_Init fails
+ * - description: The connect works, but $01 PID 00 is mandatory for
+ *                every OBD ECU: without it Init fails and the context
+ *                does not count as connected.
+ * - steps:
+ *     1. 5-baud init answered, 01 00 not (tester echo suppressed, see
+ *        APPFX_SuppressEcho)
+ *     2. LibOBD2_Init fails (the bit-banged 0x33 still lands on the
+ *        virtual line, so the exact error is a line artefact)
+ *     3. The context is not connected, a request is refused with
+ *        OBD_ERR_NOT_INITIALIZED
+ ******************************************************************/
+void test_neg_ex_LIBOBD2_Init_3(void)
+{
+    uint8_t response[APPFX_RESPONSE_BUF_LEN] = {0};
+    size_t responseLen = 0;
+    obd_status_t status = {0};
+
+    /* 1. */
+    APPFX_SetUpLine();
+    APPFX_SuppressEcho();
+    APPFX_QueueIso9141Init();
+
+    /* 2. */
+    UART_TRACE_Begin("test_neg_ex_LIBOBD2_Init_3.vcd");
+    status = LibOBD2_Init(&appFx.ctx);
+    UART_TRACE_End();
+    TEST_ASSERT_TRUE((OBD_STATUS_OK != status.response) || (OBD_STATUS_OK != status.timeout));
+
+    /* 3. */
+    TEST_ASSERT_FALSE(appFx.ctx.connectionStatus);
+    status = LibOBD2_RequestService(&appFx.ctx, OBD_GET_COOLANT_TEMP, response, &responseLen);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NOT_INITIALIZED, status.response);
+}
+
+/******************************************************************
+ * - brief:       A request before LibOBD2_Init is refused
+ * - description: A context that never went through LibOBD2_Init (its
+ *                connectionStatus is false) is refused with
+ *                OBD_ERR_NOT_INITIALIZED before anything goes on the
+ *                line, even with a bound link.
+ * - steps:
+ *     1. Connected line, connectionStatus false
+ *     2. RequestService(coolant) returns OBD_ERR_NOT_INITIALIZED
+ *     3. No response data, the clock never moved
+ ******************************************************************/
+void test_neg_ex_LIBOBD2_RequestService_12(void)
+{
+    uint8_t response[APPFX_RESPONSE_BUF_LEN] = {0};
+    size_t responseLen = 0;
+    obd_status_t status = {0};
+
+    /* 1. */
+    APPFX_SetUpLine();
+    appFx.ctx.connectionStatus = false;
+
+    /* 2. */
+    status = LibOBD2_RequestService(&appFx.ctx, OBD_GET_COOLANT_TEMP, response, &responseLen);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_NOT_INITIALIZED, status.response);
+
+    /* 3. */
+    TEST_ASSERT_EQUAL_size_t(0, responseLen);
+    TEST_ASSERT_EQUAL_UINT32(0u, appFx.timer.timeNow);
+}
+
+/******************************************************************
+ * - brief:       A PID the ECU does not support is never requested
+ * - description: The ECU supports $01 but not its PID 05: the coolant
+ *                request is refused with OBD_SRV_NOT_SUPPORTED_BY_ECU
+ *                and nothing goes on the line.
+ * - steps:
+ *     1. ECU: 01 00 -> 41 00 F0 00 00 00 (01..04 only), nothing else
+ *     2. ReadSupportedPids returns OK
+ *     3. RequestService(coolant) returns OBD_SRV_NOT_SUPPORTED_BY_ECU,
+ *        no further request, no response data
+ ******************************************************************/
+void test_neg_ex_LIBOBD2_RequestService_13(void)
+{
+    const uint8_t pids01_00[] = { 0x41u, 0x00u, 0xF0u, 0x00u, 0x00u, 0x00u };
+    static appFxScriptedEcu_t ecu;
+    uint8_t response[APPFX_RESPONSE_BUF_LEN] = {0};
+    size_t responseLen = 0;
+    size_t reqCnt = 0;
+    dataLink_if_t link = {0};
+    obd_ctx_t ctx = {0};
+    obd_status_t status = {0};
+
+    /* 1. */
+    APPFX_EcuReset(&ecu);
+    APPFX_EcuAnswer(&ecu, 0x01u, 0x00u, pids01_00, sizeof(pids01_00));
+    link = APPFX_EcuLink(&ecu);
+    ctx  = (obd_ctx_t){ .pDataLink = &link };
+
+    /* 2. */
+    status = LibOBD2_ReadSupportedPids(&ctx);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
+    ctx.connectionStatus = true;
+    reqCnt = ecu.reqCnt;
+
+    /* 3. */
+    status = LibOBD2_RequestService(&ctx, OBD_GET_COOLANT_TEMP, response, &responseLen);
+    TEST_ASSERT_EQUAL_HEX16(OBD_SRV_NOT_SUPPORTED_BY_ECU, status.response);
+    TEST_ASSERT_EQUAL_size_t(reqCnt, ecu.reqCnt);
+    TEST_ASSERT_EQUAL_size_t(0, responseLen);
+}
+
+/******************************************************************
+ * - brief:       A sid the ECU does not answer is never requested
+ * - description: The ECU does not answer $09 00: VIN and calibration
+ *                ID are refused with OBD_SRV_NOT_SUPPORTED_BY_ECU.
+ * - steps:
+ *     1. ECU: 01 00 -> 41 00 FF FF FF FE, $09 silent
+ *     2. ReadSupportedPids returns OK, $09 is not supported, not even
+ *        its PID 00
+ *     3. RequestService(VIN) and (CALID) return
+ *        OBD_SRV_NOT_SUPPORTED_BY_ECU without a request
+ ******************************************************************/
+void test_neg_ex_LIBOBD2_RequestService_14(void)
+{
+    const uint8_t pids01_00[] = { 0x41u, 0x00u, 0xFFu, 0xFFu, 0xFFu, 0xFEu };
+    static appFxScriptedEcu_t ecu;
+    uint8_t response[APPFX_RESPONSE_BUF_LEN] = {0};
+    size_t responseLen = 0;
+    size_t reqCnt = 0;
+    dataLink_if_t link = {0};
+    obd_ctx_t ctx = {0};
+    obd_status_t status = {0};
+
+    /* 1. */
+    APPFX_EcuReset(&ecu);
+    APPFX_EcuAnswer(&ecu, 0x01u, 0x00u, pids01_00, sizeof(pids01_00));
+    link = APPFX_EcuLink(&ecu);
+    ctx  = (obd_ctx_t){ .pDataLink = &link };
+
+    /* 2. */
+    status = LibOBD2_ReadSupportedPids(&ctx);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
+    TEST_ASSERT_FALSE(LibOBD2_IsSidSupportedByEcu(SID_REQUEST_VEHICLE_INFO));
+    TEST_ASSERT_FALSE(LibOBD2_IsPidSupportedByEcu(SID_REQUEST_VEHICLE_INFO, 0x00u));
+    ctx.connectionStatus = true;
+    reqCnt = ecu.reqCnt;
+
+    /* 3. */
+    status = LibOBD2_RequestService(&ctx, OBD_GET_VIN, response, &responseLen);
+    TEST_ASSERT_EQUAL_HEX16(OBD_SRV_NOT_SUPPORTED_BY_ECU, status.response);
+    status = LibOBD2_RequestService(&ctx, OBD_GET_CALID, response, &responseLen);
+    TEST_ASSERT_EQUAL_HEX16(OBD_SRV_NOT_SUPPORTED_BY_ECU, status.response);
+    TEST_ASSERT_EQUAL_size_t(reqCnt, ecu.reqCnt);
+}
+
+/******************************************************************
+ * - brief:       Answers that are not the bitmap asked for
+ * - description: An answer to 01 00 that is too short, for another
+ *                PID, for another sid or negative does not count:
+ *                $01 PID 00 is mandatory, so ReadSupportedPids fails
+ *                and nothing is left marked as supported.
+ * - steps:
+ *     1. For each answer: 41 00 BE 1F A8 (short), 41 20 BE 1F A8 13
+ *        (other PID), 49 00 BE 1F A8 13 (other sid), 7F 01 11
+ *     2. ReadSupportedPids returns OBD_SRV_NOT_SUPPORTED_BY_ECU after
+ *        the single 01 00 request
+ *     3. $01 is not supported, neither are its PIDs
+ ******************************************************************/
+void test_neg_ex_LIBOBD2_ReadSupportedPids_0(void)
+{
+    const uint8_t shortResp[] = { 0x41u, 0x00u, 0xBEu, 0x1Fu, 0xA8u };
+    const uint8_t otherPid[]  = { 0x41u, 0x20u, 0xBEu, 0x1Fu, 0xA8u, 0x13u };
+    const uint8_t otherSid[]  = { 0x49u, 0x00u, 0xBEu, 0x1Fu, 0xA8u, 0x13u };
+    const uint8_t negative[]  = { 0x7Fu, 0x01u, 0x11u };
+    const uint8_t *answers[]  = { shortResp, otherPid, otherSid, negative };
+    const size_t answerLens[] = { sizeof(shortResp), sizeof(otherPid), sizeof(otherSid), sizeof(negative) };
+    static appFxScriptedEcu_t ecu;
+    dataLink_if_t link = {0};
+    obd_ctx_t ctx = {0};
+    obd_status_t status = {0};
+
+    for (size_t idx = 0u; idx < (sizeof(answers) / sizeof(answers[0])); idx++)
+    {
+        /* 1. */
+        APPFX_SetEcuSupportsAll(true);
+        APPFX_EcuReset(&ecu);
+        APPFX_EcuAnswer(&ecu, 0x01u, 0x00u, answers[idx], answerLens[idx]);
+        link = APPFX_EcuLink(&ecu);
+        ctx  = (obd_ctx_t){ .pDataLink = &link };
+
+        /* 2. */
+        status = LibOBD2_ReadSupportedPids(&ctx);
+        TEST_ASSERT_EQUAL_HEX16(OBD_SRV_NOT_SUPPORTED_BY_ECU, status.response);
+        TEST_ASSERT_EQUAL_size_t(1u, ecu.reqCnt);
+
+        /* 3. */
+        TEST_ASSERT_FALSE(LibOBD2_IsSidSupportedByEcu(SID_SHOW_CURRENT_DATA));
+        TEST_ASSERT_FALSE(LibOBD2_IsPidSupportedByEcu(SID_SHOW_CURRENT_DATA, 0x00u));
+        TEST_ASSERT_FALSE(LibOBD2_IsPidSupportedByEcu(SID_SHOW_CURRENT_DATA, 0x01u));
+    }
+}
+
+/******************************************************************
+ * - brief:       A silent ECU: ReadSupportedPids fails on 01 00
+ * - description: The transport error of the mandatory $01 PID 00
+ *                comes back to the caller unchanged, nothing else is
+ *                requested.
+ * - steps:
+ *     1. ECU answers nothing
+ *     2. ReadSupportedPids returns OBD_ERR_COMM_FMT_BYTE_NOT_RECVD with
+ *        the P2 max timeout after the single 01 00 request
+ ******************************************************************/
+void test_neg_ex_LIBOBD2_ReadSupportedPids_1(void)
+{
+    static appFxScriptedEcu_t ecu;
+    dataLink_if_t link = {0};
+    obd_ctx_t ctx = {0};
+    obd_status_t status = {0};
+
+    /* 1. */
+    APPFX_EcuReset(&ecu);
+    link = APPFX_EcuLink(&ecu);
+    ctx  = (obd_ctx_t){ .pDataLink = &link };
+
+    /* 2. */
+    status = LibOBD2_ReadSupportedPids(&ctx);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_COMM_FMT_BYTE_NOT_RECVD, status.response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_ERR_COMM_P2_TIMEOUT_MAX_TESTER_ECU, status.timeout);
+    TEST_ASSERT_EQUAL_size_t(1u, ecu.reqCnt);
+}
+
+/******************************************************************
+ * - brief:       An announced range that is not answered
+ * - description: 01 00 announces range 20 but 01 20 is not answered:
+ *                the first range is kept, the second stays empty, and
+ *                the other sids are still probed.
+ * - steps:
+ *     1. ECU: 01 00 -> 41 00 80 00 00 01 (01, next range), 01 20 silent,
+ *             09 00 -> 49 00 01 80 00 00 00 (01)
+ *     2. ReadSupportedPids returns OK, $09 was requested too
+ *     3. $01 PID 01 is supported, 21 is not; $09 PID 01 is supported
+ ******************************************************************/
+void test_neg_ex_LIBOBD2_ReadSupportedPids_2(void)
+{
+    const uint8_t pids01_00[] = { 0x41u, 0x00u, 0x80u, 0x00u, 0x00u, 0x01u };
+    const uint8_t pids09_00[] = { 0x49u, 0x00u, 0x01u, 0x80u, 0x00u, 0x00u, 0x00u };
+    static appFxScriptedEcu_t ecu;
+    dataLink_if_t link = {0};
+    obd_ctx_t ctx = {0};
+    obd_status_t status = {0};
+
+    /* 1. */
+    APPFX_EcuReset(&ecu);
+    APPFX_EcuAnswer(&ecu, 0x01u, 0x00u, pids01_00, sizeof(pids01_00));
+    APPFX_EcuAnswer(&ecu, 0x09u, 0x00u, pids09_00, sizeof(pids09_00));
+    link = APPFX_EcuLink(&ecu);
+    ctx  = (obd_ctx_t){ .pDataLink = &link };
+
+    /* 2. */
+    status = LibOBD2_ReadSupportedPids(&ctx);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
+    TEST_ASSERT_EQUAL_HEX8(SID_REQUEST_VEHICLE_INFO, ecu.reqs[ecu.reqCnt - 1u].sid);
+
+    /* 3. */
+    TEST_ASSERT_TRUE(LibOBD2_IsPidSupportedByEcu(SID_SHOW_CURRENT_DATA, 0x01u));
+    TEST_ASSERT_TRUE(LibOBD2_IsPidSupportedByEcu(SID_SHOW_CURRENT_DATA, 0x20u));
+    TEST_ASSERT_FALSE(LibOBD2_IsPidSupportedByEcu(SID_SHOW_CURRENT_DATA, 0x21u));
+    TEST_ASSERT_TRUE(LibOBD2_IsPidSupportedByEcu(SID_REQUEST_VEHICLE_INFO, 0x01u));
+}
+
+/******************************************************************
+ * - brief:       Transport failures of the 01 00 probe come back
+ * - description: The status of a failing send (a response error or
+ *                only a timeout) or of a receive that only reports a
+ *                timeout is returned unchanged: $01 PID 00 is
+ *                mandatory, so ReadSupportedPids stops there.
+ * - steps:
+ *     1. Send fails with OBD_GENERIC_ERROR
+ *     2. Send fails with only the P3 timeout
+ *     3. Send works, the receive reports only the P2 max timeout
+ *     4. Each time: that status after the single 01 00 request, $01
+ *        not supported
+ ******************************************************************/
+void test_neg_ex_LIBOBD2_ReadSupportedPids_3(void)
+{
+    const obd_status_t sendFails[] = {
+        { .response = OBD_GENERIC_ERROR },
+        { .timeout  = OBD_ERR_COMM_P3_TIMEOUT_MIN_ECU_TESTER },
+        {0},
+    };
+    const obd_status_t recvFails[] = {
+        {0},
+        {0},
+        { .timeout = OBD_ERR_COMM_P2_TIMEOUT_MAX_TESTER_ECU },
+    };
+    static appFxScriptedEcu_t ecu;
+    dataLink_if_t link = {0};
+    obd_ctx_t ctx = {0};
+    obd_status_t status = {0};
+
+    for (size_t idx = 0u; idx < (sizeof(sendFails) / sizeof(sendFails[0])); idx++)
+    {
+        const bool sendFailed = (OBD_STATUS_OK != sendFails[idx].response) || (OBD_STATUS_OK != sendFails[idx].timeout);
+        const obd_status_t expected = sendFailed ? sendFails[idx] : recvFails[idx];
+
+        /* 1. - 3. */
+        APPFX_SetEcuSupportsAll(true);
+        APPFX_EcuReset(&ecu);
+        ecu.sendStatus    = sendFails[idx];
+        ecu.silentStatus  = recvFails[idx];
+        ecu.customSilence = true;
+        link = APPFX_EcuLink(&ecu);
+        ctx  = (obd_ctx_t){ .pDataLink = &link };
+
+        /* 4. */
+        status = LibOBD2_ReadSupportedPids(&ctx);
+        TEST_ASSERT_EQUAL_HEX16(expected.response, status.response);
+        TEST_ASSERT_EQUAL_HEX16(expected.timeout, status.timeout);
+        TEST_ASSERT_EQUAL_size_t(1u, ecu.reqCnt);
+        TEST_ASSERT_FALSE(LibOBD2_IsSidSupportedByEcu(SID_SHOW_CURRENT_DATA));
+    }
+}
+
+/******************************************************************
+ * - brief:       A later sid that only times out is skipped
+ * - description: Once $01 is read, a sid whose probe reports only a
+ *                timeout (response OK) counts as not supported and the
+ *                remaining sids are still probed.
+ * - steps:
+ *     1. ECU: 01 00 -> 41 00 80 00 00 00, 09 00 -> 49 00 01 80 00 00 00,
+ *        every other request: only the P2 max timeout
+ *     2. ReadSupportedPids returns OK
+ *     3. $01 and $09 supported, $02 $05 $06 $08 not
+ ******************************************************************/
+void test_neg_ex_LIBOBD2_ReadSupportedPids_4(void)
+{
+    const uint8_t pids01_00[] = { 0x41u, 0x00u, 0x80u, 0x00u, 0x00u, 0x00u };
+    const uint8_t pids09_00[] = { 0x49u, 0x00u, 0x01u, 0x80u, 0x00u, 0x00u, 0x00u };
+    static appFxScriptedEcu_t ecu;
+    dataLink_if_t link = {0};
+    obd_ctx_t ctx = {0};
+    obd_status_t status = {0};
+
+    /* 1. */
+    APPFX_EcuReset(&ecu);
+    APPFX_EcuAnswer(&ecu, 0x01u, 0x00u, pids01_00, sizeof(pids01_00));
+    APPFX_EcuAnswer(&ecu, 0x09u, 0x00u, pids09_00, sizeof(pids09_00));
+    ecu.silentStatus  = (obd_status_t){ .timeout = OBD_ERR_COMM_P2_TIMEOUT_MAX_TESTER_ECU };
+    ecu.customSilence = true;
+    link = APPFX_EcuLink(&ecu);
+    ctx  = (obd_ctx_t){ .pDataLink = &link };
+
+    /* 2. */
+    status = LibOBD2_ReadSupportedPids(&ctx);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
+    TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
+
+    /* 3. */
+    TEST_ASSERT_TRUE(LibOBD2_IsSidSupportedByEcu(SID_SHOW_CURRENT_DATA));
+    TEST_ASSERT_TRUE(LibOBD2_IsSidSupportedByEcu(SID_REQUEST_VEHICLE_INFO));
+    TEST_ASSERT_FALSE(LibOBD2_IsSidSupportedByEcu(SID_SHOW_FREEZE_FRAME_DATA));
+    TEST_ASSERT_FALSE(LibOBD2_IsSidSupportedByEcu(SID_TEST_RESULTS_O2_SENSORS));
+    TEST_ASSERT_FALSE(LibOBD2_IsSidSupportedByEcu(SID_TEST_RESULTS_OTHER));
+    TEST_ASSERT_FALSE(LibOBD2_IsSidSupportedByEcu(SID_CONTROL_ONBOARD_SYSTEM));
 }

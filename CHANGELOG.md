@@ -14,8 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Services `$05`, `$06` and `$08`: `LibOBD2_RequestSupportedTids`, `LibOBD2_RequestO2SensorTest` (Annex C scaling, limits, pass/fail), `LibOBD2_RequestMonitorTests` (every component and limit, pass/fail) and `LibOBD2_RequestControl`.
 - Readiness: PID `$01` decodes its monitor bytes B-D, PID `$41` returns the same `libobd2_monitors_t` for the drive cycle, `LibOBD2_IsReady` tells whether every supported monitor has completed. PIDs `$4F` / `$50` (full scales) with `LibOBD2_Rescale`.
 - `TP_READ_UNTIL_TO` transfer protocol step: reads answers until none starts within P2 max, so the ECU(s) may send any number of them (DTC services).
-- PID formula table (`LIBOBD2_PID_FORMULAS`, `src/app/libobd2_formulas.h`): adding a `$01` / `$02` PID is one row there plus one in `OBD_SUPPORTED_SERVICES`.
+- PID formula table (`LIBOBD2_PID_FORMULAS`, `src/app/inc/libobd2_formulas.h`): adding a `$01` / `$02` PID is one row there plus one in `OBD_SUPPORTED_SERVICES`.
 - ECU simulator answers every library service; `ECU_LibOBD2_GetAnswer` exposes its table and the `host_virtual` app tests replay it (`APPFX_QueueEcuExchange`).
+- `LibOBD2_Init` reads which services and PIDs the ECU supports (#89): every service with "PIDs supported" (`$01 $02 $05 $06 $08 $09`) is probed with its PID `$00`, and the ranges `$20` … `$E0` are followed while a bitmap announces the next one. A service the ECU does not answer (silent or negative response) is unsupported. `$03 $04 $07 $0A` are not probed (`$04` would clear the DTCs). `LibOBD2_IsSidSupportedByEcu` and `LibOBD2_IsSidWithAvailablePids` expose the result.
+- `OBD_ERR_NOT_INITIALIZED`: returned by `LibOBD2_RequestService` before a successful `LibOBD2_Init` (`obd_ctx_t.connectionStatus` is now set by `LibOBD2_Init`).
+- ECU simulator answers `$02` PID `$00` and `$09` PID `$00`, and its `$01` "PIDs supported" answers list every PID it answers.
 
 ### Fixed
 
@@ -27,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Breaking:** `OBD_GET_COOLANT_TEMP` returns an `int16_t` (2 bytes) instead of one byte, so temperatures below 0 degC come out right. Decoded values are written into `response` in their own type (see `libobd2_sid_t`); read them back with `memcpy`.
 - **Breaking:** `libobd2_sid_t` values are renumbered (new services); use the names.
+- **Breaking:** `LibOBD2_RequestService` refuses a service or PID the ECU did not report at init with `OBD_SRV_NOT_SUPPORTED_BY_ECU`, without sending it (#89). `LibOBD2_Init` fails when the ECU does not answer `01 00`, which every OBD ECU must support.
+- **Breaking:** the app layer is split into `src/app/inc/` (headers, the include path) and `src/app/src/` (`libobd2_init.c`, `libobd2_requests.c`, and `libobd2.c` for the supported services / PIDs), with the private header `libobd2_priv.h`. Builds that list the app include directory by hand must use `src/app/inc/`; the single header is unchanged.
 
 ## [0.1.0](https://github.com/AndreiSaldorfean/libOBD2/releases/tag/v0.1.0) - 2026-11-17
 
