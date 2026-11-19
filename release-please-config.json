@@ -11,7 +11,6 @@
   "force-tag-creation": true,
   "pull-request-title-pattern": "chore(release): v${version}",
   "pull-request-header": "Merging this PR releases libOBD2. The release agent stamps `[Unreleased]` in CHANGELOG.md as this version; edit `[Unreleased]` on `develop`, since this branch is rebuilt on every push there.",
-  "release-as": "0.1.0",
   "packages": {
     ".": {
       "package-name": "libOBD2",
