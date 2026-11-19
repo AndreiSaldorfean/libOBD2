@@ -26,6 +26,8 @@
 #define APPFX_RESPONSE_BUF_LEN 64u
 #define APPFX_VIN_LEN          17u
 #define APPFX_VIN_MSG_CNT      5u  /* 17 VIN chars + 3 pad bytes, 4 data bytes per message */
+#define APPFX_ECU_MAX_ANSWERS  16u /* answers one scripted ECU knows */
+#define APPFX_ECU_MAX_REQS     32u /* requests one scripted ECU records */
 
 /* Virtual time at which the tester is connected after APPFX_QueueIso9141Init's 5-baud init: the ECU
  * sends ~address (its last byte) here and the tester reads it one poll later */
@@ -44,6 +46,32 @@ typedef struct
     dataLink_if_t     link;
     obd_ctx_t         ctx;
 } appFixture_t;
+
+/* An ECU behind APPFX_MockLink that answers requests by (sid, first param) from a script and records
+ * every request. A request without a scripted answer gets silentStatus if customSilence is set, else
+ * OBD_ERR_COMM_FMT_BYTE_NOT_RECVD with the P2 max timeout, like a silent ECU. Every send returns
+ * sendStatus (OK after APPFX_EcuReset). With useSimulator, requests the script does not know get the
+ * first message the ECU simulator answers with (ECU_LibOBD2_GetAnswer). */
+typedef struct
+{
+    struct
+    {
+        uint8_t    sid;
+        uint8_t    pid;
+        obd_data_t resp;
+        size_t     respLen;
+    } answers[APPFX_ECU_MAX_ANSWERS];
+    size_t answerCnt;
+
+    obd_status_t sendStatus;
+    obd_status_t silentStatus;
+    bool         customSilence;
+    bool         useSimulator;
+
+    obd_data_t reqs[APPFX_ECU_MAX_REQS];
+    size_t     reqLens[APPFX_ECU_MAX_REQS];
+    size_t     reqCnt;
+} appFxScriptedEcu_t;
 
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
@@ -89,6 +117,15 @@ uint32_t APPFX_QueueEcuFrame(uint32_t reqEnd, const uint8_t *data, size_t dataLe
  * clears what the link knows about the protocol, so LibOBD2_Init runs the whole connect. The tester is
  * connected at APPFX_INIT_CONNECT_END. */
 void APPFX_QueueIso9141Init(void);
+
+/* Empties the script and the recorded requests of 'ecu' */
+void APPFX_EcuReset(appFxScriptedEcu_t *ecu);
+
+/* Scripts the answer 'resp' (sid + params, 'respLen' bytes) to request <reqSid> <reqPid> ... */
+void APPFX_EcuAnswer(appFxScriptedEcu_t *ecu, uint8_t reqSid, uint8_t reqPid, const uint8_t *resp, size_t respLen);
+
+/* A mock data link driven by 'ecu' (see appFxScriptedEcu_t) */
+dataLink_if_t APPFX_EcuLink(appFxScriptedEcu_t *ecu);
 
 /* Queues the ECU side of a SID $09 exchange: the count answer 49 <cntPid> <msgCnt>, then the first
  * 'sentCnt' of the data messages 49 <pid> <msgNr> D1..D4 (payload: 4 bytes per message). */

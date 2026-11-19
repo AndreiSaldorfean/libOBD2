@@ -114,6 +114,9 @@ int targetRunTests(void)
     RUN_TEST(test_pos_ex_LIBOBD2_Services_17);
     RUN_TEST(test_pos_ex_LIBOBD2_O2TestScaling_0);
     RUN_TEST(test_pos_ex_LIBOBD2_DtcToString_0);
+    RUN_TEST(test_pos_ex_LIBOBD2_ReadSupportedPids_0);
+    RUN_TEST(test_pos_ex_LIBOBD2_ReadSupportedPids_1);
+    RUN_TEST(test_pos_ex_LIBOBD2_ReadSupportedPids_2);
 
     /* property-based */
     /* ---- DRIVER ---- */
@@ -236,6 +239,15 @@ int targetRunTests(void)
     RUN_TEST(test_neg_ex_LIBOBD2_Services_12);
     RUN_TEST(test_neg_ex_LIBOBD2_Services_13);
     RUN_TEST(test_neg_ex_LIBOBD2_Services_14);
+    RUN_TEST(test_neg_ex_LIBOBD2_Init_3);
+    RUN_TEST(test_neg_ex_LIBOBD2_RequestService_12);
+    RUN_TEST(test_neg_ex_LIBOBD2_RequestService_13);
+    RUN_TEST(test_neg_ex_LIBOBD2_RequestService_14);
+    RUN_TEST(test_neg_ex_LIBOBD2_ReadSupportedPids_0);
+    RUN_TEST(test_neg_ex_LIBOBD2_ReadSupportedPids_1);
+    RUN_TEST(test_neg_ex_LIBOBD2_ReadSupportedPids_2);
+    RUN_TEST(test_neg_ex_LIBOBD2_ReadSupportedPids_3);
+    RUN_TEST(test_neg_ex_LIBOBD2_ReadSupportedPids_4);
 
     /* property-based */
     /* ---- DATALINK ---- */
