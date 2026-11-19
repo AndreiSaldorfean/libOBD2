@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/AndreiSaldorfean/libOBD2/releases/tag/v0.2.0) - 2026-11-19
+
 ### Added
 
 - ISO 15031-5 services: all 81 `$01` PIDs from `$00` to `$50` (supported-PID masks, monitor status, fuel system, load, fuel trims, RPM, speed, MAF, temperatures, pressures, conventional and wide-range O2 sensors, throttle / pedal positions, distances, times...), `$02` freeze frame (DTC, fuel system, load, fuel trims, MAP, RPM, speed, coolant, IAT), `$03` / `$07` / `$0A` DTCs, `$04` clear DTCs and the `$09` CVN and in-use performance tracking. Each service's output type is listed in `libobd2_sid_t`; `LibOBD2_DtcToString` formats a DTC as `P0143`.
