@@ -139,7 +139,7 @@ static enum theft_trial_res prop_vin_roundtrip(struct theft *t, void *arg)
     state.callIdx = 0u;
 
     dataLink_if_t mockLink = APPFX_MockLink(&state, mock_send_ok, mock_recv_vin);
-    obd_ctx_t ctx = { .pDataLink = &mockLink };
+    obd_ctx_t ctx = APPFX_ConnectedCtx(&mockLink);
 
     uint8_t response[RESPONSE_BUF_LEN] = {0};
     size_t  responseLen = 0;

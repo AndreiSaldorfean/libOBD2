@@ -5,6 +5,7 @@
 #include "iso15031_5.h"
 #include "iso9141.h"
 #include "libobd2.h"
+#include "libobd2_priv.h"
 #include "libobd2_services.h"
 #include "libobd2_timer_port.h"
 #include "libobd2_uart_port.h"
@@ -27,43 +28,41 @@ extern obd_status_t LibOBD2_DispatchSid(obd_ctx_t* ctx, const libobd2_service_t 
 /* ================================================ MODULE API ============================================= */
 /******************************************************************
  * - brief:       Connect to an ISO9141-2 ECU with LibOBD2_Init
- * - description: The library entry point runs the whole 5-baud init
- *                and leaves the data link bound to ISO9141.
+ * - description: The library entry point runs the whole 5-baud init,
+ *                leaves the data link bound to ISO9141 and reads which
+ *                sids / PIDs the ECU supports.
  * - steps:
  *     1. Tester idles W5, then sends 0x33 at 5 baud
  *     2. ECU answers sync 0x55, KB1 0x08, KB2 0x08 and, after the
  *        tester's ~KB2, the inverted address 0xCC
- *     3. LibOBD2_Init reports OK and binds the datalink to ISO9141
+ *     3. Tester: 68 6A F1 01 00 CS        ECU: 48 6B 12 41 00 08 00 00 00 CS
+ *        (only PID $05 supported, no next range); $02 $05 $06 $08 $09
+ *        are not answered
+ *     4. LibOBD2_Init reports OK and binds the datalink to ISO9141
  *        with the 68 6A F1 header
+ *     5. The context is connected; $01 and its PID $05 are supported,
+ *        PID $0C and the silent sids are not
  ******************************************************************/
 void test_pos_ex_LIBOBD2_Init_0(void)
 {
+    const uint8_t pidsResp[] = { SID_SHOW_CURRENT_DATA + 0x40u, PID_01_PIDS_SUPPORTED_01_20, 0x08u, 0x00u, 0x00u, 0x00u };
     obd_status_t status = {0};
 
+    /* 2. */
     APPFX_SetUpLine();
-    /* nothing is known about the protocol before the connect */
-    appFx.proto = (iso9141_ctx_t){0};
-    appFx.link.connect       = NULL;
-    appFx.link.send_request  = NULL;
-    appFx.link.recv_response = NULL;
+    APPFX_QueueIso9141Init();
 
-    /* 2. Same ECU timing as test_pos_ex_ISO9141_5BaudInit_0: W5 + 10 bits at 5 baud, then W1..W4 */
-    appFx.timer.timeNow = ISO9141_W5_TIME_MIN + 2000u + ISO9141_W1_TIME_MIN;
-    UART_WriteByte(&appFx.uart, 0x55u);
-    appFx.timer.timeNow += ISO9141_W2_TIME_MIN;
-    UART_WriteByte(&appFx.uart, 0x08u);
-    appFx.timer.timeNow += ISO9141_W3_TIME_MIN;
-    UART_WriteByte(&appFx.uart, 0x08u);
-    appFx.timer.timeNow += 3u * ISO9141_W4_TIME_MIN;
-    UART_WriteByte(&appFx.uart, (uint8_t)(~0x33u));
-    appFx.timer.timeNow = 0u;
+    /* 3. */
+    (void)APPFX_QueueEcuFrame(APPFX_INIT_CONNECT_END + APPFX_REQ_DURATION(2u), pidsResp, sizeof(pidsResp));
 
     /* 1. */
+    APPFX_SetEcuSupportsAll(false);
+    appFx.ctx.connectionStatus = false;
     UART_TRACE_Begin("test_pos_ex_LIBOBD2_Init_0.vcd");
     status = LibOBD2_Init(&appFx.ctx);
     UART_TRACE_End();
 
-    /* 3. */
+    /* 4. */
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.response);
     TEST_ASSERT_EQUAL_HEX16(OBD_STATUS_OK, status.timeout);
     TEST_ASSERT_EQUAL_PTR(ISO9141_Connect, appFx.link.connect);
@@ -74,6 +73,15 @@ void test_pos_ex_LIBOBD2_Init_0(void)
     TEST_ASSERT_EQUAL_HEX8(0xF1u, appFx.proto.header.srcAddr);
     TEST_ASSERT_EQUAL_HEX8(0x08u, appFx.proto.kb1);
     TEST_ASSERT_EQUAL_HEX8(0x08u, appFx.proto.kb2);
+
+    /* 5. */
+    TEST_ASSERT_TRUE(appFx.ctx.connectionStatus);
+    TEST_ASSERT_TRUE(LibOBD2_IsSidSupportedByEcu(SID_SHOW_CURRENT_DATA));
+    TEST_ASSERT_TRUE(LibOBD2_IsLibobd2SidSupported(OBD_GET_COOLANT_TEMP));
+    TEST_ASSERT_FALSE(LibOBD2_IsSidSupportedByEcu(SID_SHOW_FREEZE_FRAME_DATA));
+    TEST_ASSERT_FALSE(LibOBD2_IsSidSupportedByEcu(SID_CONTROL_ONBOARD_SYSTEM));
+    TEST_ASSERT_FALSE(LibOBD2_IsSidSupportedByEcu(SID_REQUEST_VEHICLE_INFO));
+    TEST_ASSERT_FALSE(LibOBD2_IsLibobd2SidSupported(OBD_GET_VIN));
 }
 
 /******************************************************************

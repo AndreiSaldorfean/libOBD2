@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TP_READ_UNTIL_TO` transfer protocol step: reads answers until none starts within P2 max, so the ECU(s) may send any number of them (DTC services).
 - PID formula table (`LIBOBD2_PID_FORMULAS`, `src/app/inc/libobd2_formulas.h`): adding a `$01` / `$02` PID is one row there plus one in `OBD_SUPPORTED_SERVICES`.
 - ECU simulator answers every library service; `ECU_LibOBD2_GetAnswer` exposes its table and the `host_virtual` app tests replay it (`APPFX_QueueEcuExchange`).
+- `LibOBD2_Init` reads which services and PIDs the ECU supports (#89): every service with "PIDs supported" (`$01 $02 $05 $06 $08 $09`) is probed with its PID `$00`, and the ranges `$20` … `$E0` are followed while a bitmap announces the next one. A service the ECU does not answer (silent or negative response) is unsupported. `$03 $04 $07 $0A` are not probed (`$04` would clear the DTCs). `LibOBD2_IsSidSupportedByEcu` and `LibOBD2_IsSidWithAvailablePids` expose the result.
+- `OBD_ERR_NOT_INITIALIZED`: returned by `LibOBD2_RequestService` before a successful `LibOBD2_Init` (`obd_ctx_t.connectionStatus` is now set by `LibOBD2_Init`).
 
 ### Fixed
 
@@ -27,7 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Breaking:** `OBD_GET_COOLANT_TEMP` returns an `int16_t` (2 bytes) instead of one byte, so temperatures below 0 degC come out right. Decoded values are written into `response` in their own type (see `libobd2_sid_t`); read them back with `memcpy`.
 - **Breaking:** `libobd2_sid_t` values are renumbered (new services); use the names.
-- **Breaking:** the app layer is split into `src/app/inc/` (headers, the include path) and `src/app/src/` (`libobd2_init.c`, `libobd2_requests.c`). Builds that list the app include directory by hand must use `src/app/inc/`; the single header is unchanged.
+- **Breaking:** `LibOBD2_RequestService` refuses a service or PID the ECU did not report at init with `OBD_SRV_NOT_SUPPORTED_BY_ECU`, without sending it (#89). `LibOBD2_Init` fails when the ECU does not answer `01 00`, which every OBD ECU must support.
+- **Breaking:** the app layer is split into `src/app/inc/` (headers, the include path) and `src/app/src/` (`libobd2_init.c`, `libobd2_requests.c`, and `libobd2.c` for the supported services / PIDs), with the private header `libobd2_priv.h`. Builds that list the app include directory by hand must use `src/app/inc/`; the single header is unchanged.
 
 ## [0.1.0](https://github.com/AndreiSaldorfean/libOBD2/releases/tag/v0.1.0) - 2026-11-17
 

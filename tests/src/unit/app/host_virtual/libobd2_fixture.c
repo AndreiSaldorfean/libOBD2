@@ -2,6 +2,7 @@
 #include "libobd2_fixture.h"
 #include "ecu_libobd2.h"
 #include "iso15031_5.h"
+#include "libobd2_priv.h"
 #include "uart_trace.h"
 #include "unity.h"
 #include <string.h>
@@ -24,6 +25,10 @@ const uint8_t appFxVin[APPFX_VIN_MSG_CNT * 4u] = { 0x00, 0x00, 0x00, '1', 'H', '
                                                    '6', '3', '3', 'A', '0', '0', '4', '3', '5', '2' };
 
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
+/* What LibOBD2_Init learnt about the ECU (libobd2.c) */
+extern uint32_t supportedPids[MAX_NUM_OF_ECUS][MAX_NUM_OF_SIDS_WITH_PIDS][LIBOBD2_PID_RANGES];
+extern bool supportedSids[MAX_NUM_OF_ECUS][MAX_NUM_OF_SIDS_WITH_PIDS];
+
 extern uint8_t ISO9141_ComputeChecksum(const header_t *header, const obd_data_t *data, size_t dataLen);
 
 static obd_tmr_status_t keepTimer(void *pHandle);
@@ -93,7 +98,20 @@ void APPFX_SetUpLine(void)
         .send_request     = ISO9141_SendRequest,
         .recv_response    = ISO9141_RecvResponse,
     };
-    appFx.ctx = (obd_ctx_t){ .pDataLink = &appFx.link, .connectionStatus = 0 };
+    appFx.ctx = (obd_ctx_t){ .pDataLink = &appFx.link, .connectionStatus = true };
+    APPFX_SetEcuSupportsAll(true);
+}
+
+void APPFX_SetEcuSupportsAll(bool isSupported)
+{
+    for (size_t slot = 0u; slot < MAX_NUM_OF_SIDS_WITH_PIDS; slot++)
+    {
+        supportedSids[0][slot] = isSupported;
+        for (size_t range = 0u; range < LIBOBD2_PID_RANGES; range++)
+        {
+            supportedPids[0][slot][range] = isSupported ? 0xFFFFFFFFu : 0u;
+        }
+    }
 }
 
 bool APPFX_HasEarlyChecksum(const uint8_t *data, size_t dataLen)
@@ -111,6 +129,12 @@ bool APPFX_HasEarlyChecksum(const uint8_t *data, size_t dataLen)
     return false;
 }
 
+obd_ctx_t APPFX_ConnectedCtx(dataLink_if_t *link)
+{
+    APPFX_SetEcuSupportsAll(true);
+    return (obd_ctx_t){ .pDataLink = link, .connectionStatus = true };
+}
+
 dataLink_if_t APPFX_MockLink(void *ctx, dl_send_request_t send, dl_recv_response_t recv)
 {
     return (dataLink_if_t)
@@ -123,6 +147,26 @@ dataLink_if_t APPFX_MockLink(void *ctx, dl_send_request_t send, dl_recv_response
         .send_request     = send,
         .recv_response    = recv,
     };
+}
+
+void APPFX_QueueIso9141Init(void)
+{
+    /* nothing is known about the protocol before the connect */
+    appFx.proto = (iso9141_ctx_t){0};
+    appFx.link.connect       = NULL;
+    appFx.link.send_request  = NULL;
+    appFx.link.recv_response = NULL;
+
+    /* Same ECU timing as test_pos_ex_ISO9141_5BaudInit_0: W5 + 10 bits at 5 baud, then W1..W4 */
+    appFx.timer.timeNow = ISO9141_W5_TIME_MIN + 2000u + ISO9141_W1_TIME_MIN;
+    UART_WriteByte(&appFx.uart, 0x55u);
+    appFx.timer.timeNow += ISO9141_W2_TIME_MIN;
+    UART_WriteByte(&appFx.uart, 0x08u);
+    appFx.timer.timeNow += ISO9141_W3_TIME_MIN;
+    UART_WriteByte(&appFx.uart, 0x08u);
+    appFx.timer.timeNow += 3u * ISO9141_W4_TIME_MIN;
+    UART_WriteByte(&appFx.uart, (uint8_t)(~0x33u));
+    appFx.timer.timeNow = 0u;
 }
 
 void APPFX_SuppressEcho(void)

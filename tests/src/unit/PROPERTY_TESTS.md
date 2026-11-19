@@ -170,7 +170,7 @@ Each finding is a `PBT_KNOWN_BUG` property and has a bug ticket (#62 to #68); th
   outside `1..count`.
 
 ### F6 (#67): $09 answers are not matched to the request
-- **Where:** `src/app/src/libobd2_requests.c:154`. `TP_MSG_CNT` takes the count from `param[1]` of any answer, and
+- **Where:** `src/app/src/libobd2_requests.c:156`. `TP_MSG_CNT` takes the count from `param[1]` of any answer, and
   `TP_MSGS` stores whatever comes next. Only the first message's sid/PID is looked at, when decoding.
 - **Counter-example:** a count answer `48 01 05` (sid `48`, PID `01`) is taken as "5 VIN messages" and
   the request returns OK. A CALID message among VIN messages is joined in too.

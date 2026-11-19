@@ -27,6 +27,11 @@
 #define APPFX_VIN_LEN          17u
 #define APPFX_VIN_MSG_CNT      5u  /* 17 VIN chars + 3 pad bytes, 4 data bytes per message */
 
+/* Virtual time at which the tester is connected after APPFX_QueueIso9141Init's 5-baud init: the ECU
+ * sends ~address (its last byte) here and the tester reads it one poll later */
+#define APPFX_INIT_CONNECT_END (ISO9141_W5_TIME_MIN + 2000u + ISO9141_W1_TIME_MIN + ISO9141_W2_TIME_MIN + \
+                                ISO9141_W3_TIME_MIN + 3u * ISO9141_W4_TIME_MIN + APPFX_TIME_STEP)
+
 /* Time the tester needs to send a request of `dataLen` bytes (sid + params): P3 idle, then P4 after each byte */
 #define APPFX_REQ_DURATION(dataLen) (P3_TIME_MIN + (APPFX_HDR_LEN + (dataLen) + 1u) * P4_TIME_MIN)
 
@@ -50,8 +55,16 @@ extern const uint8_t appFxVin[APPFX_VIN_MSG_CNT * 4u];
 /* =============================================== MODULE API ============================================== */
 
 /* Clock at 0, empty line, tester connected over ISO9141 with timer/transport inits that keep both
- * (DL_Connect would otherwise zero timeStep and drop the queued ECU bytes). */
+ * (DL_Connect would otherwise zero timeStep and drop the queued ECU bytes). The context counts as
+ * initialised and the ECU as supporting every sid and PID, as if LibOBD2_Init had run. */
 void APPFX_SetUpLine(void);
+
+/* Sets what LibOBD2_Init would have learnt: every sid with PIDs and every PID supported, or none */
+void APPFX_SetEcuSupportsAll(bool isSupported);
+
+/* For mock-link tests: a context on 'link' that counts as initialised, with an ECU supporting every
+ * sid and PID (APPFX_SetEcuSupportsAll) */
+obd_ctx_t APPFX_ConnectedCtx(dataLink_if_t *link);
 
 /* True when one of the 'dataLen' data bytes of an ECU frame 48 6B 12 <data> <cs> equals the sum of the
  * bytes before it: a receiver that frames by checksum ends the frame there (PROPERTY_TESTS.md, F1) */
@@ -71,6 +84,11 @@ void APPFX_SuppressEcho(void);
  * which the tester stopped talking), the rest APPFX_ECU_BYTE_GAP apart. Returns the virtual time at
  * which the tester has read the whole frame. */
 uint32_t APPFX_QueueEcuFrame(uint32_t reqEnd, const uint8_t *data, size_t dataLen);
+
+/* Queues the ECU side of the ISO9141 5-baud init (sync 0x55, KB1 = KB2 = 0x08, ~address 0xCC) and
+ * clears what the link knows about the protocol, so LibOBD2_Init runs the whole connect. The tester is
+ * connected at APPFX_INIT_CONNECT_END. */
+void APPFX_QueueIso9141Init(void);
 
 /* Queues the ECU side of a SID $09 exchange: the count answer 49 <cntPid> <msgCnt>, then the first
  * 'sentCnt' of the data messages 49 <pid> <msgNr> D1..D4 (payload: 4 bytes per message). */

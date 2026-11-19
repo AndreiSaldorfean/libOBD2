@@ -49,6 +49,7 @@ PRIVATE_HEADERS = [
     "src/datalink/specific/iso9141/iso9141_priv.h",
     "src/datalink/specific/iso9141/iso9141.h",
     "src/datalink/specific/kwp2000/kwp2000.h",
+    "src/app/inc/libobd2_priv.h",
 ]
 
 # Same directories the OBD2 target globs in CMakeLists.txt
