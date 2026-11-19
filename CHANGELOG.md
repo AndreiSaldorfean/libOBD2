@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ECU simulator answers every library service; `ECU_LibOBD2_GetAnswer` exposes its table and the `host_virtual` app tests replay it (`APPFX_QueueEcuExchange`).
 - `LibOBD2_Init` reads which services and PIDs the ECU supports (#89): every service with "PIDs supported" (`$01 $02 $05 $06 $08 $09`) is probed with its PID `$00`, and the ranges `$20` … `$E0` are followed while a bitmap announces the next one. A service the ECU does not answer (silent or negative response) is unsupported. `$03 $04 $07 $0A` are not probed (`$04` would clear the DTCs). `LibOBD2_IsSidSupportedByEcu` and `LibOBD2_IsSidWithAvailablePids` expose the result.
 - `OBD_ERR_NOT_INITIALIZED`: returned by `LibOBD2_RequestService` before a successful `LibOBD2_Init` (`obd_ctx_t.connectionStatus` is now set by `LibOBD2_Init`).
+- ECU simulator answers `$02` PID `$00` and `$09` PID `$00`, and its `$01` "PIDs supported" answers list every PID it answers.
 
 ### Fixed
 
