@@ -158,12 +158,14 @@ static bool readCoolant(void)
     uint8_t response[RESPONSE_BUF_LEN] = {0};
     size_t responseLen = 0;
     obd_status_t status = {0};
+    int16_t temp = 0;
 
     status = LibOBD2_RequestService(&obdCtx, OBD_GET_COOLANT_TEMP, response, &responseLen);
-    if (isOk(status) && (1U == responseLen))
+    if (isOk(status) && (sizeof(temp) == responseLen))
     {
-        /* decoded as A - 40, stored in a byte */
-        printf("%-13s %d degC\n", "Coolant temp", (int)(int8_t)response[0]);
+        /* decoded as A - 40, an int16_t */
+        memcpy(&temp, response, sizeof(temp));
+        printf("%-13s %d degC\n", "Coolant temp", (int)temp);
     }
     else
     {

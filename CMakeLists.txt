@@ -62,7 +62,7 @@ if(SPT_TRACING STREQUAL ON)
 endif()
 
 file(GLOB SOURCES
-    "./src/app/*.c"
+    "./src/app/src/*.c"
     "./src/datalink/common/*.c"
     "./src/datalink/specific/iso9141/*.c"
     "./src/datalink/specific/kwp2000/*.c"
@@ -77,7 +77,7 @@ set(LIBOBD2_SINGLE_HEADER ${CMAKE_CURRENT_BINARY_DIR}/dist/libobd2.h)
 if(Python3_Interpreter_FOUND)
     file(GLOB AMALGAMATION_HEADERS
         "./include/*.h"
-        "./src/app/*.h"
+        "./src/app/inc/*.h"
         "./src/datalink/common/*.h"
         "./src/datalink/specific/iso9141/*.h"
         "./src/datalink/specific/kwp2000/*.h"
@@ -107,7 +107,7 @@ endif()
 if(LIBOBD2_USE_AMALGAMATION)
     message("Amalgamation= ON")
     # One TU with the whole implementation. It sits next to the generated header,
-    # so its #include "libobd2.h" picks dist/libobd2.h before src/app/libobd2.h.
+    # so its #include "libobd2.h" picks dist/libobd2.h before src/app/inc/libobd2.h.
     set(LIBOBD2_IMPL_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/dist/libobd2_impl.c)
     if(NOT EXISTS ${LIBOBD2_IMPL_SOURCE})
         file(WRITE ${LIBOBD2_IMPL_SOURCE}
@@ -169,7 +169,7 @@ target_include_directories(${PROJECT_NAME}
     ./src/datalink/specific/iso9141/
     ./src/datalink/specific/kwp2000/
     ./src/utils/common/
-    ./src/app/
+    ./src/app/inc/
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE

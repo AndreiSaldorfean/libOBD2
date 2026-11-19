@@ -6,11 +6,13 @@
 #include "dl_test.h"
 #include "iso9141_test.h"
 #include "libobd2_test.h"
+#include "libobd2_services_test.h"
 #include "timer_pbt_test.h"
 #include "uart_pbt_test.h"
 #include "dl_pbt_test.h"
 #include "iso9141_pbt_test.h"
 #include "libobd2_pbt_test.h"
+#include "libobd2_services_pbt_test.h"
 #include "timer_neg_test.h"
 #include "uart_neg_test.h"
 #include "fault_injection_neg_test.h"
@@ -18,9 +20,11 @@
 #include "dl_fault_test.h"
 #include "iso9141_neg_test.h"
 #include "libobd2_neg_test.h"
+#include "libobd2_services_neg_test.h"
 #include "dl_pbt_neg_test.h"
 #include "iso9141_pbt_neg_test.h"
 #include "libobd2_pbt_neg_test.h"
+#include "libobd2_services_pbt_neg_test.h"
 #include "unity_internals.h"
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
@@ -90,6 +94,29 @@ int targetRunTests(void)
     RUN_TEST(test_pos_ex_LIBOBD2_RequestService_2);
     RUN_TEST(test_pos_ex_LIBOBD2_DispatchSid_0);
     RUN_TEST(test_pos_ex_LIBOBD2_DispatchSid_1);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_0);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_1);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_2);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_3);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_4);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_5);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_6);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_7);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_8);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_9);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_10);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_11);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_12);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_13);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_14);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_15);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_16);
+    RUN_TEST(test_pos_ex_LIBOBD2_Services_17);
+    RUN_TEST(test_pos_ex_LIBOBD2_O2TestScaling_0);
+    RUN_TEST(test_pos_ex_LIBOBD2_DtcToString_0);
+    RUN_TEST(test_pos_ex_LIBOBD2_ReadSupportedPids_0);
+    RUN_TEST(test_pos_ex_LIBOBD2_ReadSupportedPids_1);
+    RUN_TEST(test_pos_ex_LIBOBD2_ReadSupportedPids_2);
 
     /* property-based */
     /* ---- DRIVER ---- */
@@ -115,6 +142,8 @@ int targetRunTests(void)
     RUN_TEST(test_pos_pbt_LIBOBD2_RequestService_1);
     RUN_TEST(test_pos_pbt_LIBOBD2_RequestService_2);
     RUN_TEST(test_pos_pbt_LIBOBD2_RequestService_3);
+    RUN_TEST(test_pos_pbt_LIBOBD2_DecodeResponse_0);
+    RUN_TEST(test_pos_pbt_LIBOBD2_DecodeResponse_1);
 
     /*================= POSITIVE TESTS =================*/
 
@@ -195,6 +224,30 @@ int targetRunTests(void)
     RUN_TEST(test_neg_ex_LIBOBD2_RequestService_9);
     RUN_TEST(test_neg_ex_LIBOBD2_RequestService_10);
     RUN_TEST(test_neg_ex_LIBOBD2_RequestService_11);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_0);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_1);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_2);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_3);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_4);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_5);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_6);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_7);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_8);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_9);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_10);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_11);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_12);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_13);
+    RUN_TEST(test_neg_ex_LIBOBD2_Services_14);
+    RUN_TEST(test_neg_ex_LIBOBD2_Init_3);
+    RUN_TEST(test_neg_ex_LIBOBD2_RequestService_12);
+    RUN_TEST(test_neg_ex_LIBOBD2_RequestService_13);
+    RUN_TEST(test_neg_ex_LIBOBD2_RequestService_14);
+    RUN_TEST(test_neg_ex_LIBOBD2_ReadSupportedPids_0);
+    RUN_TEST(test_neg_ex_LIBOBD2_ReadSupportedPids_1);
+    RUN_TEST(test_neg_ex_LIBOBD2_ReadSupportedPids_2);
+    RUN_TEST(test_neg_ex_LIBOBD2_ReadSupportedPids_3);
+    RUN_TEST(test_neg_ex_LIBOBD2_ReadSupportedPids_4);
 
     /* property-based */
     /* ---- DATALINK ---- */
@@ -218,6 +271,7 @@ int targetRunTests(void)
     RUN_TEST(test_neg_pbt_LIBOBD2_RequestService_3);
     RUN_TEST(test_neg_pbt_LIBOBD2_RequestService_4);
     RUN_TEST(test_neg_pbt_LIBOBD2_RequestService_5);
+    RUN_TEST(test_neg_pbt_LIBOBD2_DecodeResponse_0);
 
     /*================= NEGATIVE TESTS =================*/
     return UNITY_END();

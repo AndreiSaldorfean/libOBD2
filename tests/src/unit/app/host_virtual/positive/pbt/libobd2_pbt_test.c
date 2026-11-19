@@ -139,7 +139,7 @@ static enum theft_trial_res prop_vin_roundtrip(struct theft *t, void *arg)
     state.callIdx = 0u;
 
     dataLink_if_t mockLink = APPFX_MockLink(&state, mock_send_ok, mock_recv_vin);
-    obd_ctx_t ctx = { .pDataLink = &mockLink };
+    obd_ctx_t ctx = APPFX_ConnectedCtx(&mockLink);
 
     uint8_t response[RESPONSE_BUF_LEN] = {0};
     size_t  responseLen = 0;
@@ -275,7 +275,7 @@ static enum theft_trial_res propInfoOverLine(struct theft *t, void *arg)
     return infoHitsF1((const infoCase_t *)arg) ? THEFT_TRIAL_SKIP : propInfoAnyData(t, arg);
 }
 
-/* Any A decodes to one byte, A - 40 */
+/* Any A decodes to an int16_t, A - 40 */
 static enum theft_trial_res propCoolantAnyA(struct theft *t, void *arg)
 {
     const uint8_t a = *(const uint8_t *)arg;
@@ -283,12 +283,14 @@ static enum theft_trial_res propCoolantAnyA(struct theft *t, void *arg)
     uint8_t response[RESPONSE_BUF_LEN] = {0};
     size_t responseLen = 0u;
     obd_status_t status = {0};
+    int16_t temp = 0;
 
     (void)t;
     APPFX_SetUpLine();
     (void)APPFX_QueueEcuFrame(APPFX_REQ_DURATION(2u), ecuResp, sizeof(ecuResp));
     status = LibOBD2_RequestService(&appFx.ctx, OBD_GET_COOLANT_TEMP, response, &responseLen);
-    return ((status.response == OBD_STATUS_OK) && (responseLen == 1u) && (response[0] == (uint8_t)(a - 40u)))
+    memcpy(&temp, response, sizeof(temp));
+    return ((status.response == OBD_STATUS_OK) && (responseLen == sizeof(temp)) && (temp == ((int16_t)a - 40)))
          ? THEFT_TRIAL_PASS : THEFT_TRIAL_FAIL;
 }
 
@@ -355,11 +357,11 @@ void test_pos_pbt_LIBOBD2_RequestService_1(void)
 /******************************************************************
  * - brief:       Any coolant byte decodes to A - 40
  * - description: For any A in 41 05 A, RequestService(coolant)
- *                returns OK with one byte, A - 40 (as one byte).
+ *                returns OK with an int16_t, A - 40.
  *                The one A that F1 cuts (0x0B) is skipped here (see _3).
  * - steps:
  *     1. Generate A, queue 48 6B 12 41 05 A CS
- *     2. RequestService: OK, len 1, (uint8)(A - 40)
+ *     2. RequestService: OK, len 2, (int16)(A - 40)
  ******************************************************************/
 void test_pos_pbt_LIBOBD2_RequestService_2(void)
 {

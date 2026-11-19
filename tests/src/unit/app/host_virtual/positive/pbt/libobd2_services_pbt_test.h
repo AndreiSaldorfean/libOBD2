@@ -1,5 +1,5 @@
-#ifndef TIMER_TEST_H
-#define TIMER_TEST_H
+#ifndef LIBOBD2_SERVICES_PBT_TEST_H
+#define LIBOBD2_SERVICES_PBT_TEST_H
 
 /* ================================================ INCLUDES =============================================== */
 /* ================================================= MACROS ================================================ */
@@ -7,7 +7,7 @@
 /* ============================================ INLINE FUNCTIONS =========================================== */
 /* ======================================= EXTERN GLOBAL VARIABLES ========================================= */
 /* =============================================== MODULE API ============================================== */
-void test_TMR_Init_0(void);
+void test_pos_pbt_LIBOBD2_DecodeResponse_0(void);
+void test_pos_pbt_LIBOBD2_DecodeResponse_1(void);
 
-#endif /* TIMER_TEST_H */
-
+#endif /* LIBOBD2_SERVICES_PBT_TEST_H */

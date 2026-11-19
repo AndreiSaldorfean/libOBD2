@@ -13,5 +13,8 @@ void test_pos_ex_LIBOBD2_RequestService_1(void);
 void test_pos_ex_LIBOBD2_RequestService_2(void);
 void test_pos_ex_LIBOBD2_DispatchSid_0(void);
 void test_pos_ex_LIBOBD2_DispatchSid_1(void);
+void test_pos_ex_LIBOBD2_ReadSupportedPids_0(void);
+void test_pos_ex_LIBOBD2_ReadSupportedPids_1(void);
+void test_pos_ex_LIBOBD2_ReadSupportedPids_2(void);
 
 #endif /* LIBOBD2_TEST_H */

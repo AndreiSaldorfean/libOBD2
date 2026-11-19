@@ -122,7 +122,7 @@ static enum theft_trial_res prop_send_failure_propagates(struct theft *t, void *
     uint16_t errCode = testCase.errCode;
 
     dataLink_if_t mockLink = APPFX_MockLink(&errCode, mock_send_fail, mock_recv_should_not_be_called);
-    obd_ctx_t ctx = { .pDataLink = &mockLink };
+    obd_ctx_t ctx = APPFX_ConnectedCtx(&mockLink);
 
     uint8_t response[RESPONSE_BUF_LEN] = {0};
     const size_t sentinel = (size_t)0xDEADBEEFu;
@@ -504,8 +504,7 @@ void test_neg_pbt_LIBOBD2_RequestService_3(void)
         .type_info = { &truncatedInfo },
         .trials    = PBT_TRIALS_LINE,
     };
-    PBT_KNOWN_BUG(&cfg, "test_neg_pbt_LIBOBD2_RequestService_3.vcd",
-                  "F7 (#68): a missing data byte decodes as A = 0, i.e. -40 degC (PROPERTY_TESTS.md)");
+    PBT_ASSERT_HOLDS(&cfg, "test_neg_pbt_LIBOBD2_RequestService_3.vcd");
 }
 
 /******************************************************************

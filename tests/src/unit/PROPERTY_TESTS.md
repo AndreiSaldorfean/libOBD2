@@ -109,12 +109,12 @@ A failing property prints its shrunk counter-example, and the seed to rerun it w
 |---|---|
 | `test_pos_pbt_LIBOBD2_RequestService_0` | a VIN of any length is reassembled across $09 messages (mocked data link) |
 | `test_pos_pbt_LIBOBD2_RequestService_1` | VIN/CALID of 1..9 messages come back complete and in order over the K-line; nothing written past the result |
-| `test_pos_pbt_LIBOBD2_RequestService_2` | any coolant byte decodes to `A - 40` |
+| `test_pos_pbt_LIBOBD2_RequestService_2` | any coolant byte decodes to the `int16_t` `A - 40` |
 | `test_pos_pbt_LIBOBD2_RequestService_3` | any data the ECU sends reaches the caller (**F1** at app level) |
 | `test_neg_pbt_LIBOBD2_RequestService_0` | a transport send failure is returned unchanged; nothing is received |
 | `test_neg_pbt_LIBOBD2_RequestService_1` | $09 data is assembled by message number, or the request fails (**F5**) |
 | `test_neg_pbt_LIBOBD2_RequestService_2` | an answer with the wrong sid or PID is never OK (**F6**) |
-| `test_neg_pbt_LIBOBD2_RequestService_3` | a coolant answer without its data byte is rejected (**F7**) |
+| `test_neg_pbt_LIBOBD2_RequestService_3` | a coolant answer without its data byte is rejected (**F7**, fixed) |
 | `test_neg_pbt_LIBOBD2_RequestService_4` | an answer for another PID or service is never decoded as coolant |
 | `test_neg_pbt_LIBOBD2_RequestService_5` | a UART error on any ECU byte of an exchange fails it with no data |
 
@@ -162,7 +162,7 @@ Each finding is a `PBT_KNOWN_BUG` property and has a bug ticket (#62 to #68); th
 - **Fix direction:** limit the data field to 7 bytes (+ checksum) and report `RECV_MSG_FAILED` beyond.
 
 ### F5 (#66): $09 message numbers are ignored
-- **Where:** `src/app/libobd2_formulas.h:36`. `LibOBD2_FormulaMultiFrame` joins messages in arrival
+- **Where:** `src/app/inc/libobd2_formulas.h:232`. `LibOBD2_FormulaMultiFrame` joins messages in arrival
   order and skips the message-number byte without checking it.
 - **Counter-example:** VIN messages numbered `2 1 3 4 5` are joined in that order and returned OK.
 - **Impact:** a repeated, missing or reordered message gives a wrong VIN/CALID with an OK status.
@@ -170,7 +170,7 @@ Each finding is a `PBT_KNOWN_BUG` property and has a bug ticket (#62 to #68); th
   outside `1..count`.
 
 ### F6 (#67): $09 answers are not matched to the request
-- **Where:** `src/app/libobd2.c:96`. `TP_MSG_CNT` takes the count from `param[1]` of any answer, and
+- **Where:** `src/app/src/libobd2_requests.c:156`. `TP_MSG_CNT` takes the count from `param[1]` of any answer, and
   `TP_MSGS` stores whatever comes next. Only the first message's sid/PID is looked at, when decoding.
 - **Counter-example:** a count answer `48 01 05` (sid `48`, PID `01`) is taken as "5 VIN messages" and
   the request returns OK. A CALID message among VIN messages is joined in too.
@@ -178,7 +178,10 @@ Each finding is a `PBT_KNOWN_BUG` property and has a bug ticket (#62 to #68); th
 - **Fix direction:** check sid = request + `0x40` and PID = requested PID on every answer, including
   the count answer.
 
-### F7 (#68): a coolant answer without its data byte decodes anyway
+### F7 (#68): a coolant answer without its data byte decodes anyway — fixed
+- **Fixed by:** the PID formula table (`LIBOBD2_PID_FORMULAS` in `src/app/inc/libobd2_formulas.h`) gives
+  the number of data bytes each PID needs; `LibOBD2_DecodePid` fails a shorter answer with
+  `OBD_ERR_APP_SHORT_MSG`. The property now runs with `PBT_ASSERT_HOLDS`.
 - **Where:** `src/app/libobd2.c:148`, `LibOBD2_FormulaCoolantTemp`: `param[1]` is read without checking
   `dataLen`.
 - **Counter-example:** the answer `41 05` returns OK, 1 byte, `0 − 40` = −40 °C.

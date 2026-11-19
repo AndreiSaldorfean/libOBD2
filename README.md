@@ -96,6 +96,8 @@ size_t len = 0;
 LibOBD2_RequestService(&ctx, OBD_GET_COOLANT_TEMP, response, &len);
 ```
 
+`LibOBD2_Init` also asks the ECU which services and PIDs it supports (the "PIDs supported" PIDs `$00`, `$20`, … of `$01 $02 $05 $06 $08 $09`). `LibOBD2_RequestService` then refuses a service or PID the ECU did not report with `OBD_SRV_NOT_SUPPORTED_BY_ECU`, without sending anything, and returns `OBD_ERR_NOT_INITIALIZED` until `LibOBD2_Init` has succeeded. `LibOBD2_IsSidSupportedByEcu` tells you what init found.
+
 Full wiring: see `examples/stm32f4/` and `ports/stm32f4/`.
 
 ---

@@ -136,8 +136,9 @@ def check_baseline(summary: dict, baseline_path: Path) -> int:
         print(f"FAIL: {', '.join(failed)} coverage dropped below the baseline. Add tests for the new or changed code.")
         return 3
     if raised:
-        print(f"Coverage went up ({', '.join(raised)}). Raise the baseline in this PR:\n"
-              f"  python scripts/coverage.py <build_dir> --update-baseline {baseline_path}")
+        print(f"Coverage went up ({', '.join(raised)}). Raise {baseline_path} in this PR to the totals CI\n"
+              f"measured (the ci/coverage status of the PR), not to a local run: other gcc versions count\n"
+              f"branches differently (scripts/ci/README.md).")
     return 0
 
 

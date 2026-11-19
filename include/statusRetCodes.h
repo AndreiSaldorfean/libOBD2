@@ -5,15 +5,17 @@
 #include <stdint.h>
 
 /* ================================================= MACROS ================================================ */
-#define SRV_STATUS_GENERIC            (0x01)
-#define OBD_MAKE_ERROR(module, code) ((uint16_t)(((module) << 8) | ((code) & 0xFF)))
-#define OBD_STATUS_OK                ((uint16_t)0x0U)
-#define OBD_GENERIC_ERROR            (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x1U))
-#define OBD_ERR_NULL_PTR             (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x2U))
-#define OBD_NOT_SUPPORTED            (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x3U))
-#define OBD_ERR_TIMEOUT_MAX          (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x4U))
-#define OBD_ERR_TIMEOUT_MIN          (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x5U))
-#define OBD_ERR_INVALID_PARAM        (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x6U))
+#define SRV_STATUS_GENERIC             (0x01)
+#define OBD_MAKE_ERROR(module, code)   ((uint16_t)(((module) << 8) | ((code) & 0xFF)))
+#define OBD_STATUS_OK                  ((uint16_t)0x0U)
+#define OBD_GENERIC_ERROR              (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x1U))
+#define OBD_ERR_NULL_PTR               (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x2U))
+#define OBD_NOT_SUPPORTED              (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x3U))
+#define OBD_ERR_TIMEOUT_MAX            (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x4U))
+#define OBD_ERR_TIMEOUT_MIN            (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x5U))
+#define OBD_ERR_INVALID_PARAM          (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x6U))
+#define OBD_SRV_NOT_SUPPORTED_BY_ECU   (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x7U))
+#define OBD_ERR_NOT_INITIALIZED        (OBD_MAKE_ERROR(SRV_STATUS_GENERIC, (uint16_t)0x8U))
 
 // Init status codes
 #define SRV_STATUS_INIT                   (0x02)
@@ -61,6 +63,7 @@
 // App status codes
 #define SRV_STATUS_APP                     (0x06)
 #define OBD_ERR_APP_TOO_MANY_MSGS          (OBD_MAKE_ERROR(SRV_STATUS_APP, (uint16_t)0x1U))
+#define OBD_ERR_APP_SHORT_MSG              (OBD_MAKE_ERROR(SRV_STATUS_APP, (uint16_t)0x2U)) /* answer lacks data bytes */
 /* ======================================= TYPEDEFS, ENUMS, STRUCTS ======================================== */
 typedef struct
 {

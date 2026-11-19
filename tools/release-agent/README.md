@@ -77,4 +77,6 @@ for a repository without CI.
 - `release-please-config.json`: `draft` + `force-tag-creation` keep a release private until its assets
   are built; `always-update` rebuilds the release PR on every push, so edit `[Unreleased]` on `develop`,
   not on the release branch.
-- `release-as: "0.1.0"` forces the first release. **Remove it after v0.1.0 ships** (`status` warns).
+- No `release-as`: release-please picks the next version from the commit types. One was only needed to
+  force the first release (v0.1.0); a pinned version that is already released keeps the release PR on it
+  (`status` warns).

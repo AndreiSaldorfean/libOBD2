@@ -13,12 +13,29 @@
 
 /* ================================================= MACROS ================================================ */
 /* ============================================ LOCAL VARIABLES ============================================ */
-ecu_libobd2_service_t ecuResponses[10][10] = {ECU_SRV_RESP};
+OBD2_STATIC const ecu_libobd2_service_t ecuResponses[ECU_MAX_SID][ECU_MAX_PID] = {ECU_SRV_RESP};
 
 /* ============================================ GLOBAL VARIABLES =========================================== */
 /* ======================================= LOCAL FUNCTION DECLARATIONS ===================================== */
 /* ======================================== LOCAL FUNCTION DEFINITIONS ===================================== */
 /* ================================================ MODULE API ============================================= */
+/******************************************
+* title: ECU_LibOBD2_GetAnswer
+* brief: The answer of the simulated ECU to request sid / pid (pid 0 for the
+*        services without one), NULL when it does not answer.
+******************************************/
+const ecu_libobd2_service_t *ECU_LibOBD2_GetAnswer(uint8_t sid, uint8_t pid)
+{
+    const ecu_libobd2_service_t *answer = NULL;
+
+    if ((ECU_MAX_SID > sid) && (ECU_MAX_PID > pid) && (0U < ecuResponses[sid][pid].sreqLen))
+    {
+        answer = &ecuResponses[sid][pid];
+    }
+
+    return answer;
+}
+
 obd_status_t ECU_LibOBD2_Init(obd_ctx_t *ctx)
 {
     obd_status_t status = {0};
@@ -37,6 +54,7 @@ exit:
 
 obd_status_t ECU_Listen(obd_ctx_t* ctx)
 {
+    const ecu_libobd2_service_t *answer = NULL;
     obd_data_t resp = {0};
     obd_status_t status;
     size_t dataLen = 0;
@@ -44,9 +62,13 @@ obd_status_t ECU_Listen(obd_ctx_t* ctx)
     status = ECU_DL_RecvResponse(ctx->pDataLink, &resp, &dataLen);
     OBD2_ASSERT_OK(status);
 
-    for (size_t idx = 0; idx < ecuResponses[resp.sid][resp.param[0]].sreqLen; idx++)
+    // Unsupported requests get no answer (ISO 15031-5 5.2.4.1)
+    answer = ECU_LibOBD2_GetAnswer(resp.sid, resp.param[0]);
+    OBD2_IF_COND_GOTO_EXIT(NULL == answer);
+
+    for (size_t idx = 0; idx < answer->sreqLen; idx++)
     {
-        const libobd2_data_t *data = &ecuResponses[resp.sid][resp.param[0]].serviceRequests.serviceRequests[idx];
+        const libobd2_data_t *data = &answer->serviceRequests.serviceRequests[idx];
 
         status = ECU_DL_SendRequest(ctx->pDataLink, &data->data, data->dataLen);
         OBD2_ASSERT_OK(status);

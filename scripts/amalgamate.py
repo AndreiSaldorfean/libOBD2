@@ -26,7 +26,7 @@ INCLUDE_DIRS = [
     "src/datalink/specific/iso9141",
     "src/datalink/specific/kwp2000",
     "src/utils/common",
-    "src/app",
+    "src/app/inc",
 ]
 
 # Interface part: always visible to the integrator
@@ -34,12 +34,12 @@ PUBLIC_HEADERS = [
     "include/statusRetCodes.h",
     "include/timing_if.h",
     "include/uart_if.h",
-    "src/app/libobd2.h",
-    "src/app/libobd2_services.h",
-    "src/app/libobd2_service_requests.h",
-    "src/app/iso15031_5.h",
-    "src/app/libobd2_formulas.h",
-    "src/app/libobd2_transfer_protocol.h",
+    "src/app/inc/libobd2.h",
+    "src/app/inc/libobd2_services.h",
+    "src/app/inc/libobd2_service_requests.h",
+    "src/app/inc/iso15031_5.h",
+    "src/app/inc/libobd2_formulas.h",
+    "src/app/inc/libobd2_transfer_protocol.h",
 ]
 
 # Implementation part: only with LIBOBD2_IMPLEMENTATION
@@ -49,11 +49,12 @@ PRIVATE_HEADERS = [
     "src/datalink/specific/iso9141/iso9141_priv.h",
     "src/datalink/specific/iso9141/iso9141.h",
     "src/datalink/specific/kwp2000/kwp2000.h",
+    "src/app/inc/libobd2_priv.h",
 ]
 
 # Same directories the OBD2 target globs in CMakeLists.txt
 SOURCE_DIRS = [
-    "src/app",
+    "src/app/src",
     "src/datalink/common",
     "src/datalink/specific/iso9141",
     "src/datalink/specific/kwp2000",
